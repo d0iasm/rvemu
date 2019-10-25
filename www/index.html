@@ -3,10 +3,29 @@
   <head>
     <meta charset="utf-8">
     <title>Risc-V Emulator</title>
+    <style>
+      body {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #screen {
+        background-color: black;
+        color: white;
+        height: 1024px;
+        width: 1280px;
+      }
+    </style>
   </head>
   <body>
     <h1>Risc-V Emulator</h1>
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <canvas id="screen"></canvas>
     <script src="./bootstrap.js"></script>
   </body>
 </html>
