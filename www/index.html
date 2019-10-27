@@ -19,13 +19,17 @@
         background-color: black;
         color: white;
         height: 1024px;
+        padding: 10px;
         width: 1280px;
       }
     </style>
   </head>
   <body>
     <h1>Risc-V Emulator</h1>
-    <canvas id="screen"></canvas>
+    <input id="file" type="file" />
+    <button id="exec">execute</button>
+    <div id="state"></div>
+    <div id="screen"></div>
     <script src="./bootstrap.js"></script>
   </body>
 </html>

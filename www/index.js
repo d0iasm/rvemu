@@ -1,12 +1,28 @@
 import { Emulator } from "riscv-emu";
 
 const screen = document.getElementById("screen");
-let ctx = screen.getContext("2d");
-
-ctx.font = "8px Arial";
-ctx.fillStyle = "#fff";
-ctx.fillText("Hello World", 10, 30);
-
 const emu = Emulator.new();
-ctx.fillText(emu.dump_registers(), 10, 50);
-ctx.fillText("hoge", 10, 70);
+
+const fileReader = new FileReader();
+const execBtn = document.getElementById("exec");
+
+fileReader.onloadend = e => {
+  console.log(fileReader.result);
+  emu.set_binary(fileReader.result);
+};
+
+execBtn.onclick = e => {
+  let file = document.getElementById("file");
+  let state = document.getElementById("state");
+  const text = document.createTextNode("Load file (" + file.files[0].name + ") ...");
+  state.appendChild(text);
+  fileReader.readAsText(file.files[0]);
+};
+
+export function render(str) {
+  console.log("called render" + str);
+  const d = document.createElement("div");
+  const t = document.createTextNode(str);
+  d.appendChild(t);
+  screen.appendChild(d);
+}
