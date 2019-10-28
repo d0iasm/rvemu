@@ -9,13 +9,10 @@ use wasm_bindgen::prelude::*;
 //static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern "C" {
+extern {
     fn alert(s: &str); // window.alert()
+    #[wasm_bindgen(module = "index")]
     fn render(s: &str); // TODO: ReferenceError: render is not defined
-}
-
-#[wasm_bindgen]
-extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str); // console.log()
 }
@@ -56,6 +53,48 @@ enum Register {
     X31,
     X32,
     PC,
+}
+
+// TODO: better way?
+impl Register {
+    fn str(&self) -> String {
+        match *self {
+            Register::X0 => String::from("x0"),
+            Register::X1 => String::from("x1"),
+            Register::X2 => String::from("x2"),
+            Register::X3 => String::from("x3"),
+            Register::X4 => String::from("x4"),
+            Register::X5 => String::from("x5"),
+            Register::X6 => String::from("x6"),
+            Register::X7 => String::from("x7"),
+            Register::X8 => String::from("x8"),
+            Register::X9 => String::from("x9"),
+            Register::X10 => String::from("x10"),
+            Register::X11 => String::from("x11"),
+            Register::X12 => String::from("x12"),
+            Register::X13 => String::from("x13"),
+            Register::X14 => String::from("x14"),
+            Register::X15 => String::from("x15"),
+            Register::X16 => String::from("x16"),
+            Register::X17 => String::from("x17"),
+            Register::X18 => String::from("x18"),
+            Register::X19 => String::from("x19"),
+            Register::X20 => String::from("x20"),
+            Register::X21 => String::from("x21"),
+            Register::X22 => String::from("x22"),
+            Register::X23 => String::from("x23"),
+            Register::X24 => String::from("x24"),
+            Register::X25 => String::from("x25"),
+            Register::X26 => String::from("x26"),
+            Register::X27 => String::from("x27"),
+            Register::X28 => String::from("x28"),
+            Register::X29 => String::from("x29"),
+            Register::X30 => String::from("x30"),
+            Register::X31 => String::from("x31"),
+            Register::X32 => String::from("x32"),
+            Register::XPC => String::from("pc"),
+        }
+    }
 }
 
 #[wasm_bindgen]
