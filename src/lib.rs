@@ -1,5 +1,7 @@
+mod cpu;
 mod utils;
 
+use crate::cpu::register::*;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -7,87 +9,6 @@ use wasm_bindgen::prelude::*;
 //#[cfg(feature = "wee_alloc")]
 //#[global_allocator]
 //static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-const REGISTERS_COUNT: usize = 33;
-
-enum Register {
-    X0,
-    X1,
-    X2,
-    X3,
-    X4,
-    X5,
-    X6,
-    X7,
-    X8,
-    X9,
-    X10,
-    X11,
-    X12,
-    X13,
-    X14,
-    X15,
-    X16,
-    X17,
-    X18,
-    X19,
-    X20,
-    X21,
-    X22,
-    X23,
-    X24,
-    X25,
-    X26,
-    X27,
-    X28,
-    X29,
-    X30,
-    X31,
-    X32,
-    PC,
-}
-
-// TODO: better way?
-impl Register {
-    fn str(&self) -> String {
-        match *self {
-            Register::X0 => String::from("x0"),
-            Register::X1 => String::from("x1"),
-            Register::X2 => String::from("x2"),
-            Register::X3 => String::from("x3"),
-            Register::X4 => String::from("x4"),
-            Register::X5 => String::from("x5"),
-            Register::X6 => String::from("x6"),
-            Register::X7 => String::from("x7"),
-            Register::X8 => String::from("x8"),
-            Register::X9 => String::from("x9"),
-            Register::X10 => String::from("x10"),
-            Register::X11 => String::from("x11"),
-            Register::X12 => String::from("x12"),
-            Register::X13 => String::from("x13"),
-            Register::X14 => String::from("x14"),
-            Register::X15 => String::from("x15"),
-            Register::X16 => String::from("x16"),
-            Register::X17 => String::from("x17"),
-            Register::X18 => String::from("x18"),
-            Register::X19 => String::from("x19"),
-            Register::X20 => String::from("x20"),
-            Register::X21 => String::from("x21"),
-            Register::X22 => String::from("x22"),
-            Register::X23 => String::from("x23"),
-            Register::X24 => String::from("x24"),
-            Register::X25 => String::from("x25"),
-            Register::X26 => String::from("x26"),
-            Register::X27 => String::from("x27"),
-            Register::X28 => String::from("x28"),
-            Register::X29 => String::from("x29"),
-            Register::X30 => String::from("x30"),
-            Register::X31 => String::from("x31"),
-            Register::X32 => String::from("x32"),
-            Register::PC => String::from("pc"),
-        }
-    }
-}
 
 #[wasm_bindgen]
 pub struct Emulator {
@@ -99,6 +20,9 @@ pub struct Emulator {
 #[wasm_bindgen]
 impl Emulator {
     pub fn new() -> Emulator {
+        // Initialize for putting error messages to console.error.
+        utils::set_panic_hook();
+
         return Emulator {
             registers: [0; REGISTERS_COUNT],
             memory: Vec::new(),
@@ -136,15 +60,19 @@ impl Emulator {
         let div = document.create_element("div")
             .expect("div element should be created successfully");
         div.set_inner_html(content);
-        screen.append_child(&div);
+        let result = screen.append_child(&div);
+        if result.is_err() {
+            panic!("can't append a div node to a screen node")
+        }
 
         let maxline = 51;
         if screen.child_element_count() > maxline {
             let child = screen.first_element_child()
                 .expect("screen should have at least 1 child");
-            screen.remove_child(&child);
-            //let children = screen.child_nodes();
-            //screen.remove_child(children[0]);
+            let result = screen.remove_child(&child);
+            if result.is_err() {
+                panic!("can't remove a first div node from a screen node")
+            }
         }
     }
 }
