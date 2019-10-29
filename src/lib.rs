@@ -1,20 +1,20 @@
 mod cpu;
 mod utils;
 
-use crate::cpu::register::*;
+use crate::cpu::*;
+
 use wasm_bindgen::prelude::*;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-//#[cfg(feature = "wee_alloc")]
-//#[global_allocator]
-//static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
 
 #[wasm_bindgen]
 pub struct Emulator {
-    registers: [u64; REGISTERS_COUNT],
+    cpu: Cpu,
     memory: Vec<u8>,
-    pc: usize,
 }
 
 #[wasm_bindgen]
@@ -23,11 +23,10 @@ impl Emulator {
         // Initialize for putting error messages to console.error.
         utils::set_panic_hook();
 
-        return Emulator {
-            registers: [0; REGISTERS_COUNT],
+        Emulator {
+            cpu: Cpu::new(),
             memory: Vec::new(),
-            pc: 0,
-        };
+        }
     }
 
     pub fn set_binary(&mut self, text: String) {
@@ -35,17 +34,18 @@ impl Emulator {
     }
 
     pub fn dump_registers(&self) -> String {
-        String::from("pc: ") + &self.registers[32].to_string()
+        String::from("pc: ") + &self.cpu.registers[32].to_string()
         //for i in 0..REGISTERS_COUNT {
             //println!("{0} = {1}", REGISTERS_NAME[i], get_register32(emu, i));
         //}
     }
 
-    pub fn exec(&mut self) {
+    pub fn execute(&mut self) {
         let size = self.memory.len();
 
-        while self.pc < size {
-
+        while self.cpu.pc < size {
+            let code = self.cpu.fetch(&self.memory);
+            self.cpu.execute(code, &mut self.memory);
         }
     }
 

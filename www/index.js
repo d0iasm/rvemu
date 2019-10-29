@@ -3,6 +3,7 @@ import { Emulator } from "riscv-emu";
 const screen = document.getElementById("screen");
 const emu = Emulator.new();
 
+// TODO: remove this block
 for (let i=0; i<60; i++) {
   emu.render("hogehoge" + i);
 }
@@ -13,6 +14,7 @@ const execBtn = document.getElementById("exec");
 fileReader.onloadend = e => {
   console.log(fileReader.result);
   emu.set_binary(fileReader.result);
+  emu.execute();
 };
 
 execBtn.onclick = e => {
@@ -22,11 +24,3 @@ execBtn.onclick = e => {
   state.appendChild(text);
   fileReader.readAsText(file.files[0]);
 };
-
-export function render(str) {
-  console.log("called render" + str);
-  const d = document.createElement("div");
-  const t = document.createTextNode(str);
-  d.appendChild(t);
-  screen.appendChild(d);
-}
