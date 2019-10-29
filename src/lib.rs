@@ -8,15 +8,6 @@ use wasm_bindgen::prelude::*;
 //#[global_allocator]
 //static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-extern {
-    fn alert(s: &str); // window.alert()
-    #[wasm_bindgen(module = "index")]
-    fn render(s: &str); // TODO: ReferenceError: render is not defined
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str); // console.log()
-}
-
 const REGISTERS_COUNT: usize = 33;
 
 enum Register {
@@ -50,6 +41,7 @@ enum Register {
     X27,
     X28,
     X29,
+    X30,
     X31,
     X32,
     PC,
@@ -92,7 +84,7 @@ impl Register {
             Register::X30 => String::from("x30"),
             Register::X31 => String::from("x31"),
             Register::X32 => String::from("x32"),
-            Register::XPC => String::from("pc"),
+            Register::PC => String::from("pc"),
         }
     }
 }
@@ -107,9 +99,6 @@ pub struct Emulator {
 #[wasm_bindgen]
 impl Emulator {
     pub fn new() -> Emulator {
-        log("hoge");
-        alert("hogehoge");
-        render("hogehoge");
         return Emulator {
             registers: [0; REGISTERS_COUNT],
             memory: Vec::new(),
@@ -118,7 +107,6 @@ impl Emulator {
     }
 
     pub fn set_binary(&mut self, text: String) {
-        render("welcome to Risc-V Emulator.");
         self.memory = text.into_bytes();
     }
 
@@ -134,6 +122,29 @@ impl Emulator {
 
         while self.pc < size {
 
+        }
+    }
+
+    pub fn render(&self, content: &str) {
+        let window = web_sys::window()
+            .expect("no global `window` exists");
+        let document = window.document()
+            .expect("should have a document on window");
+        let screen = document.get_element_by_id("screen")
+            .expect("should have a element with a `screen` id");
+
+        let div = document.create_element("div")
+            .expect("div element should be created successfully");
+        div.set_inner_html(content);
+        screen.append_child(&div);
+
+        let maxline = 51;
+        if screen.child_element_count() > maxline {
+            let child = screen.first_element_child()
+                .expect("screen should have at least 1 child");
+            screen.remove_child(&child);
+            //let children = screen.child_nodes();
+            //screen.remove_child(children[0]);
         }
     }
 }

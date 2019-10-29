@@ -3,6 +3,10 @@ import { Emulator } from "riscv-emu";
 const screen = document.getElementById("screen");
 const emu = Emulator.new();
 
+for (let i=0; i<60; i++) {
+  emu.render("hogehoge" + i);
+}
+
 const fileReader = new FileReader();
 const execBtn = document.getElementById("exec");
 

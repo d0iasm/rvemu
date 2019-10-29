@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rustwasm/create-wasm-app.git"
+    "url": "git+https://github.com/d0iasm/riscv-emu.git"
   },
   "keywords": [
     "webassembly",
@@ -20,12 +20,12 @@
     "rust",
     "webpack"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
-  "license": "(MIT OR Apache-2.0)",
+  "author": "Asami Doi <d0iasm.pub@gmail.com>",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rustwasm/create-wasm-app/issues"
+    "url": "https://github.com/d0iasm/riscv-emu/issues"
   },
-  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "homepage": "https://github.com/d0iasm/riscv-emu",
   "devDependencies": {
     "hello-wasm-pack": "^0.1.0",
     "webpack": "^4.29.3",
