@@ -12,7 +12,6 @@ const fileReader = new FileReader();
 const execBtn = document.getElementById("exec");
 
 fileReader.onloadend = e => {
-  console.log(fileReader.result);
   emu.set_binary(fileReader.result);
   emu.execute();
 };
