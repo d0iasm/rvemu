@@ -20,7 +20,7 @@ pub struct Emulator {
 #[wasm_bindgen]
 impl Emulator {
     pub fn new() -> Emulator {
-        // Initialize for putting error messages to console.error.
+        // Initialize for putting error messages to a browser console.
         utils::set_panic_hook();
 
         Emulator {
@@ -29,15 +29,12 @@ impl Emulator {
         }
     }
 
-    pub fn set_binary(&mut self, text: String) {
-        self.memory = text.into_bytes();
+    pub fn reset(&mut self) {
+        self.cpu.pc = 0;
     }
 
-    pub fn dump_registers(&self) -> String {
-        String::from("pc: ") + &self.cpu.registers[32].to_string()
-        //for i in 0..REGISTERS_COUNT {
-            //println!("{0} = {1}", REGISTERS_NAME[i], get_register32(emu, i));
-        //}
+    pub fn set_binary(&mut self, text: String) {
+        self.memory = text.into_bytes();
     }
 
     pub fn execute(&mut self) {
@@ -47,6 +44,7 @@ impl Emulator {
             let code = self.cpu.fetch(&self.memory);
             self.cpu.execute(code, &mut self.memory);
         }
+
     }
 
     pub fn render(&self, content: &str) {
