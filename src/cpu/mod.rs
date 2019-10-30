@@ -139,7 +139,7 @@ impl Cpu {
         Code::new(binary)
     }
 
-    pub fn execute(&mut self, code: Code, memory: &mut Vec<u8>) {
+    pub fn execute(&mut self, code: &Code, memory: &mut Vec<u8>) {
         let opcode: usize = code.opcode as usize;
 
         let text = format!("pc = {:x}, opcode = {:#x} ({}, {:#b}), code = {:#?})",
@@ -148,7 +148,7 @@ impl Cpu {
         render(&text);
 
         match self.instructions[opcode] {
-            Some(inst) => inst(self, memory),
+            Some(inst) => inst(self, &code, memory),
             None => {
                 let text = format!("not implemented: opecode {}, {:#?}", opcode, code);
                 log(&text);

@@ -59,6 +59,9 @@ impl Emulator {
 
     pub fn reset(&mut self) {
         self.cpu.pc = 0;
+        for i in 0..REGISTERS_COUNT {
+            self.cpu.registers[i] = 0;
+        }
     }
 
     pub fn set_binary(&mut self, text: String) {
@@ -71,7 +74,7 @@ impl Emulator {
         while self.cpu.pc < size {
             let binary = self.cpu.fetch(&self.memory);
             let code = self.cpu.decode(binary);
-            self.cpu.execute(code, &mut self.memory);
+            self.cpu.execute(&code, &mut self.memory);
         }
         self.dump_registers();
     }
