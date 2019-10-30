@@ -69,7 +69,8 @@ impl Emulator {
         let size = self.memory.len();
 
         while self.cpu.pc < size {
-            let code = self.cpu.fetch(&self.memory);
+            let binary = self.cpu.fetch(&self.memory);
+            let code = self.cpu.decode(binary);
             self.cpu.execute(code, &mut self.memory);
         }
         self.dump_registers();
@@ -77,16 +78,13 @@ impl Emulator {
 
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
-            let text = format!("{}: {}", Register::itos(i), self.cpu.registers[i]);
+            let text = format!("{}: {:#x} ({}, {:#b})",
+                Register::itos(i), self.cpu.registers[i], self.cpu.registers[i], self.cpu.registers[i]);
             log(&text);
-            self.render(&text);
+            render(&text);
         }
 
         log(&format!("pc: {}", self.cpu.pc));
-        self.render(&format!("pc: {}", self.cpu.pc));
-    }
-
-    pub fn render(&self, content: &str) {
-        render(content);
+        render(&format!("pc: {}", self.cpu.pc));
     }
 }
