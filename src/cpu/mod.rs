@@ -1,8 +1,8 @@
 pub mod register;
 pub mod instruction;
 
-use crate::log;
-use crate::cpu::register::REGISTERS_COUNT;
+use crate::*;
+use crate::cpu::register::*;
 use crate::cpu::instruction::*;
 
 pub struct Cpu {
@@ -42,6 +42,7 @@ impl Cpu {
         let opcode: usize = (code & 0x0000007F) as usize;
 
         log(&format!("pc = {}, opcode = {}, code = {}", self.pc, opcode, code));
+        render(&format!("pc = {}, opcode = {}, code = {}", self.pc, opcode, code));
 
         match self.instructions[opcode] {
             Some(inst) => inst(self, memory),

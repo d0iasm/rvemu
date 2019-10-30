@@ -1,17 +1,11 @@
 import { Emulator } from "riscv-emu";
 
 const screen = document.getElementById("screen");
-const emu = Emulator.new();
-
-// TODO: remove this block
-for (let i=0; i<60; i++) {
-  emu.render("hogehoge" + i);
-}
-
 const execBtn = document.getElementById("exec");
 const fileIn = document.getElementById("file");
 const stateDiv = document.getElementById("state");
 
+const emu = Emulator.new();
 const fileReader = new FileReader();
 let execute_once = false;
 

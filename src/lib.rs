@@ -2,6 +2,7 @@ mod cpu;
 mod utils;
 
 use crate::cpu::*;
+use crate::cpu::register::*;
 
 use wasm_bindgen::prelude::*;
 
@@ -9,6 +10,33 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
+}
+
+pub fn render(content: &str) {
+    let window = web_sys::window()
+        .expect("no global `window` exists");
+    let document = window.document()
+        .expect("should have a document on window");
+    let screen = document.get_element_by_id("screen")
+        .expect("should have a element with a `screen` id");
+
+    let div = document.create_element("div")
+        .expect("div element should be created successfully");
+    div.set_inner_html(content);
+    let result = screen.append_child(&div);
+    if result.is_err() {
+        panic!("can't append a div node to a screen node")
+    }
+
+    let maxline = 51;
+    if screen.child_element_count() > maxline {
+        let child = screen.first_element_child()
+            .expect("screen should have at least 1 child");
+        let result = screen.remove_child(&child);
+        if result.is_err() {
+            panic!("can't remove a first div node from a screen node")
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -44,33 +72,21 @@ impl Emulator {
             let code = self.cpu.fetch(&self.memory);
             self.cpu.execute(code, &mut self.memory);
         }
+        self.dump_registers();
+    }
 
+    pub fn dump_registers(&self) {
+        for i in 0..REGISTERS_COUNT {
+            let text = format!("{}: {}", Register::itos(i), self.cpu.registers[i]);
+            log(&text);
+            self.render(&text);
+        }
+
+        log(&format!("pc: {}", self.cpu.pc));
+        self.render(&format!("pc: {}", self.cpu.pc));
     }
 
     pub fn render(&self, content: &str) {
-        let window = web_sys::window()
-            .expect("no global `window` exists");
-        let document = window.document()
-            .expect("should have a document on window");
-        let screen = document.get_element_by_id("screen")
-            .expect("should have a element with a `screen` id");
-
-        let div = document.create_element("div")
-            .expect("div element should be created successfully");
-        div.set_inner_html(content);
-        let result = screen.append_child(&div);
-        if result.is_err() {
-            panic!("can't append a div node to a screen node")
-        }
-
-        let maxline = 51;
-        if screen.child_element_count() > maxline {
-            let child = screen.first_element_child()
-                .expect("screen should have at least 1 child");
-            let result = screen.remove_child(&child);
-            if result.is_err() {
-                panic!("can't remove a first div node from a screen node")
-            }
-        }
+        render(content);
     }
 }

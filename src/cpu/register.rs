@@ -1,6 +1,6 @@
-pub const REGISTERS_COUNT: usize = 33;
+pub const REGISTERS_COUNT: usize = 32;
 
-enum Register {
+pub enum Register {
     X0,
     X1,
     X2,
@@ -33,14 +33,13 @@ enum Register {
     X29,
     X30,
     X31,
-    X32,
-    PC,
 }
 
 // TODO: better way?
 impl Register {
-    fn str(&self) -> String {
-        match *self {
+    // Enum to string
+	fn etos(&self) -> String {
+		match *self {
             Register::X0 => String::from("x0"),
             Register::X1 => String::from("x1"),
             Register::X2 => String::from("x2"),
@@ -73,8 +72,46 @@ impl Register {
             Register::X29 => String::from("x29"),
             Register::X30 => String::from("x30"),
             Register::X31 => String::from("x31"),
-            Register::X32 => String::from("x32"),
-            Register::PC => String::from("pc"),
+        }
+    }
+
+    // int to string
+	pub fn itos(i: usize) -> String {
+		match i {
+            0 => String::from("x0"),
+            1 => String::from("x1"),
+            2 => String::from("x2"),
+            3 => String::from("x3"),
+            4 => String::from("x4"),
+            5 => String::from("x5"),
+            6 => String::from("x6"),
+            7 => String::from("x7"),
+            8 => String::from("x8"),
+            9 => String::from("x9"),
+            10 => String::from("x10"),
+            11 => String::from("x11"),
+            12 => String::from("x12"),
+            13 => String::from("x13"),
+            14 => String::from("x14"),
+            15 => String::from("x15"),
+            16 => String::from("x16"),
+            17 => String::from("x17"),
+            18 => String::from("x18"),
+            19 => String::from("x19"),
+            20 => String::from("x20"),
+            21 => String::from("x21"),
+            22 => String::from("x22"),
+            23 => String::from("x23"),
+            24 => String::from("x24"),
+            25 => String::from("x25"),
+            26 => String::from("x26"),
+            27 => String::from("x27"),
+            28 => String::from("x28"),
+            29 => String::from("x29"),
+            30 => String::from("x30"),
+            31 => String::from("x31"),
+            _ => String::from("unknown register number")
         }
     }
 }
+
