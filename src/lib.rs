@@ -2,7 +2,6 @@ mod cpu;
 mod utils;
 
 use crate::cpu::*;
-use crate::cpu::register::*;
 
 use wasm_bindgen::prelude::*;
 
@@ -75,8 +74,8 @@ impl Emulator {
 
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
-            let text = format!("{}: {:#x} ({}, {:#b})",
-                Register::itos(i), self.cpu.registers[i], self.cpu.registers[i], self.cpu.registers[i]);
+            let text = format!("x{}: {:#x} ({}, {:#b})",
+                i, self.cpu.registers[i], self.cpu.registers[i], self.cpu.registers[i]);
             log(&text);
             render(&text);
         }

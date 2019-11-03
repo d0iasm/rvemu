@@ -1,11 +1,9 @@
-pub mod register;
 pub mod instruction;
 
 use crate::*;
-use crate::cpu::register::*;
 use crate::cpu::instruction::*;
 
-use std::convert::TryInto;
+pub const REGISTERS_COUNT: usize = 32;
 
 pub struct Cpu {
     pub instructions: [Option<InstFunc>; 127],

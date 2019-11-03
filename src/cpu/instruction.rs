@@ -1,4 +1,3 @@
-use crate::log;
 use crate::cpu::*;
 
 pub type InstFunc = fn(&mut Cpu, &Code, &mut Vec<u8>);
