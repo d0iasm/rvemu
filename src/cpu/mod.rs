@@ -36,7 +36,17 @@ impl Cpu {
         }
     }
 
-    pub fn fetch(&mut self, memory: &Vec<u8>) -> u32 {
+    pub fn start(&mut self, memory: &mut Vec<u8>) {
+        let size = memory.len();
+
+        while self.pc < size {
+            let binary = self.fetch(memory);
+            let code = self.decode(binary);
+            self.execute(&code, memory);
+        }
+    }
+
+    fn fetch(&mut self, memory: &Vec<u8>) -> u32 {
         let mut bin: u32 = 0;
 
         // little endian
@@ -48,7 +58,7 @@ impl Cpu {
         return bin;
     }
 
-    pub fn decode(&self, binary: u32) -> Code {
+    fn decode(&self, binary: u32) -> Code {
         let opcode = binary & 0x0000007F;
         let rd = (binary & 0x00000F80) >> 7;
         let funct3 = (binary & 0x00007000) >> 12;
@@ -59,7 +69,7 @@ impl Cpu {
         Code{ opcode, funct3, funct7, rd, rs1, rs2, imm }
     }
 
-    pub fn execute(&mut self, code: &Code, memory: &mut Vec<u8>) {
+    fn execute(&mut self, code: &Code, memory: &mut Vec<u8>) {
         let opcode: usize = code.opcode as usize;
 
         let text = format!("pc = {:x}, opcode = {:#x} ({}, {:#b}), code = {:#?})",

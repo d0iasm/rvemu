@@ -69,13 +69,7 @@ impl Emulator {
     }
 
     pub fn execute(&mut self) {
-        let size = self.memory.len();
-
-        while self.cpu.pc < size {
-            let binary = self.cpu.fetch(&self.memory);
-            let code = self.cpu.decode(binary);
-            self.cpu.execute(&code, &mut self.memory);
-        }
+        self.cpu.start(&mut self.memory);
         self.dump_registers();
     }
 
