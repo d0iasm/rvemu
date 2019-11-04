@@ -64,12 +64,23 @@ impl Cpu {
                     _ => {},
                 }
             },
+            0x17 => { // U-type
+                // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
+                // in the lowest 12 bits with zeros.
+                let imm = (binary & 0xFFFFF000) as i32;
+                regs[rd] = (self.pc as i32) + imm;
+            }
             0x33 => { // R-type
                 match funct7 {
-                    0x00 => regs[rd] = regs[rs1] + regs[rs2], // add rd, rs1, rs2
-                    0x20 => regs[rd] = regs[rs1] - regs[rs2], // sub rd, rs1, rs2
+                    0x00 => regs[rd] = regs[rs1] + regs[rs2], // add
+                    0x20 => regs[rd] = regs[rs1] - regs[rs2], // sub
                     _ => {},
                 };
+            },
+            0x37 => { // U-type
+                // LUI places the U-immediate value in the top 20 bits of the destination
+                // register rd, filling in the lowest 12 bits with zeros.
+                regs[rd] = (binary & 0xFFFFF000) as i32; // lui
             },
             _ => {},
         }
