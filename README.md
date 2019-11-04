@@ -21,6 +21,11 @@ You can see a web page via http://localhost:8080/ that reflects changes when we 
 $ npm run start
 ```
 
+## Test
+```
+$ wasm-pack test --firefox --headless
+```
+
 ## Tools
 - rustup
 - rustc

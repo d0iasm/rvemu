@@ -10,14 +10,12 @@ const fileReader = new FileReader();
 let execute_once = false;
 
 fileReader.onloadend = e => {
-  console.log("file reader on loaded");
   emu.set_binary(fileReader.result);
   emu.execute();
   execute_once = true;
 };
 
 fileIn.onchange = e => {
-  console.log("file changed");
   emu.reset();
   execute_once = false;
   while (stateDiv.hasChildNodes()) {
@@ -27,13 +25,11 @@ fileIn.onchange = e => {
 
 execBtn.onclick = e => {
   if (execute_once) {
-    console.log("just execute");
     emu.reset();
     emu.execute();
     return;
   }
 
-  console.log("button on click");
   const text = document.createTextNode("Set the file (" + fileIn.files[0].name + ")");
   stateDiv.appendChild(text);
   fileReader.readAsText(file.files[0]);

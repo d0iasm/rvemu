@@ -1,4 +1,4 @@
-mod cpu;
+pub mod cpu;
 mod utils;
 
 use crate::cpu::*;
@@ -6,7 +6,7 @@ use crate::cpu::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-extern "C" {
+extern {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
 }
