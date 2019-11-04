@@ -25,13 +25,11 @@ impl Cpu {
     }
 
     fn fetch(&mut self, memory: &Vec<u8>) -> u32 {
-        let mut bin: u32 = 0;
-
         // little endian
-        for i in 0..4 {
-            let v: u32 = memory[self.pc + i].into();
-            bin = bin.rotate_left(8) + v;
-        }
+        let bin = ((memory[self.pc] as u32) << 24)
+            + ((memory[self.pc + 1] as u32) << 16)
+            + ((memory[self.pc + 2] as u32) << 8)
+            + (memory[self.pc + 3] as u32);
         self.pc += 4;
         return bin;
     }
