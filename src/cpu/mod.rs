@@ -3,14 +3,14 @@ use crate::*;
 pub const REGISTERS_COUNT: usize = 32;
 
 pub struct Cpu {
-    pub registers: [u32; REGISTERS_COUNT],
+    pub regs: [u32; REGISTERS_COUNT],
     pub pc: usize,
 }
 
 impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
-            registers: [0; REGISTERS_COUNT],
+            regs: [0; REGISTERS_COUNT],
             pc: 0,
         }
     }
@@ -49,14 +49,14 @@ impl Cpu {
         render(&text);
 
         match opcode {
-            0x13 => {
-                // addi rd, rs1, imm (0x13): I-type. rd = rs1 + imm
-                self.registers[rd] = self.registers[rs1] + imm;
-            },
+            0x13 => self.regs[rd] = self.regs[rs1] + imm, // addi rd, rs1, imm
             0x33 => {
-                // add rd, rs1, rs2 (0x33): R-type. rd = rs1 + rs2
-                self.registers[rd] = self.registers[rs1] + self.registers[rs2];
-            },
+                match funct7 {
+                    0x00 => self.regs[rd] = self.regs[rs1] + self.regs[rs2], // add rd, rs1, rs2
+                    0x20 => self.regs[rd] = self.regs[rs1] - self.regs[rs2], // sub rd, rs1, rs2
+                    _ => log(&format!("not implemented funct7 {:#x} for opcode 0x33", funct7)),
+                };
+            }
             _ => {
                 let text = format!("not implemented: opecode {:#x} ({}, {:#b})",
                     opcode, opcode, opcode);

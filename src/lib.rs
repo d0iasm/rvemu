@@ -59,7 +59,7 @@ impl Emulator {
     pub fn reset(&mut self) {
         self.cpu.pc = 0;
         for i in 0..REGISTERS_COUNT {
-            self.cpu.registers[i] = 0;
+            self.cpu.regs[i] = 0;
         }
     }
 
@@ -75,7 +75,7 @@ impl Emulator {
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
             let text = format!("x{}: {:#x} ({}, {:#b})",
-                i, self.cpu.registers[i], self.cpu.registers[i], self.cpu.registers[i]);
+                i, self.cpu.regs[i], self.cpu.regs[i], self.cpu.regs[i]);
             log(&text);
             render(&text);
         }
