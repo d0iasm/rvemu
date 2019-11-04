@@ -19,17 +19,16 @@ impl Cpu {
         while self.pc < size {
             let binary = self.fetch(memory);
             self.execute(binary, memory);
+            self.pc += 4;
         }
     }
 
     fn fetch(&mut self, memory: &Vec<u8>) -> u32 {
         // little endian
-        let bin = ((memory[self.pc] as u32) << 24)
+        return ((memory[self.pc] as u32) << 24)
             + ((memory[self.pc + 1] as u32) << 16)
             + ((memory[self.pc + 2] as u32) << 8)
             + (memory[self.pc + 3] as u32);
-        self.pc += 4;
-        return bin;
     }
 
     pub fn execute(&mut self, binary: u32, memory: &mut Vec<u8>) {
@@ -90,6 +89,20 @@ impl Cpu {
                 // register rd, filling in the lowest 12 bits with zeros.
                 regs[rd] = (binary & 0xFFFFF000) as i32; // lui
             },
+            0x6F => { // J-type
+                regs[rd] = (self.pc as i32) + 4;
+
+                let imm20 = ((binary & 0x80000000) as i32) >> 31;
+                let imm10_1 = (binary & 0x7FE00000) >> 21;
+                let imm11 = (binary & 0x100000) >> 20;
+                let imm19_12 = (binary & 0xFF000) >> 12;
+                let offset = ((imm20 << 20) as u32
+                    | (imm19_12 << 12)
+                    | (imm11 << 11)
+                    | (imm10_1) << 1) as i32;
+                let tmp = (self.pc as i32) + offset;
+                self.pc = tmp as usize;
+            }
             _ => {},
         }
     }
