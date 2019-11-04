@@ -503,3 +503,31 @@ pub fn jal_rd_imm() {
     }
     assert_eq!(0, cpu.pc);
 }
+
+#[wasm_bindgen_test]
+pub fn jalr_rd_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, 3
+    let bin1 = 0x00300813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 5
+    let bin2 = 0x00500893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // jalr x18, x0, 4
+    let bin3 = 0x00400967;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(4, cpu.pc);
+}

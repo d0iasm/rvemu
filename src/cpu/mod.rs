@@ -89,7 +89,15 @@ impl Cpu {
                 // register rd, filling in the lowest 12 bits with zeros.
                 regs[rd] = (binary & 0xFFFFF000) as i32; // lui
             },
+            0x67 => { // I-type
+                // jalr
+                regs[rd] = (self.pc as i32) + 4;
+
+                let imm = ((binary & 0xFFF00000) as i32) >> 20;
+                self.pc = ((regs[rs1] + imm) & !1) as usize;
+            },
             0x6F => { // J-type
+                // jal
                 regs[rd] = (self.pc as i32) + 4;
 
                 let imm20 = ((binary & 0x80000000) as i32) >> 31;
@@ -102,7 +110,7 @@ impl Cpu {
                     | (imm10_1) << 1) as i32;
                 let tmp = (self.pc as i32) + offset;
                 self.pc = tmp as usize;
-            }
+            },
             _ => {},
         }
     }
