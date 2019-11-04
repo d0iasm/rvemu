@@ -43,28 +43,35 @@ impl Cpu {
         let regs = &mut self.regs;
 
         match opcode {
-            0x13 => {
+            0x13 => { // I-type
                 let imm = ((binary & 0xFFF00000) as i32) >> 20;
+                let shamt = (binary & 0x01F00000) >> 20;
                 match funct3 {
                     0x0 => regs[rd] = regs[rs1] + imm, // addi
+                    0x1 => regs[rd] = ((regs[rs1] as u32) << shamt) as i32, // slli
                     0x2 => regs[rd] = if regs[rs1] < imm { 1 } else { 0 }, // slti
                     0x3 => regs[rd] = if (regs[rs1] as u32) < (imm as u32) { 1 } else { 0 }, // sltiu
                     0x4 => regs[rd] = regs[rs1] ^ imm, // xori
+                    0x5 => {
+                        match funct7 {
+                            0x00 => regs[rd] = ((regs[rs1] as u32) >> shamt) as i32, // srli
+                            0x20 => regs[rd] = regs[rs1] >> shamt, // srai
+                            _ => {},
+                        }
+                    }
                     0x6 => regs[rd] = regs[rs1] | imm, // ori
                     0x7 => regs[rd] = regs[rs1] & imm, // andi
-                    _ => {}
+                    _ => {},
                 }
-            }
-            0x33 => {
+            },
+            0x33 => { // R-type
                 match funct7 {
                     0x00 => regs[rd] = regs[rs1] + regs[rs2], // add rd, rs1, rs2
                     0x20 => regs[rd] = regs[rs1] - regs[rs2], // sub rd, rs1, rs2
                     _ => {},
                 };
-            }
-            _ => {
-                return;
             },
+            _ => {},
         }
     }
 }
