@@ -1,5 +1,3 @@
-use crate::*;
-
 pub const REGISTERS_COUNT: usize = 32;
 
 pub struct Cpu {
@@ -42,16 +40,25 @@ impl Cpu {
         let funct3 = (binary & 0x00007000) >> 12;
         let funct7 = (binary & 0xFE000000) >> 25;
 
+        let regs = &mut self.regs;
+
         match opcode {
             0x13 => {
-                // addi rd, rs1, imm
                 let imm = ((binary & 0xFFF00000) as i32) >> 20;
-                self.regs[rd] = self.regs[rs1] + imm;
+                match funct3 {
+                    0x0 => regs[rd] = regs[rs1] + imm, // addi
+                    0x2 => regs[rd] = if regs[rs1] < imm { 1 } else { 0 }, // slti
+                    0x3 => regs[rd] = if (regs[rs1] as u32) < (imm as u32) { 1 } else { 0 }, // sltiu
+                    0x4 => regs[rd] = regs[rs1] ^ imm, // xori
+                    0x6 => regs[rd] = regs[rs1] | imm, // ori
+                    0x7 => regs[rd] = regs[rs1] & imm, // andi
+                    _ => {}
+                }
             }
             0x33 => {
                 match funct7 {
-                    0x00 => self.regs[rd] = self.regs[rs1] + self.regs[rs2], // add rd, rs1, rs2
-                    0x20 => self.regs[rd] = self.regs[rs1] - self.regs[rs2], // sub rd, rs1, rs2
+                    0x00 => regs[rd] = regs[rs1] + regs[rs2], // add rd, rs1, rs2
+                    0x20 => regs[rd] = regs[rs1] - regs[rs2], // sub rd, rs1, rs2
                     _ => {},
                 };
             }
