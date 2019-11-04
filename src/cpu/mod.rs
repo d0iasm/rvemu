@@ -68,12 +68,20 @@ impl Cpu {
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
                 let imm = (binary & 0xFFFFF000) as i32;
-                regs[rd] = (self.pc as i32) + imm;
+                regs[rd] = (self.pc as i32) + imm; // auipc
             }
             0x33 => { // R-type
-                match funct7 {
-                    0x00 => regs[rd] = regs[rs1] + regs[rs2], // add
-                    0x20 => regs[rd] = regs[rs1] - regs[rs2], // sub
+                match (funct3, funct7) {
+                    (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
+                    (0x0, 0x20) => regs[rd] = regs[rs1] - regs[rs2], // sub
+                    (0x1, 0x00) => regs[rd] = ((regs[rs1] as u32) << (regs[rs2] as u32)) as i32, // sll
+                    (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
+                    (0x3, 0x00) => regs[rd] = if (regs[rs1] as u32) < (regs[rs2] as u32) { 1 } else { 0 }, // sltu
+                    (0x4, 0x00) => regs[rd] = regs[rs1] ^ regs[rs2], // xor
+                    (0x5, 0x00) => regs[rd] = ((regs[rs1] as u32) >> (regs[rs2] as u32)) as i32, // srl
+                    (0x5, 0x20) => regs[rd] = regs[rs1] >> (regs[rs2] as u32), // sra
+                    (0x6, 0x00) => regs[rd] = regs[rs1] | regs[rs2], // or
+                    (0x7, 0x00) => regs[rd] = regs[rs1] & regs[rs2], // and
                     _ => {},
                 };
             },
