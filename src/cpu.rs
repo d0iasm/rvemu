@@ -5,6 +5,22 @@ pub struct Cpu {
     pub pc: usize,
 }
 
+fn set_memory8(index: usize, mem: &mut Vec<u8>, val: u8) {
+    mem[index] = val
+}
+
+fn set_memory16(index: usize, mem: &mut Vec<u8>, val: u16) {
+    mem[index] = (val & 0xFF) as u8;
+    mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
+}
+
+fn set_memory32(index: usize, mem: &mut Vec<u8>, val: u32) {
+    mem[index] = (val & 0xFF) as u8;
+    mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
+    mem[index + 2] = ((val & 0xFF0000) >> 16) as u8;
+    mem[index + 3] = ((val & 0xFF000000) >> 24) as u8;
+}
+
 fn get_memory8(index: usize, mem: &Vec<u8>) -> u8 {
     mem[index]
 }
@@ -58,8 +74,8 @@ impl Cpu {
 
         match opcode {
             0x03 => { // I-type
-                let imm = ((binary & 0xFFF00000) as i32) >> 20;
-                let addr = (regs[rs1] + imm) as usize;
+                let offset = ((binary & 0xFFF00000) as i32) >> 20;
+                let addr = (regs[rs1] + offset) as usize;
                 match funct3 {
                     0x0 => regs[rd] = (get_memory8(addr, mem) as i8) as i32, // lb
                     0x1 => regs[rd] = (get_memory16(addr, mem) as i16) as i32, // lh
@@ -68,7 +84,7 @@ impl Cpu {
                     0x5 => regs[rd] = (get_memory16(addr, mem) as i32) & 0xFFFF, // lhu
                     _ => {},
                 }
-            }
+            },
             0x13 => { // I-type
                 let imm = ((binary & 0xFFF00000) as i32) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
@@ -95,7 +111,20 @@ impl Cpu {
                 // in the lowest 12 bits with zeros.
                 let imm = (binary & 0xFFFFF000) as i32;
                 regs[rd] = (self.pc as i32) + imm; // auipc
-            }
+            },
+            0x23 => { // S-type
+                let imm11_5 = ((binary & 0xFE000000) as i32) >> 25;
+                let imm4_0 = (binary & 0x00000F80) >> 7;
+                let offset = ((imm11_5 << 5) as u32
+                    | imm4_0) as i32;
+                let addr = (regs[rs1] + offset) as usize;
+                match funct3 {
+                    0x0 => set_memory8(addr, mem, regs[rs2] as u8), // sb
+                    0x1 => set_memory16(addr, mem, regs[rs2] as u16), // sh
+                    0x2 => set_memory32(addr, mem, regs[rs2] as u32), // sw
+                    _ => {},
+                }
+            },
             0x33 => { // R-type
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
