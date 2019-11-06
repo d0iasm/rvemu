@@ -8,6 +8,151 @@ extern crate riscv_emu;
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
+pub fn lb_rd_offset_rs1() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = vec![
+        0x13, 0x08, 0x50, 0x00,
+        0x93, 0x08, 0x30, 0x00,
+        0x03, 0x09, 0x20, 0x00,
+    ];
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+
+    // lb x18, 4(x0)
+    let bin3 = 0x00400903;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, -109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn lh_rd_offset_rs1() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = vec![
+        0x13, 0x08, 0x50, 0x00,
+        0x93, 0x08, 0x30, 0x00,
+        0x03, 0x19, 0x40, 0x00,
+    ];
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+
+    // lh x18, 4(x0)
+    let bin3 = 0x00401903;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, 2195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn lw_rd_offset_rs1() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = vec![
+        0x13, 0x08, 0x50, 0x00,
+        0x93, 0x08, 0x30, 0x00,
+        0x03, 0x19, 0x40, 0x00,
+    ];
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+
+    // lw x18, 4(x0)
+    let bin3 = 0x00402903;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, 3147923, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn lbu_rd_offset_rs1() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = vec![
+        0x13, 0x08, 0x50, 0x00,
+        0x93, 0x08, 0x30, 0x00,
+        0x03, 0x19, 0x40, 0x00,
+    ];
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+
+    // lbu x18, 4(x0)
+    let bin3 = 0x00404903;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, 147, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn lhu_rd_offset_rs1() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = vec![
+        0x13, 0x08, 0x50, 0x00,
+        0x93, 0x08, 0x30, 0x00,
+        0x03, 0x19, 0x40, 0x00,
+    ];
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+
+    // lbu x18, 4(x0)
+    let bin3 = 0x00405903;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, 2195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
 pub fn addi_rd_rs1_imm() {
     let mut cpu = riscv_emu::cpu::Cpu::new();
     let mut mem = Vec::new();

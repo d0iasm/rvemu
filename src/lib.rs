@@ -41,7 +41,7 @@ pub fn render(content: &str) {
 #[wasm_bindgen]
 pub struct Emulator {
     cpu: Cpu,
-    memory: Vec<u8>,
+    mem: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -52,7 +52,7 @@ impl Emulator {
 
         Emulator {
             cpu: Cpu::new(),
-            memory: Vec::new(),
+            mem: Vec::new(),
         }
     }
 
@@ -64,11 +64,11 @@ impl Emulator {
     }
 
     pub fn set_binary(&mut self, text: String) {
-        self.memory = text.into_bytes();
+        self.mem = text.into_bytes();
     }
 
     pub fn execute(&mut self) {
-        self.cpu.start(&mut self.memory);
+        self.cpu.start(&mut self.mem);
         self.dump_registers();
     }
 
