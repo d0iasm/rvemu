@@ -477,7 +477,35 @@ pub fn lui_rd_imm() {
 }
 
 #[wasm_bindgen_test]
-pub fn jal_rd_imm() {
+pub fn beq_rs1_rs2_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, 3
+    let bin1 = 0x00300813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // beq x16, x17, -8
+    let bin3 = 0xff180ce3;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn bne_rs1_rs2_imm() {
     let mut cpu = riscv_emu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
@@ -491,13 +519,125 @@ pub fn jal_rd_imm() {
     cpu.execute(bin2, &mut mem);
     cpu.pc += 4;
 
-    // jal x18, -8
-    let bin3 = 0xff9ff96f;
+    // bne x16, x17, -8
+    let bin3 = 0xff181ce3;
     cpu.execute(bin3, &mut mem);
 
     let expected =
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn blt_rs1_rs2_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, -3
+    let bin1 = 0xffd00813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 5
+    let bin2 = 0x00500893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // blt x16, x17, -8
+    let bin3 = 0xff184ce3;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        -3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn bge_rs1_rs2_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, -3
+    let bin1 = 0xffd00813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, -3
+    let bin2 = 0xffd00893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // bge x16, x17, -8
+    let bin3 = 0xff185ce3;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        -3, -3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn bltu_rs1_rs2_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, 3
+    let bin1 = 0x00300813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 5
+    let bin2 = 0x00500893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // bltu x16, x17, -8
+    let bin3 = 0xff186ce3;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn bgeu_rs1_rs2_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, 5
+    let bin1 = 0x00500813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 3
+    let bin2 = 0x00300893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // bgeu x16, x17, -8
+    let bin3 = 0xff187ce3;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.regs[i]);
     }
@@ -530,4 +670,32 @@ pub fn jalr_rd_imm() {
         assert_eq!(*e, cpu.regs[i]);
     }
     assert_eq!(4, cpu.pc);
+}
+
+#[wasm_bindgen_test]
+pub fn jal_rd_imm() {
+    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut mem = Vec::new();
+
+    // addi x16, x0, 3
+    let bin1 = 0x00300813;
+    cpu.execute(bin1, &mut mem);
+    cpu.pc += 4;
+
+    // addi x17, x0, 5
+    let bin2 = 0x00500893;
+    cpu.execute(bin2, &mut mem);
+    cpu.pc += 4;
+
+    // jal x18, -8
+    let bin3 = 0xff9ff96f;
+    cpu.execute(bin3, &mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+    assert_eq!(0, cpu.pc);
 }

@@ -31,6 +31,7 @@ impl Cpu {
             + (memory[self.pc + 3] as u32);
     }
 
+    // This function is public because it's called from a unit test.
     pub fn execute(&mut self, binary: u32, memory: &mut Vec<u8>) {
         let opcode = binary & 0x0000007F;
         let rd = ((binary & 0x00000F80) >> 7) as usize;
@@ -89,6 +90,55 @@ impl Cpu {
                 // register rd, filling in the lowest 12 bits with zeros.
                 regs[rd] = (binary & 0xFFFFF000) as i32; // lui
             },
+            0x63 => { // B-type
+                let imm12 = ((binary & 0x80000000) as i32) >> 31;
+                let imm10_5 = (binary & 0x7E000000) >> 25;
+                let imm4_1 = (binary & 0x00000F00) >> 8;
+                let imm11 = (binary & 0x00000080) >> 7;
+                let offset = ((imm12 << 12) as u32
+                    | (imm11 << 11)
+                    | (imm10_5 << 5)
+                    | (imm4_1 << 1)) as i32;
+                match funct3 {
+                    0x0 => {
+                        // beq
+                        if regs[rs1] == regs[rs2] {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    0x1 => {
+                        // bne
+                        if regs[rs1] != regs[rs2] {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    0x4 => {
+                        // blt
+                        if regs[rs1] < regs[rs2] {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    0x5 => {
+                        // bge
+                        if regs[rs1] >= regs[rs2] {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    0x6 => {
+                        // bltu
+                        if (regs[rs1] as u32) < (regs[rs2] as u32) {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    0x7 => {
+                        // bgeu
+                        if (regs[rs1] as u32) >= (regs[rs2] as u32) {
+                            self.pc = ((self.pc as i32) + offset) as usize;
+                        }
+                    },
+                    _ => {},
+                }
+            },
             0x67 => { // I-type
                 // jalr
                 regs[rd] = (self.pc as i32) + 4;
@@ -107,7 +157,7 @@ impl Cpu {
                 let offset = ((imm20 << 20) as u32
                     | (imm19_12 << 12)
                     | (imm11 << 11)
-                    | (imm10_1) << 1) as i32;
+                    | (imm10_1 << 1)) as i32;
                 let tmp = (self.pc as i32) + offset;
                 self.pc = tmp as usize;
             },
