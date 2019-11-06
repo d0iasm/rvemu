@@ -5,6 +5,24 @@ pub struct Cpu {
     pub pc: usize,
 }
 
+fn get_memory8(index: usize, mem: &Vec<u8>) -> u8 {
+    mem[index]
+}
+
+fn get_memory16(index: usize, mem: &Vec<u8>) -> u16 {
+    // little endian
+    return (mem[index] as u16)
+        | ((mem[index + 1] as u16) << 8);
+}
+
+fn get_memory32(index: usize, mem: &Vec<u8>) -> u32 {
+    // little endian
+    return (mem[index] as u32)
+        | ((mem[index + 1] as u32) << 8)
+        | ((mem[index + 2] as u32) << 16)
+        | ((mem[index + 3] as u32) << 24);
+}
+
 impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
@@ -13,26 +31,22 @@ impl Cpu {
         }
     }
 
-    pub fn start(&mut self, memory: &mut Vec<u8>) {
-        let size = memory.len();
+    pub fn start(&mut self, mem: &mut Vec<u8>) {
+        let size = mem.len();
 
         while self.pc < size {
-            let binary = self.fetch(memory);
-            self.execute(binary, memory);
+            let binary = self.fetch(mem);
+            self.execute(binary, mem);
             self.pc += 4;
         }
     }
 
-    fn fetch(&mut self, memory: &Vec<u8>) -> u32 {
-        // little endian
-        return ((memory[self.pc] as u32) << 24)
-            + ((memory[self.pc + 1] as u32) << 16)
-            + ((memory[self.pc + 2] as u32) << 8)
-            + (memory[self.pc + 3] as u32);
+    fn fetch(&mut self, mem: &Vec<u8>) -> u32 {
+        get_memory32(self.pc, mem)
     }
 
     // This function is public because it's called from a unit test.
-    pub fn execute(&mut self, binary: u32, memory: &mut Vec<u8>) {
+    pub fn execute(&mut self, binary: u32, mem: &mut Vec<u8>) {
         let opcode = binary & 0x0000007F;
         let rd = ((binary & 0x00000F80) >> 7) as usize;
         let rs1 = ((binary & 0x000F8000) >> 15) as usize;
@@ -43,6 +57,18 @@ impl Cpu {
         let regs = &mut self.regs;
 
         match opcode {
+            0x03 => { // I-type
+                let imm = ((binary & 0xFFF00000) as i32) >> 20;
+                let addr = (regs[rs1] + imm) as usize;
+                match funct3 {
+                    0x0 => regs[rd] = (get_memory8(addr, mem) as i8) as i32, // lb
+                    0x1 => regs[rd] = (get_memory16(addr, mem) as i16) as i32, // lh
+                    0x2 => regs[rd] = get_memory32(addr, mem) as i32, // lw
+                    0x4 => regs[rd] = (get_memory8(addr, mem) as i32) & 0xFF, // lbu
+                    0x5 => regs[rd] = (get_memory16(addr, mem) as i32) & 0xFFFF, // lhu
+                    _ => {},
+                }
+            }
             0x13 => { // I-type
                 let imm = ((binary & 0xFFF00000) as i32) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
