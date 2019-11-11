@@ -88,6 +88,7 @@ impl Cpu {
             0x0F => { // I-type
                 // fence instructions are not supportted yet because this emulator executes a
                 // binary sequentially on a single thread.
+                // fence i is a part of the Zifencei extension.
                 match funct3 {
                     0x0 => {}, // fence
                     0x1 => {}, // fence.i
@@ -227,6 +228,7 @@ impl Cpu {
             },
             0x73 => { // I-type
                 let funct12 = ((binary & 0xFFF00000) as i32) >> 20;
+                let _csr = ((binary & 0xFFF00000) as i32) >> 20;
                 match funct3 {
                     0x0 => {
                         match funct12 {
@@ -240,6 +242,13 @@ impl Cpu {
                             _ => {},
                         }
                     },
+                    // TODO: implement RV32/RV64 Zicsr Standard Extension
+                    0x1 => {}, // csrrw
+                    0x2 => {}, // csrrs
+                    0x3 => {}, // csrrc
+                    0x5 => {}, // csrrwi
+                    0x6 => {}, // csrrsi
+                    0x7 => {}, // csrrci
                     _ => {},
                 }
             },
