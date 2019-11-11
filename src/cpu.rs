@@ -85,6 +85,15 @@ impl Cpu {
                     _ => {},
                 }
             },
+            0x0F => { // I-type
+                // fence instructions are not supportted yet because this emulator executes a
+                // binary sequentially on a single thread.
+                match funct3 {
+                    0x0 => {}, // fence
+                    0x1 => {}, // fence.i
+                    _ => {},
+                }
+            }
             0x13 => { // I-type
                 let imm = ((binary & 0xFFF00000) as i32) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
@@ -215,6 +224,24 @@ impl Cpu {
                     | (imm10_1 << 1)) as i32;
                 let tmp = (self.pc as i32) + offset;
                 self.pc = tmp as usize;
+            },
+            0x73 => { // I-type
+                let funct12 = ((binary & 0xFFF00000) as i32) >> 20;
+                match funct3 {
+                    0x0 => {
+                        match funct12 {
+                            // TODO: implement ecall and ebreak
+                            // ecall makes a request of the execution environment by raising an
+                            // environment call exception.
+                            // ebreak makes a request of the debugger by raising a breakpoint
+                            // exception.
+                            0x0 => {}, // ecall
+                            0x1 => {}, // ebreak
+                            _ => {},
+                        }
+                    },
+                    _ => {},
+                }
             },
             _ => {},
         }
