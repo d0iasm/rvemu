@@ -10,7 +10,8 @@ const fileReader = new FileReader();
 let execute_once = false;
 
 fileReader.onloadend = e => {
-  emu.set_binary(fileReader.result);
+  const bin = new Uint8Array(fileReader.result);
+  emu.set_binary(bin);
   emu.execute();
   execute_once = true;
 };
@@ -32,5 +33,5 @@ execBtn.onclick = e => {
 
   const text = document.createTextNode("Set the file (" + fileIn.files[0].name + ")");
   stateDiv.appendChild(text);
-  fileReader.readAsText(file.files[0]);
+  fileReader.readAsArrayBuffer(file.files[0]);
 };

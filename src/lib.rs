@@ -63,8 +63,9 @@ impl Emulator {
         }
     }
 
-    pub fn set_binary(&mut self, text: String) {
-        self.mem = text.into_bytes();
+    pub fn set_binary(&mut self, bin: Vec<u8>) {
+        self.mem = bin;
+        log(&format!("binary size: {} ({:#x})", self.mem.len(), self.mem.len()));
     }
 
     pub fn execute(&mut self) {

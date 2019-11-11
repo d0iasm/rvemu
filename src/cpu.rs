@@ -1,5 +1,7 @@
 pub const REGISTERS_COUNT: usize = 32;
 
+use crate::*;
+
 pub struct Cpu {
     pub regs: [i32; REGISTERS_COUNT],
     pub pc: usize,
@@ -72,6 +74,8 @@ impl Cpu {
 
         let regs = &mut self.regs;
 
+        log(&format!("execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b})",
+                    self.pc, self.pc, opcode, opcode, opcode));
         match opcode {
             0x03 => { // I-type
                 let offset = ((binary & 0xFFF00000) as i32) >> 20;
@@ -252,7 +256,12 @@ impl Cpu {
                     _ => {},
                 }
             },
-            _ => {},
+            _ => {
+                let text = format!("not implemented opcode {} ({:#x}, {:#b})",
+                                   opcode, opcode, opcode);
+                log(&text);
+                render(&text);
+            },
         }
     }
 }
