@@ -16,24 +16,24 @@ pub fn render(content: &str) {
         .expect("no global `window` exists");
     let document = window.document()
         .expect("should have a document on window");
-    let screen = document.get_element_by_id("screen")
-        .expect("should have a element with a `screen` id");
+    let terminal = document.get_element_by_id("terminal")
+        .expect("should have a element with a `terminal` id");
 
     let div = document.create_element("div")
         .expect("div element should be created successfully");
     div.set_inner_html(content);
-    let result = screen.append_child(&div);
+    let result = terminal.append_child(&div);
     if result.is_err() {
-        panic!("can't append a div node to a screen node")
+        panic!("can't append a div node to a terminal node")
     }
 
     let maxline = 51;
-    if screen.child_element_count() > maxline {
-        let child = screen.first_element_child()
-            .expect("screen should have at least 1 child");
-        let result = screen.remove_child(&child);
+    if terminal.child_element_count() > maxline {
+        let child = terminal.first_element_child()
+            .expect("terminal should have at least 1 child");
+        let result = terminal.remove_child(&child);
         if result.is_err() {
-            panic!("can't remove a first div node from a screen node")
+            panic!("can't remove a first div node from a terminal node")
         }
     }
 }

@@ -1,35 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <title>RISC-V Emulator</title>
+    <link rel="stylesheet" type="text/css" href="node_modules/xterm/css/xterm.css" />
     <style>
-      body {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        justify-content: center;
-        left: 0;
-        position: absolute;
-        top: 0;
-        width: 100%;
+      html {
+        margin: 0;
+        padding: 0;
       }
-      #screen {
+      #terminal {
         background-color: black;
         color: white;
-        height: 1024px;
-        padding: 0 10px;
-        width: 1280px;
+        height: 100vh;
+        width: 100vw;
       }
     </style>
+    <script src="node_modules/xterm/lib/xterm.js"></script>
   </head>
   <body>
-    <h1>RISC-V Emulator</h1>
     <input id="file" type="file" />
     <button id="exec">execute</button>
     <div id="state"></div>
-    <div id="screen"></div>
+    <div id="terminal"></div>
     <script src="./bootstrap.js"></script>
   </body>
 </html>

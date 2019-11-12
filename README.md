@@ -35,6 +35,8 @@ $ wasm-pack test --firefox --headless
 - wasm-pack
 - cargo-generate
 - npm
+  - xterm: https://xtermjs.org/
+  - xterm-addon-fit
 
 ## Resources
 - [Rust and WebAssembly](https://rustwasm.github.io/docs/book/introduction.html)
