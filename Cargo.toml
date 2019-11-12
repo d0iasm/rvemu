@@ -1,5 +1,5 @@
 [package]
-name = "riscv-emu"
+name = "rvemu"
 version = "0.1.0"
 authors = ["Asami Doi <d0iasm.pub@gmail.com>"]
 edition = "2018"
