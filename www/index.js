@@ -3,6 +3,7 @@ import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 
 const fileIn = document.getElementById("file");
+const buffer = document.getElementById("buffer");
 
 const termContainer = document.getElementById("terminal");
 const term = new Terminal({cursorBlink: true});
@@ -14,7 +15,6 @@ term.loadAddon(fitAddon);
 term.open(termContainer);
 fitAddon.fit();
 
-const emu = Emulator.new();
 const fileReader = new FileReader();
 let execute_once = false;
 
@@ -22,7 +22,19 @@ let files = [];
 
 runTerminal();
 
+buffer.addEventListener('DOMSubtreeModified', (e) => {
+  if (e.target.childNodes.length <= 0) {
+    term.write("$ ");
+    return;
+  }
+  const firstChild = e.target.childNodes[0];
+  term.write(deleteLine);
+  term.writeln(firstChild.innerText);
+  e.target.removeChild(firstChild);
+});
+
 fileReader.onloadend = e => {
+  const emu = Emulator.new();
   const bin = new Uint8Array(fileReader.result);
   emu.set_binary(bin);
   emu.execute();
@@ -48,7 +60,7 @@ function prompt() {
 
 function help() {
   term.writeln('Supports the following commands:');
-  term.writeln('  upload      open a local file to execute on the emulator');
+  term.writeln('  upload      open local files for an execution on the emulator');
   term.writeln('  ls          list files you uploaded');
   term.writeln('  run [file]  execute a file');
   term.write('  help        print all commands you can use');
@@ -96,7 +108,7 @@ function command(input) {
         help();
         break;
       }
-      term.write("\r\nrun " + com[1]);
+      term.writeln("\r\nstart to execute " + com[1]);
       run(com[1]);
       break;
     default:

@@ -16,25 +16,15 @@ pub fn render(content: &str) {
         .expect("no global `window` exists");
     let document = window.document()
         .expect("should have a document on window");
-    let terminal = document.get_element_by_id("terminal")
-        .expect("should have a element with a `terminal` id");
+    let buffer = document.get_element_by_id("buffer")
+        .expect("should have a element with a `buffer` id");
 
-    let div = document.create_element("div")
-        .expect("div element should be created successfully");
-    div.set_inner_html(content);
-    let result = terminal.append_child(&div);
+    let span = document.create_element("span")
+        .expect("span element should be created successfully");
+    span.set_inner_html(content);
+    let result = buffer.append_child(&span);
     if result.is_err() {
-        panic!("can't append a div node to a terminal node")
-    }
-
-    let maxline = 51;
-    if terminal.child_element_count() > maxline {
-        let child = terminal.first_element_child()
-            .expect("terminal should have at least 1 child");
-        let result = terminal.remove_child(&child);
-        if result.is_err() {
-            panic!("can't remove a first div node from a terminal node")
-        }
+        panic!("can't append a span node to a buffer node")
     }
 }
 
