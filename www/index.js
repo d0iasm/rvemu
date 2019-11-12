@@ -4,7 +4,6 @@ import { FitAddon } from "xterm-addon-fit";
 
 const execBtn = document.getElementById("exec");
 const fileIn = document.getElementById("file");
-const stateDiv = document.getElementById("state");
 
 const termContainer = document.getElementById("terminal");
 const term = new Terminal({cursorBlink: true});
@@ -20,45 +19,93 @@ const emu = Emulator.new();
 const fileReader = new FileReader();
 let execute_once = false;
 
+let files = [];
+
 runTerminal();
 
 fileReader.onloadend = e => {
   const bin = new Uint8Array(fileReader.result);
   emu.set_binary(bin);
   emu.execute();
-  execute_once = true;
 };
 
 fileIn.onchange = e => {
-  emu.reset();
-  execute_once = false;
-  while (stateDiv.hasChildNodes()) {
-    stateDiv.removeChild(stateDiv.firstChild);
+  let names = "";
+  for (let i=0; i<file.files.length; i++) {
+    names += file.files[i].name;
+    if (i < file.files.length-1) {
+      names += ", ";
+    }
   }
+  files.push.apply(files, file.files);
+  term.write(deleteLine);
+  term.write("uploaded " + names);
+  prompt();
 };
 
 execBtn.onclick = e => {
-  if (execute_once) {
-    emu.reset();
-    emu.execute();
-    return;
-  }
-
-  const text = document.createTextNode("Set the file (" + fileIn.files[0].name + ")");
-  stateDiv.appendChild(text);
   fileReader.readAsArrayBuffer(file.files[0]);
 };
 
-function help(term) {
+function help() {
   term.writeln('Supports the following commands:');
   term.writeln('  upload      open a local file to execute on the emulator');
   term.writeln('  ls          list files you uploaded');
   term.writeln('  run [file]  execute a file');
-  term.writeln('  help        print all commands you can use');
+  term.write('  help        print all commands you can use');
 }
 
-function prompt(term) {
+function prompt() {
   term.write(newLine);
+}
+
+function upload() {
+  fileIn.click();
+}
+
+function run(filename) {
+  for (let i=0; i<files.length; i++) {
+    if (filename == files[i].name) {
+      fileReader.readAsArrayBuffer(files[i]);
+      return;
+    }
+  }
+  term.write("\r\n" + filename + ": No such file");
+}
+
+function ls() {
+  let names = "";
+  for (let i=0; i<files.length; i++) {
+    names += files[i].name;
+    if (i < files.length-1) {
+      names += ", ";
+    }
+  }
+  term.write("\r\n" + names);
+}
+
+function command(input) {
+  const com = input.split(" ");
+  switch (com[0]) {
+    case "upload":
+      upload();
+      break;
+    case "ls":
+      ls();
+      break;
+    case "run":
+      if (com[1] == undefined) {
+        term.writeln("");
+        help();
+        break;
+      }
+      term.write("\r\nrun " + com[1]);
+      run(com[1]);
+      break;
+    default:
+      term.writeln("");
+      help();
+  }
 }
 
 function runTerminal() {
@@ -73,9 +120,9 @@ function runTerminal() {
   };
 
   term.writeln('Welcome to RISC-V emulator');
-  help(term);
+  help();
   term.writeln('');
-  prompt(term);
+  prompt();
 
   let input = "";
   let cursor = 0;
@@ -83,39 +130,34 @@ function runTerminal() {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
     if (e.domEvent.keyCode === 13) { // Enter key
-      console.log("Typed: " + input);
+      command(input);
       input = "";
       cursor = 0;
-      prompt(term);
+      prompt();
     } else if (e.domEvent.keyCode === 8) { // Backspace key
       // Do not delete the prompt
       if (term._core.buffer.x > 2) {
-        console.log(cursor);
-        console.log(input);
         input = input.substr(0, cursor-1) + input.substr(cursor);
-        cursor--;
+        if (cursor > input.length) {
+          cursor--;
+        }
         term.write(deleteLine);
         term.write("$ ");
         term.write(input);
-        console.log(cursor);
-        console.log(input);
       }
     } else if (e.domEvent.keyCode === 37) { // Arrow left
-      if (cursor < input.length) {
-        cursor++;
-      }
-      term.write(e.key);
-      console.log(cursor);
-    } else if (e.domEvent.keyCode === 39) { // Arrow right
       if (cursor > 0) {
         cursor--;
       }
       term.write(e.key);
-      console.log(cursor);
+    } else if (e.domEvent.keyCode === 39) { // Arrow right
+      if (cursor < input.length) {
+        cursor++;
+      }
+      term.write(e.key);
     } else if (printable) {
       cursor++;
-      input += e.key;
-      console.log(cursor);
+      input = input.substr(0, cursor) + e.key + input.substr(cursor);
       term.write(e.key);
     }
   });
