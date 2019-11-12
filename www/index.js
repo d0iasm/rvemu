@@ -2,7 +2,6 @@ import { Emulator } from "riscv-emu";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 
-const execBtn = document.getElementById("exec");
 const fileIn = document.getElementById("file");
 
 const termContainer = document.getElementById("terminal");
@@ -43,9 +42,9 @@ fileIn.onchange = e => {
   prompt();
 };
 
-execBtn.onclick = e => {
-  fileReader.readAsArrayBuffer(file.files[0]);
-};
+function prompt() {
+  term.write(newLine);
+}
 
 function help() {
   term.writeln('Supports the following commands:');
@@ -53,10 +52,6 @@ function help() {
   term.writeln('  ls          list files you uploaded');
   term.writeln('  run [file]  execute a file');
   term.write('  help        print all commands you can use');
-}
-
-function prompt() {
-  term.write(newLine);
 }
 
 function upload() {
@@ -87,6 +82,8 @@ function ls() {
 function command(input) {
   const com = input.split(" ");
   switch (com[0]) {
+    case "":
+      break;
     case "upload":
       upload();
       break;
