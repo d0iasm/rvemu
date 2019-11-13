@@ -101,7 +101,10 @@ impl Cpu {
             }
             0x13 => { // I-type
                 let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
-                let shamt = (binary & 0x01F00000) >> 20;
+                // shamt size is 5 bits for RV32I and 6 bits for RV64I.
+                // let shamt = (binary & 0x01F00000) >> 20; // This is for RV32I
+                let shamt = (binary & 0x03F00000) >> 20;
+                let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => regs[rd] = regs[rs1] + imm, // addi
                     0x1 => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // slli
@@ -109,9 +112,9 @@ impl Cpu {
                     0x3 => regs[rd] = if (regs[rs1] as u64) < (imm as u64) { 1 } else { 0 }, // sltiu
                     0x4 => regs[rd] = regs[rs1] ^ imm, // xori
                     0x5 => {
-                        match funct7 {
+                        match funct6 {
                             0x00 => regs[rd] = ((regs[rs1] as u64) >> shamt) as i64, // srli
-                            0x20 => regs[rd] = regs[rs1] >> shamt, // srai
+                            0x10 => regs[rd] = regs[rs1] >> shamt, // srai
                             _ => {},
                         }
                     }
@@ -129,8 +132,6 @@ impl Cpu {
             0x1B => { // I-type (RV64I only)
                 let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
-                // shift instructions are legal only when shamt[5] == 0
-                if (funct3 != 0) && (shamt & 0x10 != 0) { return; }
                 match funct3 {
                     0x0 => regs[rd] = (((regs[rs1] + imm) & 0xFFFFFFFF) as i32) as i64, // addiw
                     0x1 => regs[rd] = (((regs[rs1] << shamt) & 0xFFFFFFFF) as i32) as i64, // slliw
@@ -157,15 +158,17 @@ impl Cpu {
                 }
             },
             0x33 => { // R-type
+                // The shift amount is given by rs2[5:0] in RV64I.
+                let shamt = (regs[rs2] & 0x3F) as u64;
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
                     (0x0, 0x20) => regs[rd] = regs[rs1] - regs[rs2], // sub
-                    (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << (regs[rs2] as u64)) as i64, // sll
+                    (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // sll
                     (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
                     (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
                     (0x4, 0x00) => regs[rd] = regs[rs1] ^ regs[rs2], // xor
-                    (0x5, 0x00) => regs[rd] = ((regs[rs1] as u64) >> (regs[rs2] as u64)) as i64, // srl
-                    (0x5, 0x20) => regs[rd] = regs[rs1] >> (regs[rs2] as u64), // sra
+                    (0x5, 0x00) => regs[rd] = ((regs[rs1] as u64) >> shamt) as i64, // srl
+                    (0x5, 0x20) => regs[rd] = regs[rs1] >> shamt, // sra
                     (0x6, 0x00) => regs[rd] = regs[rs1] | regs[rs2], // or
                     (0x7, 0x00) => regs[rd] = regs[rs1] & regs[rs2], // and
                     _ => {},
@@ -176,6 +179,18 @@ impl Cpu {
                 // register rd, filling in the lowest 12 bits with zeros.
                 regs[rd] = ((binary & 0xFFFFF000) as i32) as i64; // lui
             },
+            0x3B => { // R-type (RV64I only)
+                // The shift amount is given by rs2[4:0].
+                let shamt = (regs[rs2] & 0x1F) as u32;
+                match (funct3, funct7) {
+                    (0x0, 0x00) => regs[rd] = ((regs[rs1] + regs[rs2]) as i32) as i64, // addw
+                    (0x0, 0x20) => regs[rd] = ((regs[rs1] - regs[rs2]) as i32) as i64, // subw
+                    (0x1, 0x00) => regs[rd] = (((regs[rs1] as u32) << shamt) as i32) as i64, // sllw
+                    (0x5, 0x00) => regs[rd] = (((regs[rs1] as u32) >> shamt) as i32) as i64, // srlw
+                    (0x5, 0x20) => regs[rd] = ((regs[rs1] as i32) >> (shamt as i32)) as i64, // sraw
+                    _ => {},
+                }
+            }
             0x63 => { // B-type
                 let imm12 = (((binary & 0x80000000) as i32) as i64) >> 31;
                 let imm10_5 = ((binary & 0x7E000000) >> 25) as u64;
