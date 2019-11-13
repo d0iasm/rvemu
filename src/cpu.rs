@@ -3,7 +3,7 @@ pub const REGISTERS_COUNT: usize = 32;
 use crate::*;
 
 pub struct Cpu {
-    pub regs: [i32; REGISTERS_COUNT],
+    pub regs: [i64; REGISTERS_COUNT],
     pub pc: usize,
 }
 
@@ -78,14 +78,14 @@ impl Cpu {
                     self.pc, self.pc, opcode, opcode, opcode));
         match opcode {
             0x03 => { // I-type
-                let offset = ((binary & 0xFFF00000) as i32) >> 20;
+                let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let addr = (regs[rs1] + offset) as usize;
                 match funct3 {
-                    0x0 => regs[rd] = (get_memory8(addr, mem) as i8) as i32, // lb
-                    0x1 => regs[rd] = (get_memory16(addr, mem) as i16) as i32, // lh
-                    0x2 => regs[rd] = get_memory32(addr, mem) as i32, // lw
-                    0x4 => regs[rd] = (get_memory8(addr, mem) as i32) & 0xFF, // lbu
-                    0x5 => regs[rd] = (get_memory16(addr, mem) as i32) & 0xFFFF, // lhu
+                    0x0 => regs[rd] = (get_memory8(addr, mem) as i8) as i64, // lb
+                    0x1 => regs[rd] = (get_memory16(addr, mem) as i16) as i64, // lh
+                    0x2 => regs[rd] = (get_memory32(addr, mem) as i32) as i64, // lw
+                    0x4 => regs[rd] = (get_memory8(addr, mem) as i64) & 0xFF, // lbu
+                    0x5 => regs[rd] = (get_memory16(addr, mem) as i64) & 0xFFFF, // lhu
                     _ => {},
                 }
             },
@@ -100,17 +100,17 @@ impl Cpu {
                 }
             }
             0x13 => { // I-type
-                let imm = ((binary & 0xFFF00000) as i32) >> 20;
+                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
                 match funct3 {
                     0x0 => regs[rd] = regs[rs1] + imm, // addi
-                    0x1 => regs[rd] = ((regs[rs1] as u32) << shamt) as i32, // slli
+                    0x1 => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // slli
                     0x2 => regs[rd] = if regs[rs1] < imm { 1 } else { 0 }, // slti
-                    0x3 => regs[rd] = if (regs[rs1] as u32) < (imm as u32) { 1 } else { 0 }, // sltiu
+                    0x3 => regs[rd] = if (regs[rs1] as u64) < (imm as u64) { 1 } else { 0 }, // sltiu
                     0x4 => regs[rd] = regs[rs1] ^ imm, // xori
                     0x5 => {
                         match funct7 {
-                            0x00 => regs[rd] = ((regs[rs1] as u32) >> shamt) as i32, // srli
+                            0x00 => regs[rd] = ((regs[rs1] as u64) >> shamt) as i64, // srli
                             0x20 => regs[rd] = regs[rs1] >> shamt, // srai
                             _ => {},
                         }
@@ -123,14 +123,13 @@ impl Cpu {
             0x17 => { // U-type
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
-                let imm = (binary & 0xFFFFF000) as i32;
-                regs[rd] = (self.pc as i32) + imm; // auipc
+                let imm = ((binary & 0xFFFFF000) as i32) as i64;
+                regs[rd] = (self.pc as i64) + imm; // auipc
             },
             0x23 => { // S-type
-                let imm11_5 = ((binary & 0xFE000000) as i32) >> 25;
-                let imm4_0 = (binary & 0x00000F80) >> 7;
-                let offset = ((imm11_5 << 5) as u32
-                    | imm4_0) as i32;
+                let imm11_5 = (((binary & 0xFE000000) as i32) as i64) >> 25;
+                let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;
+                let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (regs[rs1] + offset) as usize;
                 match funct3 {
                     0x0 => set_memory8(addr, mem, regs[rs2] as u8), // sb
@@ -143,12 +142,12 @@ impl Cpu {
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
                     (0x0, 0x20) => regs[rd] = regs[rs1] - regs[rs2], // sub
-                    (0x1, 0x00) => regs[rd] = ((regs[rs1] as u32) << (regs[rs2] as u32)) as i32, // sll
+                    (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << (regs[rs2] as u64)) as i64, // sll
                     (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
-                    (0x3, 0x00) => regs[rd] = if (regs[rs1] as u32) < (regs[rs2] as u32) { 1 } else { 0 }, // sltu
+                    (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
                     (0x4, 0x00) => regs[rd] = regs[rs1] ^ regs[rs2], // xor
-                    (0x5, 0x00) => regs[rd] = ((regs[rs1] as u32) >> (regs[rs2] as u32)) as i32, // srl
-                    (0x5, 0x20) => regs[rd] = regs[rs1] >> (regs[rs2] as u32), // sra
+                    (0x5, 0x00) => regs[rd] = ((regs[rs1] as u64) >> (regs[rs2] as u64)) as i64, // srl
+                    (0x5, 0x20) => regs[rd] = regs[rs1] >> (regs[rs2] as u64), // sra
                     (0x6, 0x00) => regs[rd] = regs[rs1] | regs[rs2], // or
                     (0x7, 0x00) => regs[rd] = regs[rs1] & regs[rs2], // and
                     _ => {},
@@ -157,52 +156,52 @@ impl Cpu {
             0x37 => { // U-type
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
-                regs[rd] = (binary & 0xFFFFF000) as i32; // lui
+                regs[rd] = ((binary & 0xFFFFF000) as i32) as i64; // lui
             },
             0x63 => { // B-type
-                let imm12 = ((binary & 0x80000000) as i32) >> 31;
-                let imm10_5 = (binary & 0x7E000000) >> 25;
-                let imm4_1 = (binary & 0x00000F00) >> 8;
-                let imm11 = (binary & 0x00000080) >> 7;
-                let offset = ((imm12 << 12) as u32
+                let imm12 = (((binary & 0x80000000) as i32) as i64) >> 31;
+                let imm10_5 = ((binary & 0x7E000000) >> 25) as u64;
+                let imm4_1 = ((binary & 0x00000F00) >> 8) as u64;
+                let imm11 = ((binary & 0x00000080) >> 7) as u64;
+                let offset = ((imm12 << 12) as u64
                     | (imm11 << 11)
                     | (imm10_5 << 5)
-                    | (imm4_1 << 1)) as i32;
+                    | (imm4_1 << 1)) as i64;
                 match funct3 {
                     0x0 => {
                         // beq
                         if regs[rs1] == regs[rs2] {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     0x1 => {
                         // bne
                         if regs[rs1] != regs[rs2] {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     0x4 => {
                         // blt
                         if regs[rs1] < regs[rs2] {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     0x5 => {
                         // bge
                         if regs[rs1] >= regs[rs2] {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     0x6 => {
                         // bltu
-                        if (regs[rs1] as u32) < (regs[rs2] as u32) {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                        if (regs[rs1] as u64) < (regs[rs2] as u64) {
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     0x7 => {
                         // bgeu
-                        if (regs[rs1] as u32) >= (regs[rs2] as u32) {
-                            self.pc = ((self.pc as i32) + offset) as usize;
+                        if (regs[rs1] as u64) >= (regs[rs2] as u64) {
+                            self.pc = ((self.pc as i64) + offset) as usize;
                         }
                     },
                     _ => {},
@@ -210,29 +209,29 @@ impl Cpu {
             },
             0x67 => { // I-type
                 // jalr
-                regs[rd] = (self.pc as i32) + 4;
+                regs[rd] = (self.pc as i64) + 4;
 
-                let imm = ((binary & 0xFFF00000) as i32) >> 20;
+                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 self.pc = ((regs[rs1] + imm) & !1) as usize;
             },
             0x6F => { // J-type
                 // jal
-                regs[rd] = (self.pc as i32) + 4;
+                regs[rd] = (self.pc as i64) + 4;
 
-                let imm20 = ((binary & 0x80000000) as i32) >> 31;
-                let imm10_1 = (binary & 0x7FE00000) >> 21;
-                let imm11 = (binary & 0x100000) >> 20;
-                let imm19_12 = (binary & 0xFF000) >> 12;
-                let offset = ((imm20 << 20) as u32
+                let imm20 = (((binary & 0x80000000) as i32) as i64) >> 31;
+                let imm10_1 = ((binary & 0x7FE00000) >> 21) as u64;
+                let imm11 = ((binary & 0x100000) >> 20) as u64;
+                let imm19_12 = ((binary & 0xFF000) >> 12) as u64;
+                let offset = ((imm20 << 20) as u64
                     | (imm19_12 << 12)
                     | (imm11 << 11)
-                    | (imm10_1 << 1)) as i32;
-                let tmp = (self.pc as i32) + offset;
+                    | (imm10_1 << 1)) as i64;
+                let tmp = (self.pc as i64) + offset;
                 self.pc = tmp as usize;
             },
             0x73 => { // I-type
-                let funct12 = ((binary & 0xFFF00000) as i32) >> 20;
-                let _csr = ((binary & 0xFFF00000) as i32) >> 20;
+                let funct12 = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let _csr = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 match funct3 {
                     0x0 => {
                         match funct12 {

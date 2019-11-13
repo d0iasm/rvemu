@@ -3,13 +3,13 @@
 extern crate wasm_bindgen_test;
 use wasm_bindgen_test::*;
 
-extern crate riscv_emu;
+extern crate rvemu;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 pub fn lb_rd_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -38,7 +38,7 @@ pub fn lb_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lh_rd_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -67,7 +67,7 @@ pub fn lh_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lw_rd_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -96,7 +96,7 @@ pub fn lw_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lbu_rd_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -125,7 +125,7 @@ pub fn lbu_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lhu_rd_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -154,7 +154,7 @@ pub fn lhu_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn addi_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x2, x0, 4
@@ -171,7 +171,7 @@ pub fn addi_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn slli_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16 x0, 2
@@ -192,7 +192,7 @@ pub fn slli_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn slti_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16 x0, -5
@@ -213,7 +213,7 @@ pub fn slti_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn sltiu_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 2
@@ -234,7 +234,7 @@ pub fn sltiu_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn xori_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -255,7 +255,7 @@ pub fn xori_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn srli_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, -8
@@ -276,7 +276,7 @@ pub fn srli_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn srai_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 8
@@ -297,7 +297,7 @@ pub fn srai_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn ori_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -318,7 +318,7 @@ pub fn ori_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn andi_rd_rs1_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 4
@@ -339,7 +339,7 @@ pub fn andi_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn auipc_rd_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // auipc x16, 2
@@ -356,7 +356,7 @@ pub fn auipc_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn sb_rs2_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x50, 0x00,
         0x93, 0x08, 0x30, 0x00,
@@ -390,7 +390,7 @@ pub fn sb_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn sh_rs2_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x00, 0xc0,
         0x93, 0x08, 0x30, 0x00,
@@ -424,7 +424,7 @@ pub fn sh_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn sw_rs2_offset_rs1() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x13, 0x08, 0x00, 0x80,
         0x93, 0x08, 0x30, 0x00,
@@ -458,7 +458,7 @@ pub fn sw_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn add_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x3, x0, 5
@@ -483,7 +483,7 @@ pub fn add_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sub_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x3, x0, 5
@@ -508,7 +508,7 @@ pub fn sub_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sll_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 8
@@ -533,7 +533,7 @@ pub fn sll_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn slt_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, -8
@@ -558,7 +558,7 @@ pub fn slt_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sltu_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 8
@@ -583,7 +583,7 @@ pub fn sltu_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn xor_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -608,7 +608,7 @@ pub fn xor_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn srl_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 16
@@ -633,7 +633,7 @@ pub fn srl_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sra_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, -16
@@ -658,7 +658,7 @@ pub fn sra_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn or_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -683,7 +683,7 @@ pub fn or_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn and_rd_rs1_rs2() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -708,7 +708,7 @@ pub fn and_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn lui_rd_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // lui x16, 2
@@ -725,7 +725,7 @@ pub fn lui_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn beq_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -753,7 +753,7 @@ pub fn beq_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bne_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -781,7 +781,7 @@ pub fn bne_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn blt_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, -3
@@ -809,7 +809,7 @@ pub fn blt_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bge_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, -3
@@ -837,7 +837,7 @@ pub fn bge_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bltu_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -865,7 +865,7 @@ pub fn bltu_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bgeu_rs1_rs2_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 5
@@ -893,7 +893,7 @@ pub fn bgeu_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn jalr_rd_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
@@ -921,7 +921,7 @@ pub fn jalr_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn jal_rd_imm() {
-    let mut cpu = riscv_emu::cpu::Cpu::new();
+    let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
     // addi x16, x0, 3
