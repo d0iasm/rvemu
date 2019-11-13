@@ -126,6 +126,24 @@ impl Cpu {
                 let imm = ((binary & 0xFFFFF000) as i32) as i64;
                 regs[rd] = (self.pc as i64) + imm; // auipc
             },
+            0x1B => { // I-type (RV64I only)
+                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let shamt = (binary & 0x01F00000) >> 20;
+                // shift instructions are legal only when shamt[5] == 0
+                if (funct3 != 0) && (shamt & 0x10 != 0) { return; }
+                match funct3 {
+                    0x0 => regs[rd] = (((regs[rs1] + imm) & 0xFFFFFFFF) as i32) as i64, // addiw
+                    0x1 => regs[rd] = (((regs[rs1] << shamt) & 0xFFFFFFFF) as i32) as i64, // slliw
+                    0x5 => {
+                        match funct7 {
+                            0x00 => regs[rd] = ((regs[rs1] as u32) >> shamt) as i64, // srliw
+                            0x20 => regs[rd] = ((regs[rs1] as i32) >> shamt) as i64, // sraiw
+                            _ => {},
+                        }
+                    }
+                    _ => {},
+                }
+            }
             0x23 => { // S-type
                 let imm11_5 = (((binary & 0xFE000000) as i32) as i64) >> 25;
                 let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;

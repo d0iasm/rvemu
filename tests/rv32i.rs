@@ -254,7 +254,7 @@ pub fn xori_rd_rs1_imm() {
 }
 
 #[wasm_bindgen_test]
-pub fn srli_rd_rs1_imm() {
+pub fn srai_rd_rs1_imm() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
@@ -275,7 +275,7 @@ pub fn srli_rd_rs1_imm() {
 }
 
 #[wasm_bindgen_test]
-pub fn srai_rd_rs1_imm() {
+pub fn srli_rd_rs1_imm() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = Vec::new();
 
