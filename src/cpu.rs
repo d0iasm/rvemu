@@ -183,19 +183,67 @@ impl Cpu {
                     _ => {},
                 }
             },
-            0x33 => { // R-type
+            0x33 => { // R-type (RV32I and RV32M)
                 let shamt = regs[rs2] as u64;
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = regs[rs1].wrapping_add(regs[rs2]), // add
+                    (0x0, 0x01) => regs[rd] = regs[rs1].wrapping_mul(regs[rs2]), // mul
                     (0x0, 0x20) => regs[rd] = regs[rs1].wrapping_sub(regs[rs2]), // sub
                     (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // sll
+                    (0x1, 0x01) => {
+                        let result = regs[rs1].overflowing_mul(regs[2]);
+                        if result.1 {
+                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
+                            // product into regs[rd].
+                            let text = format!("mulh overflow");
+                            log(&text);
+                            render(&text);
+                        }
+                        regs[rd] = result.0;
+                    }, // mulh
                     (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
+                    (0x2, 0x01) => {
+                        // TODO: implement
+                        let result = regs[rs1].overflowing_mul(regs[2]);
+                        if result.1 {
+                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
+                            // product into regs[rd].
+                            let text = format!("mulh overflow");
+                            log(&text);
+                            render(&text);
+                        }
+                        regs[rd] = result.0;
+                    }, // mulhsu
                     (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
+                    (0x3, 0x01) => {
+                        // TODO: implement
+                        let result = regs[rs1].overflowing_mul(regs[2]);
+                        if result.1 {
+                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
+                            // product into regs[rd].
+                            let text = format!("mulh overflow");
+                            log(&text);
+                            render(&text);
+                        }
+                        regs[rd] = result.0;
+                    }, // mulhu
                     (0x4, 0x00) => regs[rd] = regs[rs1] ^ regs[rs2], // xor
+                    (0x4, 0x01) => regs[rd] = regs[rs1].wrapping_div(regs[rs2]), // div
                     (0x5, 0x00) => regs[rd] = ((regs[rs1] as u64) >> shamt) as i64, // srl
+                    (0x5, 0x01) => { // divu
+                        let dividend = regs[rs1] as u64;
+                        let divisor = regs[rs2] as u64;
+                        regs[rd] = dividend.wrapping_div(divisor) as i64;
+                    },
                     (0x5, 0x20) => regs[rd] = regs[rs1] >> shamt, // sra
                     (0x6, 0x00) => regs[rd] = regs[rs1] | regs[rs2], // or
+                    (0x6, 0x01) => regs[rd] = regs[rs1] % regs[rs2], // rem
                     (0x7, 0x00) => regs[rd] = regs[rs1] & regs[rs2], // and
+                    (0x7, 0x01) => { // remu
+                        let dividend = regs[rs1] as u64;
+                        let divisor = regs[rs2] as u64;
+                        regs[rd] = (dividend % divisor) as i64;
+                    },
                     _ => {},
                 };
             },
