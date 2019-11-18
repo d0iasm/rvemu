@@ -1,5 +1,7 @@
 pub const REGISTERS_COUNT: usize = 32;
 
+use num_bigint::{BigUint, BigInt};
+use num_traits::cast::ToPrimitive;
 use crate::*;
 
 pub struct Cpu {
@@ -190,43 +192,26 @@ impl Cpu {
                     (0x0, 0x01) => regs[rd] = regs[rs1].wrapping_mul(regs[rs2]), // mul
                     (0x0, 0x20) => regs[rd] = regs[rs1].wrapping_sub(regs[rs2]), // sub
                     (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // sll
-                    (0x1, 0x01) => {
-                        let result = regs[rs1].overflowing_mul(regs[2]);
-                        if result.1 {
-                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
-                            // product into regs[rd].
-                            let text = format!("mulh overflow");
-                            log(&text);
-                            render(&text);
-                        }
-                        regs[rd] = result.0;
-                    }, // mulh
+                    (0x1, 0x01) => { // mulh
+                        let n1 = BigInt::from(regs[rs1]);
+                        let n2 = BigInt::from(regs[rs2]);
+                        regs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
+                    },
                     (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
-                    (0x2, 0x01) => {
-                        // TODO: implement
-                        let result = regs[rs1].overflowing_mul(regs[2]);
-                        if result.1 {
-                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
-                            // product into regs[rd].
-                            let text = format!("mulh overflow");
-                            log(&text);
-                            render(&text);
-                        }
-                        regs[rd] = result.0;
-                    }, // mulhsu
+                    (0x2, 0x01) => { // mulhsu
+                        // get the most significant bit
+                        let sign = ((regs[rs1] as u64) & 0x80000000_00000000) as i64;
+                        // regs[rs1] is signed and regs[rs2] is unsigned
+                        let n1 = BigUint::from((regs[rs1] as u64) & 0xefffffff_ffffffff);
+                        let n2 = BigUint::from(regs[rs2] as u64);
+                        regs[rd] = sign | ((n1 * n2) >> 63).to_i64().unwrap();
+                    },
                     (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
-                    (0x3, 0x01) => {
-                        // TODO: implement
-                        let result = regs[rs1].overflowing_mul(regs[2]);
-                        if result.1 {
-                            // TODO: implement to store the upper XLEN bits of the full 2×XLEN-bit
-                            // product into regs[rd].
-                            let text = format!("mulh overflow");
-                            log(&text);
-                            render(&text);
-                        }
-                        regs[rd] = result.0;
-                    }, // mulhu
+                    (0x3, 0x01) => { // mulhu
+                        let n1 = BigUint::from(regs[rs1] as u64);
+                        let n2 = BigUint::from(regs[rs2] as u64);
+                        regs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
+                    },
                     (0x4, 0x00) => regs[rd] = regs[rs1] ^ regs[rs2], // xor
                     (0x4, 0x01) => regs[rd] = regs[rs1].wrapping_div(regs[rs2]), // div
                     (0x5, 0x00) => regs[rd] = ((regs[rs1] as u64) >> shamt) as i64, // srl

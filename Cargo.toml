@@ -11,6 +11,8 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
+num-bigint = "^0.2.3"
+num-traits = "^0.2.9"
 wasm-bindgen = "^0.2.52"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

@@ -30,6 +30,97 @@ pub fn mul_rd_rs1_rs2() {
 }
 
 #[wasm_bindgen_test]
+pub fn mulh_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, 1
+        0x93, 0x0f, 0x10, 0x00,
+        // slli x31, x31, 62
+        0x93, 0x9f, 0xef, 0x03,
+        // addi x30, x0, 1
+        0x13, 0x0f, 0x10, 0x00,
+        // slli x30, x30, 62
+        0x13, 0x1f, 0xef, 0x03,
+        // mulh x29, x30, x31
+        0xb3, 0x1e, 0xff, 0x03,
+    ];
+
+    cpu.start(&mut mem);
+
+    // TODO: should use negative values
+    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+/*
+#[wasm_bindgen_test]
+pub fn mulhsu_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, 1
+        0x93, 0x0f, 0x10, 0x00,
+        // slli x31, x31, 62
+        0x93, 0x9f, 0xef, 0x03,
+        // addi x30, x0, 1
+        0x13, 0x0f, 0x10, 0x00,
+        // slli x30, x30, 62
+        0x13, 0x1f, 0xef, 0x03,
+        // mulhsu x29, x30, x31
+        0xb3, 0x2e, 0xff, 0x03,
+    ];
+
+    cpu.start(&mut mem);
+
+    // TODO: should use negative values for rs1
+    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+*/
+
+#[wasm_bindgen_test]
+pub fn mulhu_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, 1
+        0x93, 0x0f, 0x10, 0x00,
+        // slli x31, x31, 62
+        0x93, 0x9f, 0xef, 0x03,
+        // addi x30, x0, 1
+        0x13, 0x0f, 0x10, 0x00,
+        // slli x30, x30, 62
+        0x13, 0x1f, 0xef, 0x03,
+        // mulhu x29, x30, x31
+        0xb3, 0x3e, 0xff, 0x03,
+    ];
+
+    cpu.start(&mut mem);
+
+    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
 pub fn div_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
