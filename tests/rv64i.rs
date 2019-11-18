@@ -251,3 +251,26 @@ pub fn sraw_rd_rs1_rs2() {
     }
 }
 
+#[wasm_bindgen_test]
+pub fn sd_rs2_offset_rs1() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, -5
+        0x93, 0x0f, 0xb0, 0xff,
+        // addi x30, x0, 3
+        0x13, 0x0f, 0x30, 0x00,
+        // sw x31, 0(x0)
+        0x23, 0x30, 0xf0, 0x01,
+        // ld x29, 0(x0)
+        0x83, 0x3E, 0x00, 0x00,
+    ];
+
+    cpu.start(&mut mem);
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 3, -5];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}

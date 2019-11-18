@@ -59,11 +59,11 @@ function prompt() {
 }
 
 function help() {
-  term.writeln('Supports the following commands:');
-  term.writeln('  upload      open local files for an execution on the emulator');
-  term.writeln('  ls          list files you uploaded');
-  term.writeln('  run [file]  execute a file');
-  term.write('  help        print all commands you can use');
+  term.writeln("Supports the following commands:");
+  term.writeln("  upload      open local files for an execution on the emulator");
+  term.writeln("  ls          list files you uploaded");
+  term.writeln("  run [file]  execute a file");
+  term.write("  help        print all commands you can use");
 }
 
 function upload() {
@@ -128,9 +128,9 @@ function runTerminal() {
     term.write('\r\n$ ');
   };
 
-  term.writeln('Welcome to RISC-V emulator');
+  term.writeln("Welcome to RISC-V emulator");
   help();
-  term.writeln('');
+  term.writeln("");
   prompt();
 
   let input = "";

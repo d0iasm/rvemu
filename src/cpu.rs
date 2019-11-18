@@ -23,6 +23,17 @@ fn set_memory32(index: usize, mem: &mut Vec<u8>, val: u32) {
     mem[index + 3] = ((val & 0xFF000000) >> 24) as u8;
 }
 
+fn set_memory64(index: usize, mem: &mut Vec<u8>, val: u64) {
+    mem[index] = (val & 0xFF) as u8;
+    mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
+    mem[index + 2] = ((val & 0xFF0000) >> 16) as u8;
+    mem[index + 3] = ((val & 0xFF000000) >> 24) as u8;
+    mem[index + 4] = ((val & 0xFF00000000) >> 32) as u8;
+    mem[index + 5] = ((val & 0xFF0000000000) >> 40) as u8;
+    mem[index + 6] = ((val & 0xFF000000000000) >> 48) as u8;
+    mem[index + 7] = ((val & 0xFF00000000000000) >> 56) as u8;
+}
+
 fn get_memory8(index: usize, mem: &Vec<u8>) -> u8 {
     mem[index]
 }
@@ -168,6 +179,7 @@ impl Cpu {
                     0x0 => set_memory8(addr, mem, regs[rs2] as u8), // sb
                     0x1 => set_memory16(addr, mem, regs[rs2] as u16), // sh
                     0x2 => set_memory32(addr, mem, regs[rs2] as u32), // sw
+                    0x3 => set_memory64(addr, mem, regs[rs2] as u64), // sd
                     _ => {},
                 }
             },
