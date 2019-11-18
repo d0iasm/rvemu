@@ -8,6 +8,62 @@ extern crate rvemu;
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
+pub fn ld_rd_offset_rs1() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, 5
+        0x93, 0x0f, 0x50, 0x00,
+        // addi x30, x0, 3
+        0x13, 0x0f, 0x30, 0x00,
+        // ld x29, 4(x0)
+        0x83, 0x3E, 0x40, 0x00,
+    ];
+
+    cpu.start(&mut mem);
+
+    // memory layout
+    // 0x0000000c   ...
+    // 0x00000008   83  3e  40  00
+    // 0x00000004   13  0f  30  00
+    // 0x00000000   93  0f  50  00
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00403e8300300f13, 3, 5];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn lwu_rd_offset_rs1() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        // addi x31, x0, -5
+        0x93, 0x0f, 0xb0, 0xff,
+        // addi x30, x0, 3
+        0x13, 0x0f, 0x30, 0x00,
+        // lwu x29, 0(x0)
+        0x83, 0x6E, 0x00, 0x00,
+    ];
+
+    cpu.start(&mut mem);
+
+    // memory layout
+    // 0x0000000c   ...
+    // 0x00000008   83  6e  00  00
+    // 0x00000004   13  0f  30  00
+    // 0x00000000   93  0f  b0  ff
+
+    let expected =
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xffb00f93, 3, -5];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.regs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
 pub fn addiw_rd_rs1_imm() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![

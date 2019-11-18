@@ -41,6 +41,18 @@ fn get_memory32(index: usize, mem: &Vec<u8>) -> u32 {
         | ((mem[index + 3] as u32) << 24);
 }
 
+fn get_memory64(index: usize, mem: &Vec<u8>) -> u64 {
+    // little endian
+    return (mem[index] as u64)
+        | ((mem[index + 1] as u64) << 8)
+        | ((mem[index + 2] as u64) << 16)
+        | ((mem[index + 3] as u64) << 24)
+        | ((mem[index + 4] as u64) << 32)
+        | ((mem[index + 5] as u64) << 40)
+        | ((mem[index + 6] as u64) << 48)
+        | ((mem[index + 7] as u64) << 56);
+}
+
 impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
@@ -84,8 +96,10 @@ impl Cpu {
                     0x0 => regs[rd] = (get_memory8(addr, mem) as i8) as i64, // lb
                     0x1 => regs[rd] = (get_memory16(addr, mem) as i16) as i64, // lh
                     0x2 => regs[rd] = (get_memory32(addr, mem) as i32) as i64, // lw
+                    0x3 => regs[rd] = get_memory64(addr, mem) as i64, // ld
                     0x4 => regs[rd] = (get_memory8(addr, mem) as i64) & 0xFF, // lbu
                     0x5 => regs[rd] = (get_memory16(addr, mem) as i64) & 0xFFFF, // lhu
+                    0x6 => regs[rd] = (get_memory32(addr, mem) as i64) & 0xFFFFFFFF, // lwu
                     _ => {},
                 }
             },
@@ -158,8 +172,7 @@ impl Cpu {
                 }
             },
             0x33 => { // R-type
-                // The shift amount is given by rs2[5:0] in RV64I.
-                let shamt = (regs[rs2] & 0x3F) as u64;
+                let shamt = regs[rs2] as u64;
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
                     (0x0, 0x20) => regs[rd] = regs[rs1] - regs[rs2], // sub
