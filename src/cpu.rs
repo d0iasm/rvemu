@@ -131,7 +131,7 @@ impl Cpu {
                 let shamt = (binary & 0x03F00000) >> 20;
                 let funct6 = funct7 >> 1;
                 match funct3 {
-                    0x0 => regs[rd] = regs[rs1] + imm, // addi
+                    0x0 => regs[rd] = regs[rs1].wrapping_add(imm), // addi
                     0x1 => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // slli
                     0x2 => regs[rd] = if regs[rs1] < imm { 1 } else { 0 }, // slti
                     0x3 => regs[rd] = if (regs[rs1] as u64) < (imm as u64) { 1 } else { 0 }, // sltiu
@@ -158,7 +158,7 @@ impl Cpu {
                 let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let shamt = (binary & 0x01F00000) >> 20;
                 match funct3 {
-                    0x0 => regs[rd] = (((regs[rs1] + imm) & 0xFFFFFFFF) as i32) as i64, // addiw
+                    0x0 => regs[rd] = (((regs[rs1].wrapping_add(imm)) & 0xFFFFFFFF) as i32) as i64, // addiw
                     0x1 => regs[rd] = (((regs[rs1] << shamt) & 0xFFFFFFFF) as i32) as i64, // slliw
                     0x5 => {
                         match funct7 {
@@ -186,8 +186,8 @@ impl Cpu {
             0x33 => { // R-type
                 let shamt = regs[rs2] as u64;
                 match (funct3, funct7) {
-                    (0x0, 0x00) => regs[rd] = regs[rs1] + regs[rs2], // add
-                    (0x0, 0x20) => regs[rd] = regs[rs1] - regs[rs2], // sub
+                    (0x0, 0x00) => regs[rd] = regs[rs1].wrapping_add(regs[rs2]), // add
+                    (0x0, 0x20) => regs[rd] = regs[rs1].wrapping_sub(regs[rs2]), // sub
                     (0x1, 0x00) => regs[rd] = ((regs[rs1] as u64) << shamt) as i64, // sll
                     (0x2, 0x00) => regs[rd] = if regs[rs1] < regs[rs2] { 1 } else { 0 }, // slt
                     (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
@@ -208,8 +208,8 @@ impl Cpu {
                 // The shift amount is given by rs2[4:0].
                 let shamt = (regs[rs2] & 0x1F) as u32;
                 match (funct3, funct7) {
-                    (0x0, 0x00) => regs[rd] = ((regs[rs1] + regs[rs2]) as i32) as i64, // addw
-                    (0x0, 0x20) => regs[rd] = ((regs[rs1] - regs[rs2]) as i32) as i64, // subw
+                    (0x0, 0x00) => regs[rd] = ((regs[rs1].wrapping_add(regs[rs2])) as i32) as i64, // addw
+                    (0x0, 0x20) => regs[rd] = ((regs[rs1].wrapping_sub(regs[rs2])) as i32) as i64, // subw
                     (0x1, 0x00) => regs[rd] = (((regs[rs1] as u32) << shamt) as i32) as i64, // sllw
                     (0x5, 0x00) => regs[rd] = (((regs[rs1] as u32) >> shamt) as i32) as i64, // srlw
                     (0x5, 0x20) => regs[rd] = ((regs[rs1] as i32) >> (shamt as i32)) as i64, // sraw
