@@ -250,11 +250,31 @@ impl Cpu {
                         let n2 = regs[rs2] as i32;
                         let result = n1.wrapping_mul(n2);
                         regs[rd] = result as i64;
-                    }
+                    },
                     (0x0, 0x20) => regs[rd] = ((regs[rs1].wrapping_sub(regs[rs2])) as i32) as i64, // subw
                     (0x1, 0x00) => regs[rd] = (((regs[rs1] as u32) << shamt) as i32) as i64, // sllw
+                    (0x4, 0x01) => { // divw
+                        let dividend = regs[rs1] as i32;
+                        let divisor = regs[rs2] as i32;
+                        regs[rd] = dividend.wrapping_div(divisor) as i64;
+                    },
                     (0x5, 0x00) => regs[rd] = (((regs[rs1] as u32) >> shamt) as i32) as i64, // srlw
+                    (0x5, 0x01) => { // divuw
+                        let dividend = regs[rs1] as u32;
+                        let divisor = regs[rs2] as u32;
+                        regs[rd] = (dividend.wrapping_div(divisor) as i32) as i64;
+                    },
                     (0x5, 0x20) => regs[rd] = ((regs[rs1] as i32) >> (shamt as i32)) as i64, // sraw
+                    (0x6, 0x01) => { // remw
+                        let dividend = regs[rs1] as i32;
+                        let divisor = regs[rs2] as i32;
+                        regs[rd] = dividend.wrapping_rem(divisor) as i64;
+                    },
+                    (0x7, 0x01) => { // remuw
+                        let dividend = regs[rs1] as u32;
+                        let divisor = regs[rs2] as u32;
+                        regs[rd] = (dividend.wrapping_rem(divisor) as i32) as i64;
+                    },
                     _ => {},
                 }
             }
