@@ -240,11 +240,17 @@ impl Cpu {
                 // register rd, filling in the lowest 12 bits with zeros.
                 regs[rd] = ((binary & 0xFFFFF000) as i32) as i64; // lui
             },
-            0x3B => { // R-type (RV64I only)
+            0x3B => { // R-type (RV64I and RV64M)
                 // The shift amount is given by rs2[4:0].
                 let shamt = (regs[rs2] & 0x1F) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => regs[rd] = ((regs[rs1].wrapping_add(regs[rs2])) as i32) as i64, // addw
+                    (0x0, 0x01) => { // mulw
+                        let n1 = regs[rs1] as i32;
+                        let n2 = regs[rs2] as i32;
+                        let result = n1.wrapping_mul(n2);
+                        regs[rd] = result as i64;
+                    }
                     (0x0, 0x20) => regs[rd] = ((regs[rs1].wrapping_sub(regs[rs2])) as i32) as i64, // subw
                     (0x1, 0x00) => regs[rd] = (((regs[rs1] as u32) << shamt) as i32) as i64, // sllw
                     (0x5, 0x00) => regs[rd] = (((regs[rs1] as u32) >> shamt) as i32) as i64, // srlw
