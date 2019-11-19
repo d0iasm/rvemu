@@ -1,7 +1,10 @@
 pub const REGISTERS_COUNT: usize = 32;
 
+use std::process::exit;
+
 use num_bigint::{BigUint, BigInt};
 use num_traits::cast::ToPrimitive;
+
 use crate::*;
 
 pub struct Cpu {
@@ -204,7 +207,7 @@ impl Cpu {
                         // regs[rs1] is signed and regs[rs2] is unsigned
                         let n1 = BigUint::from((regs[rs1] as u64) & 0xefffffff_ffffffff);
                         let n2 = BigUint::from(regs[rs2] as u64);
-                        regs[rd] = sign | ((n1 * n2) >> 63).to_i64().unwrap();
+                        regs[rd] = sign | ((n1 * n2) >> 64).to_i64().unwrap();
                     },
                     (0x3, 0x00) => regs[rd] = if (regs[rs1] as u64) < (regs[rs2] as u64) { 1 } else { 0 }, // sltu
                     (0x3, 0x01) => { // mulhu
@@ -351,6 +354,7 @@ impl Cpu {
                                    opcode, opcode, opcode);
                 log(&text);
                 render(&text);
+                exit(1);
             },
         }
     }

@@ -47,8 +47,8 @@ pub fn mulh_rd_rs1_rs2() {
 
     cpu.start(&mut mem);
 
-    // TODO: should use negative values
-    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
+    // TODO: use negative values in x30 and x31
+    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
 
     let expected =
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -59,7 +59,6 @@ pub fn mulh_rd_rs1_rs2() {
     }
 }
 
-/*
 #[wasm_bindgen_test]
 pub fn mulhsu_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
@@ -78,8 +77,8 @@ pub fn mulhsu_rd_rs1_rs2() {
 
     cpu.start(&mut mem);
 
-    // TODO: should use negative values for rs1
-    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
+    // TODO: use a negative value for x30
+    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
 
     let expected =
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -89,7 +88,6 @@ pub fn mulhsu_rd_rs1_rs2() {
         assert_eq!(*e, cpu.regs[i]);
     }
 }
-*/
 
 #[wasm_bindgen_test]
 pub fn mulhu_rd_rs1_rs2() {
