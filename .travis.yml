@@ -1,0 +1,14 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+before-install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+  - npm install npm@latest
+  - npm install xterm
+  - npm install xterm-addon-fit
+install:
+  - wasm-pack build
+script:
+  - wasm-pack test --firefox --headless
