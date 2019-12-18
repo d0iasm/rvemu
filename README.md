@@ -17,7 +17,7 @@ Supports the following RISC-V ISA features:
 The `wasm-pack build` command generates a pkg directory and makes Rust source code into `.wasm` binary. It also generates the JavaScript API for using our Rust-generated WebAssembly. The toolchain's supported target is `wasm32-unknown-unknown`.
 You need to execute this command whenever you change your Rust code.
 ```
-$ wasm-pack build
+$ wasm-pack build --out-dir www/pkg
 ```
 
 Use `npm init wasm-app www` just once to generate a www directory for a web page. Also, need `npm install` in a www directory at the first time and whenever you change a dependency in package.json.
@@ -28,7 +28,7 @@ $ npm install // at ./www directory
 
 You can see a web page via http://localhost:8080/ that reflects changes when we rus the wasm-pack build command.
 ```
-$ npm run start
+$ npm start
 ```
 
 ## Test

@@ -1,4 +1,4 @@
-import { Emulator } from "riscv-emu";
+import { Emulator } from "rvemu";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 
