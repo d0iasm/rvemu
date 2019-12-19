@@ -80,10 +80,18 @@ impl Cpu {
     pub fn start(&mut self, mem: &mut Vec<u8>) {
         let size = mem.len();
 
+        let mut i = 0;
         while self.pc < size {
             let binary = self.fetch(mem);
             self.execute(binary, mem);
             self.pc += 4;
+
+            // TODO: Remove the following check.
+            // This is for avoiding an infinite execution.
+            i += 1;
+            if i > 1000 {
+                exit(1);
+            }
         }
     }
 
@@ -102,8 +110,8 @@ impl Cpu {
 
         let regs = &mut self.regs;
 
-        log(&format!("execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b})",
-                    self.pc, self.pc, opcode, opcode, opcode));
+        log(&format!("execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b}), binary: {:#x}",
+                    self.pc, self.pc, opcode, opcode, opcode, binary));
         match opcode {
             0x03 => { // I-type
                 let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
@@ -310,6 +318,8 @@ impl Cpu {
                         // bge
                         if regs[rs1] >= regs[rs2] {
                             self.pc = ((self.pc as i64) + offset) as usize;
+                            // TODO: Check if this operation is valid
+                            self.pc -= 4;
                         }
                     },
                     0x6 => {
@@ -348,6 +358,8 @@ impl Cpu {
                     | (imm10_1 << 1)) as i64;
                 let tmp = (self.pc as i64) + offset;
                 self.pc = tmp as usize;
+                // TODO: Check if this operation is valid
+                self.pc -= 4;
             },
             0x73 => { // I-type
                 let funct12 = (((binary & 0xFFF00000) as i32) as i64) >> 20;
