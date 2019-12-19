@@ -822,8 +822,8 @@ pub fn bge_rs1_rs2_imm() {
     cpu.execute(bin2, &mut mem);
     cpu.pc += 4;
 
-    // bge x16, x17, -8
-    let bin3 = 0xff185ce3;
+    // bge x16, x17, -4
+    let bin3 = 0xff185ee3;
     cpu.execute(bin3, &mut mem);
 
     let expected =
@@ -935,7 +935,7 @@ pub fn jal_rd_imm() {
     cpu.pc += 4;
 
     // jal x18, -8
-    let bin3 = 0xff9ff96f;
+    let bin3 = 0xffdff96f;
     cpu.execute(bin3, &mut mem);
 
     let expected =
