@@ -1,8 +1,10 @@
 .DS_Store
+.firebase
+.firebaserc
 /target
 **/*.rs.bk
 Cargo.lock
 pkg/
 wasm-pack.log
-www/node_modules
 www/dist
+**/node_modules

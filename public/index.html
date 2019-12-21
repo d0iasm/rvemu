@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>RISC-V Emulator</title>
+    <link rel="stylesheet" type="text/css" href="./node_modules/xterm/css/xterm.css" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      #terminal {
+        background-color: black;
+        color: white;
+        height: 100vh;
+        width: 100vw;
+      }
+      .hide {
+        display: none;
+      }
+    </style>
+    <script src="./node_modules/xterm/lib/xterm.js"></script>
+    <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  </head>
+  <body>
+    <input id="file" class="hide" type="file" multiple/>
+    <div id="buffer" class="hide"></div>
+    <div id="terminal"></div>
+    <script src="./index.js" type="module"></script>
+  </body>
+</html>
