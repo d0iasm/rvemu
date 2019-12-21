@@ -1,3 +1,18 @@
+/*
+      ___                         ___           ___           ___ 
+     /\  \          ___          /\__\         /\  \         /\  \    
+    /::\  \        /\  \        /:/ _/_       |::\  \        \:\  \   
+   /:/\:\__\       \:\  \      /:/ /\__\      |:|:\  \        \:\  \  
+  /:/ /:/  /        \:\  \    /:/ /:/ _/_   __|:|\:\  \   ___  \:\  \ 
+ /:/_/:/__/___  ___  \:\__\  /:/_/:/ /\__\ /::::|_\:\__\ /\  \  \:\__\
+ \:\/:::::/  / /\  \ |:|  |  \:\/:/ /:/  / \:\~~\  \/__/ \:\  \ /:/  /
+  \::/~~/~~~~  \:\  \|:|  |   \::/_/:/  /   \:\  \        \:\  /:/  / 
+   \:\~~\       \:\__|:|__|    \:\/:/  /     \:\  \        \:\/:/  /  
+    \:\__\       \::::/__/      \::/  /       \:\__\        \::/  /   
+     \/__/        ~~~~           \/__/         \/__/         \/__/    
+
+*/
+
 import init, { Emulator } from "./pkg/rvemu.js";
 
 const fileIn = document.getElementById("file");
@@ -134,7 +149,11 @@ function runTerminal() {
     term.write('\r\n$ ');
   };
 
-  term.writeln("Welcome to RISC-V emulator");
+  term.
+  term.writeln("Welcome to RISC-V emulator!");
+  term.writeln("This is a work-in-progress project. You can see the progress at https://github.com/d0iasm/rvemu");
+  term.writeln("Bug reports or feature requests are always welcome: https://github.com/d0iasm/rvemu/issues");
+  term.writeln("");
   help();
   term.writeln("");
   prompt();
