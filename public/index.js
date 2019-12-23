@@ -149,7 +149,6 @@ function runTerminal() {
     term.write('\r\n$ ');
   };
 
-  term.
   term.writeln("Welcome to RISC-V emulator!");
   term.writeln("This is a work-in-progress project. You can see the progress at https://github.com/d0iasm/rvemu");
   term.writeln("Bug reports or feature requests are always welcome: https://github.com/d0iasm/rvemu/issues");
