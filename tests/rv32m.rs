@@ -25,7 +25,7 @@ pub fn mul_rd_rs1_rs2() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15, -5, 3];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -55,7 +55,7 @@ pub fn mulh_rd_rs1_rs2() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -85,7 +85,7 @@ pub fn mulhsu_rd_rs1_rs2() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -114,7 +114,7 @@ pub fn mulhu_rd_rs1_rs2() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0x1000000000000000, 0x4000000000000000, 0x4000000000000000];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -136,7 +136,7 @@ pub fn div_rd_rs1_rs2() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -5, 3];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -158,7 +158,7 @@ pub fn divu_rd_rs1_rs2() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 3];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -180,7 +180,7 @@ pub fn rem_rd_rs1_rs2() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -5, 3];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }
 
@@ -202,6 +202,6 @@ pub fn remu_rd_rs1_rs2() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 3];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.regs[i]);
+        assert_eq!(*e, cpu.xregs[i]);
     }
 }

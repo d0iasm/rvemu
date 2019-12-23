@@ -47,10 +47,7 @@ impl Emulator {
     }
 
     pub fn reset(&mut self) {
-        self.cpu.pc = 0;
-        for i in 0..REGISTERS_COUNT {
-            self.cpu.regs[i] = 0;
-        }
+        self.cpu.reset()
     }
 
     pub fn set_binary(&mut self, bin: Vec<u8>) {
@@ -66,7 +63,14 @@ impl Emulator {
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
             let text = format!("x{}: {:#x} ({}, {:#b})",
-                i, self.cpu.regs[i], self.cpu.regs[i], self.cpu.regs[i]);
+                i, self.cpu.xregs[i], self.cpu.xregs[i], self.cpu.xregs[i]);
+            log(&text);
+            render(&text);
+        }
+
+        for i in 0..REGISTERS_COUNT {
+            let text = format!("f{}: {:#?} {})",
+                i, self.cpu.fregs[i], self.cpu.fregs[i]);
             log(&text);
             render(&text);
         }

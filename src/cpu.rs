@@ -8,7 +8,8 @@ use num_traits::cast::ToPrimitive;
 use crate::*;
 
 pub struct Cpu {
-    pub regs: [i64; REGISTERS_COUNT],
+    pub xregs: [i64; REGISTERS_COUNT],
+    pub fregs: [f32; REGISTERS_COUNT],
     pub pc: usize,
 }
 
@@ -72,8 +73,17 @@ fn get_memory64(index: usize, mem: &Vec<u8>) -> u64 {
 impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
-            regs: [0; REGISTERS_COUNT],
+            xregs: [0; REGISTERS_COUNT],
+            fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.pc = 0;
+        for i in 0..REGISTERS_COUNT {
+            self.xregs[i] = 0;
+            self.fregs[i] = 0.0;
         }
     }
 
@@ -108,7 +118,7 @@ impl Cpu {
         let funct3 = (binary & 0x00007000) >> 12;
         let funct7 = (binary & 0xFE000000) >> 25;
 
-        let regs = &mut self.regs;
+        let regs = &mut self.xregs;
 
         log(&format!("execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b}), binary: {:#x}",
                     self.pc, self.pc, opcode, opcode, opcode, binary));
