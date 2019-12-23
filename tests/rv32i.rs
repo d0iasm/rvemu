@@ -643,8 +643,7 @@ pub fn beq_rs1_rs2_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 20?
-    assert_eq!(24, cpu.pc);
+    assert_eq!(20, cpu.pc);
 }
 
 #[wasm_bindgen_test]
@@ -667,8 +666,7 @@ pub fn bne_rs1_rs2_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 20?
-    assert_eq!(24, cpu.pc);
+    assert_eq!(20, cpu.pc);
 }
 
 #[wasm_bindgen_test]
@@ -691,8 +689,7 @@ pub fn blt_rs1_rs2_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 20?
-    assert_eq!(24, cpu.pc);
+    assert_eq!(20, cpu.pc);
 }
 
 #[wasm_bindgen_test]
@@ -738,8 +735,7 @@ pub fn bltu_rs1_rs2_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 20?
-    assert_eq!(24, cpu.pc);
+    assert_eq!(20, cpu.pc);
 }
 
 #[wasm_bindgen_test]
@@ -762,8 +758,7 @@ pub fn bgeu_rs1_rs2_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 20?
-    assert_eq!(24, cpu.pc);
+    assert_eq!(20, cpu.pc);
 }
 
 #[wasm_bindgen_test]
@@ -786,8 +781,7 @@ pub fn jalr_rd_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    // TODO: 42?
-    assert_eq!(46, cpu.pc);
+    assert_eq!(42, cpu.pc);
 }
 
 #[wasm_bindgen_test]

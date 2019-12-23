@@ -309,39 +309,37 @@ impl Cpu {
                     0x0 => {
                         // beq
                         if regs[rs1] == regs[rs2] {
-                            self.pc = ((self.pc as i64) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     0x1 => {
                         // bne
                         if regs[rs1] != regs[rs2] {
-                            self.pc = ((self.pc as i64) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     0x4 => {
                         // blt
                         if regs[rs1] < regs[rs2] {
-                            self.pc = ((self.pc as i64) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     0x5 => {
                         // bge
                         if regs[rs1] >= regs[rs2] {
-                            self.pc = ((self.pc as i64) + offset) as usize;
-                            // TODO: Check if this operation is valid
-                            self.pc -= 4;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     0x6 => {
                         // bltu
                         if (regs[rs1] as u64) < (regs[rs2] as u64) {
-                            self.pc = ((self.pc as i64) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     0x7 => {
                         // bgeu
                         if (regs[rs1] as u64) >= (regs[rs2] as u64) {
-                            self.pc = ((self.pc as i64) + offset) as usize;
+                            self.pc = ((self.pc as i64) + offset - 4) as usize;
                         }
                     },
                     _ => {},
@@ -352,7 +350,7 @@ impl Cpu {
                 regs[rd] = (self.pc as i64) + 4;
 
                 let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
-                self.pc = ((regs[rs1] + imm) & !1) as usize;
+                self.pc = ((regs[rs1] + imm - 4) & !1) as usize;
             },
             0x6F => { // J-type
                 // jal
@@ -366,10 +364,8 @@ impl Cpu {
                     | (imm19_12 << 12)
                     | (imm11 << 11)
                     | (imm10_1 << 1)) as i64;
-                let tmp = (self.pc as i64) + offset;
+                let tmp = (self.pc as i64) + offset - 4;
                 self.pc = tmp as usize;
-                // TODO: Check if this operation is valid
-                self.pc -= 4;
             },
             0x73 => { // I-type
                 let funct12 = (((binary & 0xFFF00000) as i32) as i64) >> 20;
