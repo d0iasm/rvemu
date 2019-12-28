@@ -67,3 +67,188 @@ pub fn fsw_rs2_offset_rs1() {
         assert_eq!(*e, cpu.fregs[i]);
     }
 }
+
+#[wasm_bindgen_test]
+pub fn fadds_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0x01, // fadd.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 2.5;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 2.5, 6.7,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fsubs_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0x09, // fsub.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 2.8;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 2.8, -1.4,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        // TODO: workaround for floating point precision problem
+        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fmuls_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0x11, // fmul.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = -1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, -5.04,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fdivs_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0x19, // fdiv.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = -1.2;
+    cpu.fregs[30] = 4.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, -3.5,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        // TODO: workaround for floating point precision problem
+        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fmins_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0x29, // fmin.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = -1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, -1.2,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fmaxs_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x1f, 0xdf, 0x29, // fmax.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = -1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, 4.2,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fsqrts_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0x0f, 0x58, // fmax.s f31, f30
+    ];
+
+    cpu.fregs[30] = 4.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.2,
+        2.04939015319192,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}

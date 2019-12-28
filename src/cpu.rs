@@ -377,6 +377,26 @@ impl Cpu {
                     _ => {}
                 }
             }
+            0x53 => {
+                // R-type (RV32F and RV64F)
+                match funct7 {
+                    // TODO: support the rounding mode encoding. Currently only "000 RNE Round to Nearest, ties to
+                    // Even" is supported.
+                    0x00 => fregs[rd] = fregs[rs1] + fregs[rs2], // fadd.s
+                    0x04 => fregs[rd] = fregs[rs1] - fregs[rs2], // fsub.s
+                    0x08 => fregs[rd] = fregs[rs1] * fregs[rs2], // fmul.s
+                    0x0c => fregs[rd] = fregs[rs1] / fregs[rs2], // fdiv.s
+                    0x14 => {
+                        match funct3 {
+                            0x0 => fregs[rd] = fregs[rs1].min(fregs[rs2]), // fmin.s
+                            0x1 => fregs[rd] = fregs[rs1].max(fregs[rs2]), // fmax.s
+                            _ => {}
+                        }
+                    }
+                    0x2c => fregs[rd] = fregs[rs1].sqrt(), // fsqrt.s
+                    _ => {}
+                }
+            }
             0x63 => {
                 // B-type
                 let imm12 = (((binary & 0x80000000) as i32) as i64) >> 31;
