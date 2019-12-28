@@ -6,20 +6,20 @@ use crate::cpu::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-extern {
+extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
 }
 
 pub fn render(content: &str) {
-    let window = web_sys::window()
-        .expect("no global `window` exists");
-    let document = window.document()
-        .expect("should have a document on window");
-    let buffer = document.get_element_by_id("buffer")
+    let window = web_sys::window().expect("no global `window` exists");
+    let document = window.document().expect("should have a document on window");
+    let buffer = document
+        .get_element_by_id("buffer")
         .expect("should have a element with a `buffer` id");
 
-    let span = document.create_element("span")
+    let span = document
+        .create_element("span")
         .expect("span element should be created successfully");
     span.set_inner_html(content);
     let result = buffer.append_child(&span);
@@ -52,7 +52,11 @@ impl Emulator {
 
     pub fn set_binary(&mut self, bin: Vec<u8>) {
         self.mem = bin;
-        log(&format!("binary size: {} ({:#x})", self.mem.len(), self.mem.len()));
+        log(&format!(
+            "binary size: {} ({:#x})",
+            self.mem.len(),
+            self.mem.len()
+        ));
     }
 
     pub fn execute(&mut self) {
@@ -62,15 +66,16 @@ impl Emulator {
 
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
-            let text = format!("x{}: {:#x} ({}, {:#b})",
-                i, self.cpu.xregs[i], self.cpu.xregs[i], self.cpu.xregs[i]);
+            let text = format!(
+                "x{}: {:#x} ({}, {:#b})",
+                i, self.cpu.xregs[i], self.cpu.xregs[i], self.cpu.xregs[i]
+            );
             log(&text);
             render(&text);
         }
 
         for i in 0..REGISTERS_COUNT {
-            let text = format!("f{}: {:#?} {})",
-                i, self.cpu.fregs[i], self.cpu.fregs[i]);
+            let text = format!("f{}: {:#?} {})", i, self.cpu.fregs[i], self.cpu.fregs[i]);
             log(&text);
             render(&text);
         }

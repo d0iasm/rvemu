@@ -8,78 +8,62 @@ extern crate rvemu;
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
-pub fn mul_rd_rs1_rs2() {
+pub fn flw_rd_offset_rs1() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
-        // addi x31, x0, 3
-        0x93, 0x0f, 0x30, 0x00, // addi x30, x0, -5
-        0x13, 0x0f, 0xb0, 0xff, // mul x29, x30, x31
-        0xb3, 0x0e, 0xff, 0x03,
+        0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
+        0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
+        0x87, 0xaf, 0x0f, 0x00, // flw f31, 0(x31)
     ];
 
     cpu.start(&mut mem);
 
-    let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15,
-        -5, 3,
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        4, 2,
     ];
-    for (i, e) in expected.iter().enumerate() {
+    // f0-f30
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+    // f31
+    assert_eq!(0x0f130020, cpu.fregs[31].to_bits());
 }
 
 #[wasm_bindgen_test]
-pub fn mulh_rd_rs1_rs2() {
+pub fn fsw_rs2_offset_rs1() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
-        // addi x31, x0, 1
-        0x93, 0x0f, 0x10, 0x00, // slli x31, x31, 62
-        0x93, 0x9f, 0xef, 0x03, // addi x30, x0, 1
-        0x13, 0x0f, 0x10, 0x00, // slli x30, x30, 62
-        0x13, 0x1f, 0xef, 0x03, // mulh x29, x30, x31
-        0xb3, 0x1e, 0xff, 0x03,
+        0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
+        0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
+        0x27, 0xa0, 0xff, 0x01, // fsw f31, 0(x31)
+        0x87, 0xaf, 0x0f, 0x00, // flw f31, 0(x31)
     ];
 
     cpu.start(&mut mem);
 
-    // TODO: use negative values in x30 and x31
-    // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
-
-    let expected = [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0x1000000000000000,
-        0x4000000000000000,
-        0x4000000000000000,
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        4, 2,
     ];
-    for (i, e) in expected.iter().enumerate() {
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
     }
 }
