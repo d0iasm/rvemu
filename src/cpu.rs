@@ -377,10 +377,38 @@ impl Cpu {
                     _ => {}
                 }
             }
+            0x43 => {
+                // R4-type (RV32F and RV64F)
+                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
+                // Even" is supported.
+                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                fregs[rd] = fregs[rs1] * fregs[rs2] + fregs[rs3]; // fmadd.s
+            }
+            0x47 => {
+                // R4-type (RV32F and RV64F)
+                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
+                // Even" is supported.
+                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                fregs[rd] = fregs[rs1] * fregs[rs2] - fregs[rs3]; // fmsub.s
+            }
+            0x4B => {
+                // R4-type (RV32F and RV64F)
+                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
+                // Even" is supported.
+                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                fregs[rd] = -(fregs[rs1] * fregs[rs2]) + fregs[rs3]; // fnmadd.s
+            }
+            0x4F => {
+                // R4-type (RV32F and RV64F)
+                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
+                // Even" is supported.
+                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                fregs[rd] = -(fregs[rs1] * fregs[rs2]) - fregs[rs3]; // fnmsub.s
+            }
             0x53 => {
                 // R-type (RV32F and RV64F)
                 match funct7 {
-                    // TODO: support the rounding mode encoding. Currently only "000 RNE Round to Nearest, ties to
+                    // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
                     // Even" is supported.
                     0x00 => fregs[rd] = fregs[rs1] + fregs[rs2], // fadd.s
                     0x04 => fregs[rd] = fregs[rs1] - fregs[rs2], // fsub.s

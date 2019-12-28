@@ -69,6 +69,98 @@ pub fn fsw_rs2_offset_rs1() {
 }
 
 #[wasm_bindgen_test]
+pub fn fmadds_rd_rs1_rs2_rs3() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xc3, 0x0f, 0xdf, 0xe1, // fmadd.s f31, f30, f29, f28
+    ];
+
+    cpu.fregs[28] = -0.5;
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, 4.54,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fmsubs_rd_rs1_rs2_rs3() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xc7, 0x0f, 0xdf, 0xe1, // fmsub.s f31, f30, f29, f28
+    ];
+
+    cpu.fregs[28] = -0.5;
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, 5.54,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fnmadds_rd_rs1_rs2_rs3() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xcb, 0x0f, 0xdf, 0xe1, // fnmadd.s f31, f30, f29, f28
+    ];
+
+    cpu.fregs[28] = -0.5;
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, -5.54,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fnmsubs_rd_rs1_rs2_rs3() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xcf, 0x0f, 0xdf, 0xe1, // fnmsub.s f31, f30, f29, f28
+    ];
+
+    cpu.fregs[28] = -0.5;
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 1.2;
+
+    cpu.start(&mut mem);
+
+    // f0-f31
+    let expected = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, -4.54,
+    ];
+    for (i, e) in expected.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
 pub fn fadds_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
