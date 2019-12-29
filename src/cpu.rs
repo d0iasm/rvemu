@@ -407,13 +407,24 @@ impl Cpu {
             }
             0x53 => {
                 // R-type (RV32F and RV64F)
+                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
+                // Even" is supported.
                 match funct7 {
-                    // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                    // Even" is supported.
                     0x00 => fregs[rd] = fregs[rs1] + fregs[rs2], // fadd.s
                     0x04 => fregs[rd] = fregs[rs1] - fregs[rs2], // fsub.s
                     0x08 => fregs[rd] = fregs[rs1] * fregs[rs2], // fmul.s
                     0x0c => fregs[rd] = fregs[rs1] / fregs[rs2], // fdiv.s
+                    0x10 => {
+                        let sign_rs2 = fregs[rs2].to_bits() & 0x8000000;
+                        let sign_rs1 = fregs[rs1].to_bits() & 0x8000000;
+                        let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
+                        match funct3 {
+                            0x0 => fregs[rd] = f32::from_bits(sign_rs2 | other), // fsgnj.s
+                            0x1 => fregs[rd] = f32::from_bits((!sign_rs2 & 0x80000000) | other), // fsgnjn.s
+                            0x2 => fregs[rd] = f32::from_bits((sign_rs1 ^ sign_rs2) | other), // fsgnjx.s
+                            _ => {}
+                        }
+                    }
                     0x14 => {
                         match funct3 {
                             0x0 => fregs[rd] = fregs[rs1].min(fregs[rs2]), // fmin.s
