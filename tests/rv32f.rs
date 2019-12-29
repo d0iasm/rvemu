@@ -257,8 +257,6 @@ pub fn fsgnjs_rd_rs1_rs2() {
         0xd3, 0x0f, 0xdf, 0x21, // fsgnj.s f31, f30, f29
     ];
 
-    // TODO: What's the correct answer?
-    /*
     cpu.fregs[29] = -1.2;
     cpu.fregs[30] = 4.2;
 
@@ -267,12 +265,11 @@ pub fn fsgnjs_rd_rs1_rs2() {
     // f0-f31
     let expected = [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, 4.2,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, -4.2,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.fregs[i]);
     }
-    */
 }
 
 #[wasm_bindgen_test]
@@ -282,8 +279,6 @@ pub fn fsgnjns_rd_rs1_rs2() {
         0xd3, 0x1f, 0xdf, 0x21, // fsgnjn.s f31, f30, f29
     ];
 
-    // TODO: What's the correct answer?
-    /*
     cpu.fregs[29] = -1.2;
     cpu.fregs[30] = 4.2;
 
@@ -297,7 +292,6 @@ pub fn fsgnjns_rd_rs1_rs2() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.fregs[i]);
     }
-    */
 }
 
 #[wasm_bindgen_test]
@@ -307,8 +301,6 @@ pub fn fsgnjxs_rd_rs1_rs2() {
         0xd3, 0x2f, 0xdf, 0x21, // fsgnjx.s f31, f30, f29
     ];
 
-    // TODO: What's the correct answer?
-    /*
     cpu.fregs[29] = -1.2;
     cpu.fregs[30] = 4.2;
 
@@ -317,12 +309,11 @@ pub fn fsgnjxs_rd_rs1_rs2() {
     // f0-f31
     let expected = [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, 4.2,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, -4.2,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.fregs[i]);
     }
-    */
 }
 
 #[wasm_bindgen_test]

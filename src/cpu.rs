@@ -409,14 +409,23 @@ impl Cpu {
                 // R-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
                 // Even" is supported.
+
+                /*
+                 * Floating-point instructions align with the IEEE 754 (1985).
+                 * The format consist of three fields: a sign bit, a biased exponent, and a fraction.
+                 *
+                 * | sign(1) | exponent(8) | fraction(23) |
+                 * 31                                     0
+                 *
+                 */
                 match funct7 {
                     0x00 => fregs[rd] = fregs[rs1] + fregs[rs2], // fadd.s
                     0x04 => fregs[rd] = fregs[rs1] - fregs[rs2], // fsub.s
                     0x08 => fregs[rd] = fregs[rs1] * fregs[rs2], // fmul.s
                     0x0c => fregs[rd] = fregs[rs1] / fregs[rs2], // fdiv.s
                     0x10 => {
-                        let sign_rs2 = fregs[rs2].to_bits() & 0x8000000;
-                        let sign_rs1 = fregs[rs1].to_bits() & 0x8000000;
+                        let sign_rs2 = fregs[rs2].to_bits() & 0x80000000;
+                        let sign_rs1 = fregs[rs1].to_bits() & 0x80000000;
                         let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
                         match funct3 {
                             0x0 => fregs[rd] = f32::from_bits(sign_rs2 | other), // fsgnj.s
