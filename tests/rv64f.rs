@@ -122,4 +122,3 @@ pub fn fcvtslu_rd_rs1_rs2() {
         assert_eq!(*e, cpu.fregs[i]);
     }
 }
-

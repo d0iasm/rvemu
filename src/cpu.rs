@@ -405,6 +405,8 @@ impl Cpu {
             0x53 => {
                 // R-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
+                // TODO: NaN Boxing of Narrower Values (Spec 12.2).
+                // TODO: set exception flags.
 
                 /*
                  * Floating-point instructions align with the IEEE 754 (1985).
@@ -450,8 +452,7 @@ impl Cpu {
                         }
                     }
                     0x60 => {
-                        let funct5 = (binary & 0x01F00000) >> 20;
-                        match funct5 {
+                        match rs2 {
                             0x0 => xregs[rd] = ((fregs[rs1] as f32).round() as i32) as i64, // fcvt.w.s
                             0x1 => xregs[rd] = (((fregs[rs1] as f32).round() as u32) as i32) as i64, // fcvt.wu.s
                             0x2 => xregs[rd] = (fregs[rs1] as f32).round() as i64, // fcvt.l.s
@@ -460,8 +461,7 @@ impl Cpu {
                         }
                     }
                     0x68 => {
-                        let funct5 = (binary & 0x01F00000) >> 20;
-                        match funct5 {
+                        match rs2 {
                             0x0 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fcvt.s.w
                             0x1 => fregs[rd] = ((xregs[rs1] as u32) as f32) as f64, // fcvt.s.wu
                             0x2 => fregs[rd] = (xregs[rs1] as f32) as f64,          // fcvt.s.l
