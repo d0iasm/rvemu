@@ -420,15 +420,16 @@ impl Cpu {
                     0x08 => fregs[rd] = fregs[rs1] * fregs[rs2], // fmul.s
                     0x0c => fregs[rd] = fregs[rs1] / fregs[rs2], // fdiv.s
                     0x10 => {
-                        let sign_rs2 = fregs[rs2].to_bits() & 0x80000000;
-                        let sign_rs1 = fregs[rs1].to_bits() & 0x80000000;
-                        let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
-                        // TODO: Use f.copysign()
                         match funct3 {
                             0x0 => fregs[rd] = fregs[rs1].copysign(fregs[rs2]), // fsgnj.s
-                            //0x1 => fregs[rd] = f32::from_bits((!sign_rs2 & 0x80000000) | other), // fsgnjn.s
                             0x1 => fregs[rd] = fregs[rs1].copysign(-fregs[rs2]), // fsgnjn.s
-                            0x2 => fregs[rd] = f32::from_bits((sign_rs1 ^ sign_rs2) | other), // fsgnjx.s
+                            0x2 => {
+                                let sign1 = fregs[rs1].to_bits() & 0x80000000;
+                                let sign2 = fregs[rs2].to_bits() & 0x80000000;
+                                let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
+                                // fsgnjx.s
+                                fregs[rd] = f32::from_bits((sign1 ^ sign2) | other);
+                            }
                             _ => {}
                         }
                     }
