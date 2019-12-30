@@ -10,7 +10,7 @@ use crate::*;
 
 pub struct Cpu {
     pub xregs: [i64; REGISTERS_COUNT],
-    pub fregs: [f32; REGISTERS_COUNT],
+    pub fregs: [f64; REGISTERS_COUNT],
     pub pc: usize,
     /*
      *  31       8 7                   5 4                           0
@@ -164,7 +164,7 @@ impl Cpu {
                 }
                 let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
-                fregs[rd] = f32::from_bits(get_memory32(addr, mem)); // flw
+                fregs[rd] = f64::from_bits(get_memory32(addr, mem) as u64); // flw
             }
             0x0F => {
                 // I-type
@@ -263,7 +263,7 @@ impl Cpu {
                 let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
-                set_memory32(addr, mem, fregs[rs2].to_bits()); // fsw
+                set_memory32(addr, mem, (fregs[rs2] as f32).to_bits()); // fsw
             }
             0x33 => {
                 // R-type (RV32I and RV32M)
@@ -424,11 +424,11 @@ impl Cpu {
                             0x0 => fregs[rd] = fregs[rs1].copysign(fregs[rs2]), // fsgnj.s
                             0x1 => fregs[rd] = fregs[rs1].copysign(-fregs[rs2]), // fsgnjn.s
                             0x2 => {
-                                let sign1 = fregs[rs1].to_bits() & 0x80000000;
-                                let sign2 = fregs[rs2].to_bits() & 0x80000000;
-                                let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
+                                let sign1 = (fregs[rs1] as f32).to_bits() & 0x80000000;
+                                let sign2 = (fregs[rs2] as f32).to_bits() & 0x80000000;
+                                let other = (fregs[rs1] as f32).to_bits() & 0x7FFFFFFF;
                                 // fsgnjx.s
-                                fregs[rd] = f32::from_bits((sign1 ^ sign2) | other);
+                                fregs[rd] = f32::from_bits((sign1 ^ sign2) | other) as f64;
                             }
                             _ => {}
                         }
@@ -460,8 +460,8 @@ impl Cpu {
                     0x68 => {
                         let funct5 = (binary & 0x01F00000) >> 20;
                         match funct5 {
-                            0x0 => fregs[rd] = (xregs[rs1] as i32) as f32, // fcvt.s.w
-                            0x1 => fregs[rd] = ((xregs[rs1] as u32) as i32) as f32, // fcvt.s.wu
+                            0x0 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fcvt.s.w
+                            0x1 => fregs[rd] = (((xregs[rs1] as u32) as i32) as f32) as f64, // fcvt.s.wu
                             _ => {}
                         }
                     }
@@ -491,7 +491,7 @@ impl Cpu {
                             _ => {}
                         }
                     }
-                    0x78 => fregs[rd] = (xregs[rs1] as i32) as f32, // fmv.x.w
+                    0x78 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fmv.x.w
                     _ => {}
                 }
             }
