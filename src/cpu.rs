@@ -118,6 +118,33 @@ impl Cpu {
         get_memory32(self.pc, mem)
     }
 
+    fn round<T: num_traits::Float>(&self, f: T) -> T {
+        // This is the function for RV32F and RV64F.
+        let frm = (self.fcsr & 0xE0) >> 5;
+        match frm {
+            0x0 => {
+                // RNE: Round to Nearest, ties to Even
+                let f2 = f.round();
+                if f2 % T::from(2.0).unwrap() != T::zero() && f % T::from(0.5).unwrap() == T::zero()
+                {
+                    if f.is_sign_positive() {
+                        return f.floor();
+                    }
+                    return f.ceil();
+                }
+                f2
+            }
+            0x1 => f.trunc(), // RTZ: Round towards Zero
+            0x2 => f.floor(), // RDN: Round Down (towards −∞)
+            0x3 => f.ceil(),  // RUP: Round Up (towards +∞)
+            0x4 => f.round(), // RMM: Round to Nearest, ties to Max Magnitude
+            0x5 => f,         // Invalid. Reserved for future use.
+            0x6 => f,         // Invalid. Reserved for future use.
+            0x7 => f, // DYN: In instruction’s rm field, selects dynamic rounding mode; In Rounding Mode register, Invalid.
+            _ => f,
+        }
+    }
+
     // This function is public because it's called from a unit test.
     pub fn execute(&mut self, binary: u32, mem: &mut Vec<u8>) {
         let opcode = binary & 0x0000007F;
@@ -380,36 +407,31 @@ impl Cpu {
             }
             0x43 => {
                 // R4-type (RV32F and RV64F)
-                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                // Even" is supported.
+                // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = fregs[rs1] * fregs[rs2] + fregs[rs3]; // fmadd.s
+                fregs[rd] = fregs[rs1].mul_add(fregs[rs2], fregs[rs3]); // fmadd.s
             }
             0x47 => {
                 // R4-type (RV32F and RV64F)
-                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                // Even" is supported.
+                // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = fregs[rs1] * fregs[rs2] - fregs[rs3]; // fmsub.s
+                fregs[rd] = fregs[rs1].mul_add(fregs[rs2], -fregs[rs3]); // fmsub.s
             }
             0x4B => {
                 // R4-type (RV32F and RV64F)
-                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                // Even" is supported.
+                // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = -(fregs[rs1] * fregs[rs2]) + fregs[rs3]; // fnmadd.s
+                fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], fregs[rs3]); // fnmadd.s
             }
             0x4F => {
                 // R4-type (RV32F and RV64F)
-                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                // Even" is supported.
+                // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = -(fregs[rs1] * fregs[rs2]) - fregs[rs3]; // fnmsub.s
+                fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], -fregs[rs3]); // fnmsub.s
             }
             0x53 => {
                 // R-type (RV32F and RV64F)
-                // TODO: support the rounding mode encoding (rm). Currently only "000 RNE Round to Nearest, ties to
-                // Even" is supported.
+                // TODO: support the rounding mode encoding (rm).
 
                 /*
                  * Floating-point instructions align with the IEEE 754 (1985).
@@ -428,9 +450,11 @@ impl Cpu {
                         let sign_rs2 = fregs[rs2].to_bits() & 0x80000000;
                         let sign_rs1 = fregs[rs1].to_bits() & 0x80000000;
                         let other = fregs[rs1].to_bits() & 0x7FFFFFFF;
+                        // TODO: Use f.copysign()
                         match funct3 {
-                            0x0 => fregs[rd] = f32::from_bits(sign_rs2 | other), // fsgnj.s
-                            0x1 => fregs[rd] = f32::from_bits((!sign_rs2 & 0x80000000) | other), // fsgnjn.s
+                            0x0 => fregs[rd] = fregs[rs1].copysign(fregs[rs2]), // fsgnj.s
+                            //0x1 => fregs[rd] = f32::from_bits((!sign_rs2 & 0x80000000) | other), // fsgnjn.s
+                            0x1 => fregs[rd] = fregs[rs1].copysign(-fregs[rs2]), // fsgnjn.s
                             0x2 => fregs[rd] = f32::from_bits((sign_rs1 ^ sign_rs2) | other), // fsgnjx.s
                             _ => {}
                         }
