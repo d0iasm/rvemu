@@ -412,6 +412,96 @@ pub fn fsqrts_rd_rs1_rs2() {
 }
 
 #[wasm_bindgen_test]
+pub fn fles_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x0f, 0xdf, 0xa1, // fle.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 4.2;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 4.2, 0.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn flts_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x1f, 0xdf, 0xa1, // fle.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = -1.2;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, 0.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn feqs_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x2f, 0xdf, 0xa1, // fle.s f31, f30, f29
+    ];
+
+    cpu.fregs[29] = 4.2;
+    cpu.fregs[30] = 4.2;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 4.2, 0.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
 pub fn fcvtws_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
@@ -547,6 +637,65 @@ pub fn fmvwx_rd_rs1_rs2() {
     let expected_f = [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fclasss_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x9f, 0x0f, 0xe0, // fclass.s x31, f31
+    ];
+
+    cpu.fregs[31] = std::f32::INFINITY;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 7,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        std::f32::INFINITY,
     ];
     for (i, e) in expected_x.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);

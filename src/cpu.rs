@@ -1,5 +1,6 @@
 pub const REGISTERS_COUNT: usize = 32;
 
+use std::num::FpCategory;
 use std::process::exit;
 
 use num_bigint::{BigInt, BigUint};
@@ -442,6 +443,14 @@ impl Cpu {
                         }
                     }
                     0x2c => fregs[rd] = fregs[rs1].sqrt(), // fsqrt.s
+                    0x50 => {
+                        match funct3 {
+                            0x0 => xregs[rd] = if fregs[rs1] <= fregs[rs2] { 1 } else { 0 }, // fle.s
+                            0x1 => xregs[rd] = if fregs[rs1] < fregs[rs2] { 1 } else { 0 }, // flt.s
+                            0x2 => xregs[rd] = if fregs[rs1] == fregs[rs2] { 1 } else { 0 }, // feq.s
+                            _ => {}
+                        }
+                    }
                     0x60 => {
                         let funct5 = (binary & 0x01F00000) >> 20;
                         match funct5 {
@@ -458,7 +467,32 @@ impl Cpu {
                             _ => {}
                         }
                     }
-                    0x70 => xregs[rd] = (fregs[rs1] as i32) as i64, // fmv.w.x
+                    0x70 => {
+                        match funct3 {
+                            0x0 => xregs[rd] = (fregs[rs1] as i32) as i64, // fmv.w.x
+                            0x1 => {
+                                // fclass.s
+                                let f = fregs[rs1];
+                                match f.classify() {
+                                    FpCategory::Infinite => {
+                                        xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
+                                    }
+                                    FpCategory::Normal => {
+                                        xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
+                                    }
+                                    FpCategory::Subnormal => {
+                                        xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
+                                    }
+                                    FpCategory::Zero => {
+                                        xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
+                                    }
+                                    // Don't support a signaling NaN, only support a quiet NaN.
+                                    FpCategory::Nan => xregs[rd] = 9,
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
                     0x78 => fregs[rd] = (xregs[rs1] as i32) as f32, // fmv.x.w
                     _ => {}
                 }
