@@ -526,3 +526,61 @@ pub fn fcvtswu_rd_rs1_rs2() {
         assert_eq!(*e, cpu.fregs[i]);
     }
 }
+
+#[wasm_bindgen_test]
+pub fn fmvwx_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x8f, 0x0f, 0xe0, // fmv.w.x x31, f31
+    ];
+
+    cpu.fregs[31] = 4.0;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 4,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}
+
+#[wasm_bindgen_test]
+pub fn fmvxw_rd_rs1_rs2() {
+    let mut cpu = rvemu::cpu::Cpu::new();
+    let mut mem = vec![
+        0xd3, 0x8f, 0x0f, 0xf0, // fmv.x.w x31, f31
+    ];
+
+    cpu.xregs[31] = 4;
+
+    cpu.start(&mut mem);
+
+    // x0-x31
+    let expected_x = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 4,
+    ];
+    // f0-f31
+    let expected_f = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
+    ];
+    for (i, e) in expected_x.iter().enumerate() {
+        assert_eq!(*e, cpu.xregs[i]);
+    }
+    for (i, e) in expected_f.iter().enumerate() {
+        assert_eq!(*e, cpu.fregs[i]);
+    }
+}

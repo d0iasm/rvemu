@@ -458,6 +458,8 @@ impl Cpu {
                             _ => {}
                         }
                     }
+                    0x70 => xregs[rd] = (fregs[rs1] as i32) as i64, // fmv.w.x
+                    0x78 => fregs[rd] = (xregs[rs1] as i32) as f32, // fmv.x.w
                     _ => {}
                 }
             }
