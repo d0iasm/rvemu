@@ -29,6 +29,7 @@ pub fn mul_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn mulh_rd_rs1_rs2() {
+    // TODO: make sure `mulh` and `mulhsu` works correctly
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x93, 0x0f, 0x10, 0x00, // addi x31, x0, 1
@@ -84,6 +85,7 @@ pub fn mulh_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn mulhsu_rd_rs1_rs2() {
+    // TODO: make sure `mulh` and `mulhsu` works correctly
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = vec![
         0x93, 0x0f, 0x10, 0x00, // addi x31, x0, 1

@@ -452,8 +452,10 @@ impl Cpu {
                     0x60 => {
                         let funct5 = (binary & 0x01F00000) >> 20;
                         match funct5 {
-                            0x0 => xregs[rd] = (fregs[rs1].round() as i32) as i64, // fcvt.w.s
-                            0x1 => xregs[rd] = (((fregs[rs1].round() as i32) as u32) as i32) as i64, // fcvt.wu.s
+                            0x0 => xregs[rd] = ((fregs[rs1] as f32).round() as i32) as i64, // fcvt.w.s
+                            0x1 => xregs[rd] = (((fregs[rs1] as f32).round() as u32) as i32) as i64, // fcvt.wu.s
+                            0x2 => xregs[rd] = (fregs[rs1] as f32).round() as i64, // fcvt.l.s
+                            0x3 => xregs[rd] = ((fregs[rs1] as f32).round() as u64) as i64, // fcvt.lu.s
                             _ => {}
                         }
                     }
@@ -461,7 +463,9 @@ impl Cpu {
                         let funct5 = (binary & 0x01F00000) >> 20;
                         match funct5 {
                             0x0 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fcvt.s.w
-                            0x1 => fregs[rd] = (((xregs[rs1] as u32) as i32) as f32) as f64, // fcvt.s.wu
+                            0x1 => fregs[rd] = ((xregs[rs1] as u32) as f32) as f64, // fcvt.s.wu
+                            0x2 => fregs[rd] = (xregs[rs1] as f32) as f64,          // fcvt.s.l
+                            0x3 => fregs[rd] = ((xregs[rs1] as u64) as f32) as f64, // fcvt.s.lu
                             _ => {}
                         }
                     }
