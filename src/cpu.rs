@@ -118,33 +118,6 @@ impl Cpu {
         get_memory32(self.pc, mem)
     }
 
-    fn round<T: num_traits::Float>(&self, f: T) -> T {
-        // This is the function for RV32F and RV64F.
-        let frm = (self.fcsr & 0xE0) >> 5;
-        match frm {
-            0x0 => {
-                // RNE: Round to Nearest, ties to Even
-                let f2 = f.round();
-                if f2 % T::from(2.0).unwrap() != T::zero() && f % T::from(0.5).unwrap() == T::zero()
-                {
-                    if f.is_sign_positive() {
-                        return f.floor();
-                    }
-                    return f.ceil();
-                }
-                f2
-            }
-            0x1 => f.trunc(), // RTZ: Round towards Zero
-            0x2 => f.floor(), // RDN: Round Down (towards −∞)
-            0x3 => f.ceil(),  // RUP: Round Up (towards +∞)
-            0x4 => f.round(), // RMM: Round to Nearest, ties to Max Magnitude
-            0x5 => f,         // Invalid. Reserved for future use.
-            0x6 => f,         // Invalid. Reserved for future use.
-            0x7 => f, // DYN: In instruction’s rm field, selects dynamic rounding mode; In Rounding Mode register, Invalid.
-            _ => f,
-        }
-    }
-
     // This function is public because it's called from a unit test.
     pub fn execute(&mut self, binary: u32, mem: &mut Vec<u8>) {
         let opcode = binary & 0x0000007F;
