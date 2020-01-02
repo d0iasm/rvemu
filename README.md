@@ -10,7 +10,7 @@ Supports the following RISC-V ISA features (RV64G):
 - RV32M/RV64M (v2.0): supports 13/13 instructions
 - RV32A/RV64A (v2.0):
 - RV32F/RV64F (v2.2): supports 30/30 instructions
-- RV32D/RV64D (v2.2):
+- RV32D/RV64D (v2.2): supports 32/32 instructions
 - Zifencei (v2.0):
 - Zicsr (v2.0):
 

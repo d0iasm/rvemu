@@ -525,6 +525,8 @@ impl Cpu {
                         match rs2 {
                             0x0 => xregs[rd] = (fregs[rs1].round() as i32) as i64, // fcvt.w.d
                             0x1 => xregs[rd] = ((fregs[rs1].round() as u32) as i32) as i64, // fcvt.wu.d
+                            0x2 => xregs[rd] = fregs[rs1].round() as i64, // fcvt.l.d
+                            0x3 => xregs[rd] = (fregs[rs1].round() as u64) as i64, // fcvt.lu.d
                             _ => {}
                         }
                     }
@@ -541,12 +543,14 @@ impl Cpu {
                         match rs2 {
                             0x0 => fregs[rd] = (xregs[rs1] as i32) as f64, // fcvt.d.w
                             0x1 => fregs[rd] = (xregs[rs1] as u32) as f64, // fcvt.d.wu
+                            0x2 => fregs[rd] = xregs[rs1] as f64, // fcvt.d.l
+                            0x3 => fregs[rd] = (xregs[rs1] as u64) as f64, // fcvt.d.lu
                             _ => {}
                         }
                     }
                     0x70 => {
                         match funct3 {
-                            0x0 => xregs[rd] = (fregs[rs1] as i32) as i64, // fmv.w.x
+                            0x0 => xregs[rd] = (fregs[rs1] as i32) as i64, // fmv.x.w
                             0x1 => {
                                 // fclass.s
                                 let f = fregs[rs1];
@@ -571,26 +575,33 @@ impl Cpu {
                         }
                     }
                     0x71 => {
-                        // fclass.d
-                        let f = fregs[rs1];
-                        match f.classify() {
-                            FpCategory::Infinite => {
-                                xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
+                        match funct3 {
+                            0x0 => xregs[rd] = fregs[rs1] as i64, // fmv.x.d
+                            0x1 => {
+                                // fclass.d
+                                let f = fregs[rs1];
+                                match f.classify() {
+                                    FpCategory::Infinite => {
+                                        xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
+                                    }
+                                    FpCategory::Normal => {
+                                        xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
+                                    }
+                                    FpCategory::Subnormal => {
+                                        xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
+                                    }
+                                    FpCategory::Zero => {
+                                        xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
+                                    }
+                                    // Don't support a signaling NaN, only support a quiet NaN.
+                                    FpCategory::Nan => xregs[rd] = 9,
+                                }
                             }
-                            FpCategory::Normal => {
-                                xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
-                            }
-                            FpCategory::Subnormal => {
-                                xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
-                            }
-                            FpCategory::Zero => {
-                                xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
-                            }
-                            // Don't support a signaling NaN, only support a quiet NaN.
-                            FpCategory::Nan => xregs[rd] = 9,
+                            _ => {}
                         }
                     }
-                    0x78 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fmv.x.w
+                    0x78 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fmv.w.x
+                    0x79 => fregs[rd] = xregs[rs1] as f64, // fmv.d.x
                     _ => {}
                 }
             }
