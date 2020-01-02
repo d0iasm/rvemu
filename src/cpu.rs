@@ -153,18 +153,13 @@ impl Cpu {
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                if funct3 != 0b010 {
-                    let text = format!(
-                        "the width of FLW should be 0b010 but got {:#b} ({})",
-                        funct3, funct3
-                    );
-                    log(&text);
-                    render(&text);
-                    exit(1);
-                }
                 let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
-                fregs[rd] = f64::from_bits(get_memory32(addr, mem) as u64); // flw
+                match funct3 {
+                    0x2 => fregs[rd] = f64::from_bits(get_memory32(addr, mem) as u64), // flw
+                    0x3 => fregs[rd] = f64::from_bits(get_memory64(addr, mem)),        // fld
+                    _ => {}
+                }
             }
             0x0F => {
                 // I-type
@@ -250,20 +245,15 @@ impl Cpu {
             }
             0x27 => {
                 // S-type (RV32F and RV64F)
-                if funct3 != 0b010 {
-                    let text = format!(
-                        "the width of FSW should be 0b010 but got {:#b} ({})",
-                        funct3, funct3
-                    );
-                    log(&text);
-                    render(&text);
-                    exit(1);
-                }
                 let imm11_5 = (((binary & 0xFE000000) as i32) as i64) >> 25;
                 let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
-                set_memory32(addr, mem, (fregs[rs2] as f32).to_bits()); // fsw
+                match funct3 {
+                    0x2 => set_memory32(addr, mem, (fregs[rs2] as f32).to_bits()), // fsw
+                    0x3 => set_memory64(addr, mem, fregs[rs2].to_bits()),          // fsd
+                    _ => {}
+                }
             }
             0x33 => {
                 // R-type (RV32I and RV32M)
@@ -382,25 +372,60 @@ impl Cpu {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = fregs[rs1].mul_add(fregs[rs2], fregs[rs3]); // fmadd.s
+                let funct2 = (binary & 0x03000000) >> 25;
+                match funct2 {
+                    0x0 => {
+                        fregs[rd] =
+                            (fregs[rs1] as f32).mul_add(fregs[rs2] as f32, fregs[rs3] as f32) as f64
+                    } // fmadd.s
+                    0x1 => fregs[rd] = fregs[rs1].mul_add(fregs[rs2], fregs[rs3]), // fmadd.d
+                    _ => {}
+                }
             }
             0x47 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = fregs[rs1].mul_add(fregs[rs2], -fregs[rs3]); // fmsub.s
+                let funct2 = (binary & 0x03000000) >> 25;
+                match funct2 {
+                    0x0 => {
+                        fregs[rd] = (fregs[rs1] as f32)
+                            .mul_add(fregs[rs2] as f32, -fregs[rs3] as f32)
+                            as f64
+                    } // fmsub.s
+                    0x1 => fregs[rd] = fregs[rs1].mul_add(fregs[rs2], -fregs[rs3]), // fmsub.d
+                    _ => {}
+                }
             }
             0x4B => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], fregs[rs3]); // fnmadd.s
+                let funct2 = (binary & 0x03000000) >> 25;
+                match funct2 {
+                    0x0 => {
+                        fregs[rd] = (-fregs[rs1] as f32)
+                            .mul_add(fregs[rs2] as f32, fregs[rs3] as f32)
+                            as f64
+                    } // fnmadd.s
+                    0x1 => fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], fregs[rs3]), // fnmadd.d
+                    _ => {}
+                }
             }
             0x4F => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((binary & 0xF8000000) >> 27) as usize;
-                fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], -fregs[rs3]); // fnmsub.s
+                let funct2 = (binary & 0x03000000) >> 25;
+                match funct2 {
+                    0x0 => {
+                        fregs[rd] = (-fregs[rs1] as f32)
+                            .mul_add(fregs[rs2] as f32, -fregs[rs3] as f32)
+                            as f64
+                    } // fnmsub.s
+                    0x1 => fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], -fregs[rs3]), // fnmsub.d
+                    _ => {}
+                }
             }
             0x53 => {
                 // R-type (RV32F and RV64F)
@@ -417,10 +442,14 @@ impl Cpu {
                  *
                  */
                 match funct7 {
-                    0x00 => fregs[rd] = fregs[rs1] + fregs[rs2], // fadd.s
-                    0x04 => fregs[rd] = fregs[rs1] - fregs[rs2], // fsub.s
-                    0x08 => fregs[rd] = fregs[rs1] * fregs[rs2], // fmul.s
-                    0x0c => fregs[rd] = fregs[rs1] / fregs[rs2], // fdiv.s
+                    0x00 => fregs[rd] = (fregs[rs1] as f32 + fregs[rs2] as f32) as f64, // fadd.s
+                    0x01 => fregs[rd] = fregs[rs1] + fregs[rs2],                        // fadd.d
+                    0x04 => fregs[rd] = (fregs[rs1] as f32 - fregs[rs2] as f32) as f64, // fsub.s
+                    0x05 => fregs[rd] = fregs[rs1] - fregs[rs2],                        // fsub.d
+                    0x08 => fregs[rd] = (fregs[rs1] as f32 * fregs[rs2] as f32) as f64, // fmul.s
+                    0x09 => fregs[rd] = fregs[rs1] * fregs[rs2],                        // fmul.d
+                    0x0c => fregs[rd] = (fregs[rs1] as f32 / fregs[rs2] as f32) as f64, // fdiv.s
+                    0x0d => fregs[rd] = fregs[rs1] / fregs[rs2],                        // fdiv.d
                     0x10 => {
                         match funct3 {
                             0x0 => fregs[rd] = fregs[rs1].copysign(fregs[rs2]), // fsgnj.s
@@ -435,6 +464,20 @@ impl Cpu {
                             _ => {}
                         }
                     }
+                    0x11 => {
+                        match funct3 {
+                            0x0 => fregs[rd] = fregs[rs1].copysign(fregs[rs2]), // fsgnj.d
+                            0x1 => fregs[rd] = fregs[rs1].copysign(-fregs[rs2]), // fsgnjn.d
+                            0x2 => {
+                                let sign1 = fregs[rs1].to_bits() & 0x80000000_00000000;
+                                let sign2 = fregs[rs2].to_bits() & 0x80000000_00000000;
+                                let other = fregs[rs1].to_bits() & 0x7FFFFFFF_FFFFFFFF;
+                                // fsgnjx.d
+                                fregs[rd] = f64::from_bits((sign1 ^ sign2) | other);
+                            }
+                            _ => {}
+                        }
+                    }
                     0x14 => {
                         match funct3 {
                             0x0 => fregs[rd] = fregs[rs1].min(fregs[rs2]), // fmin.s
@@ -442,12 +485,30 @@ impl Cpu {
                             _ => {}
                         }
                     }
-                    0x2c => fregs[rd] = fregs[rs1].sqrt(), // fsqrt.s
+                    0x15 => {
+                        match funct3 {
+                            0x0 => fregs[rd] = fregs[rs1].min(fregs[rs2]), // fmin.d
+                            0x1 => fregs[rd] = fregs[rs1].max(fregs[rs2]), // fmax.d
+                            _ => {}
+                        }
+                    }
+                    0x20 => fregs[rd] = fregs[rs1], // fcvt.s.d
+                    0x21 => fregs[rd] = (fregs[rs1] as f32) as f64, // fcvt.d.s
+                    0x2c => fregs[rd] = (fregs[rs1] as f32).sqrt() as f64, // fsqrt.s
+                    0x2d => fregs[rd] = fregs[rs1].sqrt(), // fsqrt.d
                     0x50 => {
                         match funct3 {
                             0x0 => xregs[rd] = if fregs[rs1] <= fregs[rs2] { 1 } else { 0 }, // fle.s
                             0x1 => xregs[rd] = if fregs[rs1] < fregs[rs2] { 1 } else { 0 }, // flt.s
                             0x2 => xregs[rd] = if fregs[rs1] == fregs[rs2] { 1 } else { 0 }, // feq.s
+                            _ => {}
+                        }
+                    }
+                    0x51 => {
+                        match funct3 {
+                            0x0 => xregs[rd] = if fregs[rs1] <= fregs[rs2] { 1 } else { 0 }, // fle.d
+                            0x1 => xregs[rd] = if fregs[rs1] < fregs[rs2] { 1 } else { 0 }, // flt.d
+                            0x2 => xregs[rd] = if fregs[rs1] == fregs[rs2] { 1 } else { 0 }, // feq.d
                             _ => {}
                         }
                     }
@@ -460,12 +521,26 @@ impl Cpu {
                             _ => {}
                         }
                     }
+                    0x61 => {
+                        match rs2 {
+                            0x0 => xregs[rd] = (fregs[rs1].round() as i32) as i64, // fcvt.w.d
+                            0x1 => xregs[rd] = ((fregs[rs1].round() as u32) as i32) as i64, // fcvt.wu.d
+                            _ => {}
+                        }
+                    }
                     0x68 => {
                         match rs2 {
                             0x0 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fcvt.s.w
                             0x1 => fregs[rd] = ((xregs[rs1] as u32) as f32) as f64, // fcvt.s.wu
                             0x2 => fregs[rd] = (xregs[rs1] as f32) as f64,          // fcvt.s.l
                             0x3 => fregs[rd] = ((xregs[rs1] as u64) as f32) as f64, // fcvt.s.lu
+                            _ => {}
+                        }
+                    }
+                    0x69 => {
+                        match rs2 {
+                            0x0 => fregs[rd] = (xregs[rs1] as i32) as f64, // fcvt.d.w
+                            0x1 => fregs[rd] = (xregs[rs1] as u32) as f64, // fcvt.d.wu
                             _ => {}
                         }
                     }
@@ -493,6 +568,26 @@ impl Cpu {
                                 }
                             }
                             _ => {}
+                        }
+                    }
+                    0x71 => {
+                        // fclass.d
+                        let f = fregs[rs1];
+                        match f.classify() {
+                            FpCategory::Infinite => {
+                                xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
+                            }
+                            FpCategory::Normal => {
+                                xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
+                            }
+                            FpCategory::Subnormal => {
+                                xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
+                            }
+                            FpCategory::Zero => {
+                                xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
+                            }
+                            // Don't support a signaling NaN, only support a quiet NaN.
+                            FpCategory::Nan => xregs[rd] = 9,
                         }
                     }
                     0x78 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fmv.x.w
