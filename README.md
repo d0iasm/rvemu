@@ -11,7 +11,7 @@ Supports the following RISC-V ISA features (RV64G):
 - RV32A/RV64A (v2.0):
 - RV32F/RV64F (v2.2): supports 30/30 instructions
 - RV32D/RV64D (v2.2): supports 32/32 instructions
-- Zifencei (v2.0):
+- Zifencei (v2.0): supports 0/1 instructions (FENCE.i doesn't do anything for now)
 - Zicsr (v2.0):
 
 ## Build and Run

@@ -1,5 +1,6 @@
 pub const REGISTERS_COUNT: usize = 32;
 
+use std::cmp;
 use std::num::FpCategory;
 use std::process::exit;
 
@@ -252,6 +253,78 @@ impl Cpu {
                 match funct3 {
                     0x2 => set_memory32(addr, mem, (fregs[rs2] as f32).to_bits()), // fsw
                     0x3 => set_memory64(addr, mem, fregs[rs2].to_bits()),          // fsd
+                    _ => {}
+                }
+            }
+            0x2F => {
+                // R-type (RV32A and RV64A)
+                let funct5 = (funct7 & 0b1111100) >> 2;
+                let _aq = (funct7 & 0b0000010) >> 1; // acquire access
+                let _rl = funct7 & 0b0000001; // release access
+                match (funct3, funct5) {
+                    // TODO: If the address is not naturally aligned, a misaligned address
+                    // exception or an access exception will be generated.
+                    (0x2, 0x00) => {
+                        // amoadd.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, (t.wrapping_add(xregs[rs2] as i32)) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x01) => {
+                        // amoswap.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x02) => xregs[rd] = (get_memory32(xregs[rs1] as usize, mem) as i32) as i64, // lr.w
+                    (0x2, 0x03) => {
+                        // TODO: Write a nonzero error code if the store fails.
+                        // sc.w
+                        xregs[rd] = 0;
+                        set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
+                    }
+                    (0x2, 0x04) => {
+                        // amoxor.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, (t ^ (xregs[rs2] as i32)) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x08) => {
+                        // amoor.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, (t | (xregs[rs2] as i32)) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x0c) => {
+                        // amoand.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, (t & (xregs[rs2] as i32)) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x10) => {
+                        // amomin.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as i32) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x14) => {
+                        // amomax.w
+                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
+                        set_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as i32) as u32);
+                        xregs[rd] = t as i64;
+                    }
+                    (0x2, 0x18) => {
+                        // amominu.w
+                        let t = get_memory32(xregs[rs1] as usize, mem);
+                        set_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u32));
+                        xregs[rd] = (t as i32) as i64;
+                    }
+                    (0x2, 0x1c) => {
+                        // amomaxu.w
+                        let t = get_memory32(xregs[rs1] as usize, mem);
+                        set_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u32));
+                        xregs[rd] = (t as i32) as i64;
+                    }
                     _ => {}
                 }
             }
