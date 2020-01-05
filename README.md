@@ -8,7 +8,7 @@ Supports the following RISC-V ISA features (RV64G):
 - RV32I (v2.1): supports 37/40 instructions (except FENCE, ECALL, and EBREAK)
 - RV64I (v2.1): supports 12/12 instructions (SLLI, SRLI, and SRAI are included in RV32I)
 - RV32M/RV64M (v2.0): supports 13/13 instructions
-- RV32A/RV64A (v2.0):
+- RV32A/RV64A (v2.0): supports 22/22 instructions (no unittests and no atomicity)
 - RV32F/RV64F (v2.2): supports 30/30 instructions
 - RV32D/RV64D (v2.2): supports 32/32 instructions
 - Zifencei (v2.0): supports 0/1 instructions (FENCE.i doesn't do anything for now)

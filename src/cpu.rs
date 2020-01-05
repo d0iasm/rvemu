@@ -267,8 +267,18 @@ impl Cpu {
                     (0x2, 0x00) => {
                         // amoadd.w
                         let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, (t.wrapping_add(xregs[rs2] as i32)) as u32);
+                        set_memory32(
+                            xregs[rs1] as usize,
+                            mem,
+                            (t.wrapping_add(xregs[rs2] as i32)) as u32,
+                        );
                         xregs[rd] = t as i64;
+                    }
+                    (0x3, 0x00) => {
+                        // amoadd.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, t.wrapping_add(xregs[rs2]) as u64);
+                        xregs[rd] = t;
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
@@ -276,12 +286,27 @@ impl Cpu {
                         set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
                         xregs[rd] = t as i64;
                     }
-                    (0x2, 0x02) => xregs[rd] = (get_memory32(xregs[rs1] as usize, mem) as i32) as i64, // lr.w
+                    (0x3, 0x01) => {
+                        // amoswap.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
+                        xregs[rd] = t;
+                    }
+                    (0x2, 0x02) => {
+                        xregs[rd] = (get_memory32(xregs[rs1] as usize, mem) as i32) as i64
+                    } // lr.w
+                    (0x3, 0x02) => xregs[rd] = get_memory64(xregs[rs1] as usize, mem) as i64, // lr.d
                     (0x2, 0x03) => {
                         // TODO: Write a nonzero error code if the store fails.
                         // sc.w
                         xregs[rd] = 0;
                         set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
+                    }
+                    (0x3, 0x03) => {
+                        // TODO: Write a nonzero error code if the store fails.
+                        // sc.d
+                        xregs[rd] = 0;
+                        set_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
@@ -289,11 +314,23 @@ impl Cpu {
                         set_memory32(xregs[rs1] as usize, mem, (t ^ (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
                     }
+                    (0x3, 0x04) => {
+                        // amoxor.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, (t ^ xregs[rs2]) as u64);
+                        xregs[rd] = t;
+                    }
                     (0x2, 0x08) => {
                         // amoor.w
                         let t = get_memory32(xregs[rs1] as usize, mem) as i32;
                         set_memory32(xregs[rs1] as usize, mem, (t | (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
+                    }
+                    (0x3, 0x08) => {
+                        // amoor.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, (t | xregs[rs2]) as u64);
+                        xregs[rd] = t;
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
@@ -301,17 +338,43 @@ impl Cpu {
                         set_memory32(xregs[rs1] as usize, mem, (t & (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
                     }
+                    (0x3, 0x0c) => {
+                        // amoand.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, (t & xregs[rs2]) as u64);
+                        xregs[rd] = t;
+                    }
                     (0x2, 0x10) => {
                         // amomin.w
                         let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as i32) as u32);
+                        set_memory32(
+                            xregs[rs1] as usize,
+                            mem,
+                            cmp::min(t, xregs[rs2] as i32) as u32,
+                        );
                         xregs[rd] = t as i64;
+                    }
+                    (0x3, 0x10) => {
+                        // amomin.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2]) as u64);
+                        xregs[rd] = t;
                     }
                     (0x2, 0x14) => {
                         // amomax.w
                         let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as i32) as u32);
+                        set_memory32(
+                            xregs[rs1] as usize,
+                            mem,
+                            cmp::max(t, xregs[rs2] as i32) as u32,
+                        );
                         xregs[rd] = t as i64;
+                    }
+                    (0x3, 0x14) => {
+                        // amomax.d
+                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
+                        set_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2]) as u64);
+                        xregs[rd] = t;
                     }
                     (0x2, 0x18) => {
                         // amominu.w
@@ -319,11 +382,23 @@ impl Cpu {
                         set_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u32));
                         xregs[rd] = (t as i32) as i64;
                     }
+                    (0x3, 0x18) => {
+                        // amominu.d
+                        let t = get_memory64(xregs[rs1] as usize, mem);
+                        set_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u64));
+                        xregs[rd] = t as i64;
+                    }
                     (0x2, 0x1c) => {
                         // amomaxu.w
                         let t = get_memory32(xregs[rs1] as usize, mem);
                         set_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u32));
                         xregs[rd] = (t as i32) as i64;
+                    }
+                    (0x3, 0x1c) => {
+                        // amomaxu.d
+                        let t = get_memory64(xregs[rs1] as usize, mem);
+                        set_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u64));
+                        xregs[rd] = t as i64;
                     }
                     _ => {}
                 }
@@ -616,7 +691,7 @@ impl Cpu {
                         match rs2 {
                             0x0 => fregs[rd] = (xregs[rs1] as i32) as f64, // fcvt.d.w
                             0x1 => fregs[rd] = (xregs[rs1] as u32) as f64, // fcvt.d.wu
-                            0x2 => fregs[rd] = xregs[rs1] as f64, // fcvt.d.l
+                            0x2 => fregs[rd] = xregs[rs1] as f64,          // fcvt.d.l
                             0x3 => fregs[rd] = (xregs[rs1] as u64) as f64, // fcvt.d.lu
                             _ => {}
                         }
@@ -674,7 +749,7 @@ impl Cpu {
                         }
                     }
                     0x78 => fregs[rd] = ((xregs[rs1] as i32) as f32) as f64, // fmv.w.x
-                    0x79 => fregs[rd] = xregs[rs1] as f64, // fmv.d.x
+                    0x79 => fregs[rd] = xregs[rs1] as f64,                   // fmv.d.x
                     _ => {}
                 }
             }
