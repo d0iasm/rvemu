@@ -1,7 +1,9 @@
 pub mod cpu;
+pub mod memory;
 mod utils;
 
 use crate::cpu::*;
+use crate::memory::*;
 
 use wasm_bindgen::prelude::*;
 
@@ -31,7 +33,7 @@ pub fn render(content: &str) {
 #[wasm_bindgen]
 pub struct Emulator {
     cpu: Cpu,
-    mem: Vec<u8>,
+    mem: Memory,
 }
 
 #[wasm_bindgen]
@@ -42,7 +44,7 @@ impl Emulator {
 
         Emulator {
             cpu: Cpu::new(),
-            mem: Vec::new(),
+            mem: Memory::new(),
         }
     }
 
@@ -51,7 +53,7 @@ impl Emulator {
     }
 
     pub fn set_binary(&mut self, bin: Vec<u8>) {
-        self.mem = bin;
+        self.mem.set_binary(bin);
         log(&format!(
             "binary size: {} ({:#x})",
             self.mem.len(),

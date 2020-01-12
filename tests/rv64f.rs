@@ -10,9 +10,11 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[wasm_bindgen_test]
 pub fn fcvtls_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = vec![
-        0xd3, 0x8f, 0x2f, 0xc0, // fcvt.l.s x31, f31 (rm: 000)
-    ];
+    let mut mem = rvemu::memory::Memory {
+        dram: vec![
+            0xd3, 0x8f, 0x2f, 0xc0, // fcvt.l.s x31, f31 (rm: 000)
+        ],
+    };
 
     cpu.fregs[31] = -4.2;
 
@@ -39,9 +41,11 @@ pub fn fcvtls_rd_rs1_rs2() {
 #[wasm_bindgen_test]
 pub fn fcvtlus_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = vec![
-        0xd3, 0x8f, 0x3f, 0xc0, // fcvt.lu.s x31, f31 (rm: 000)
-    ];
+    let mut mem = rvemu::memory::Memory {
+        dram: vec![
+            0xd3, 0x8f, 0x3f, 0xc0, // fcvt.lu.s x31, f31 (rm: 000)
+        ],
+    };
 
     cpu.fregs[31] = 4.2;
 
@@ -68,9 +72,11 @@ pub fn fcvtlus_rd_rs1_rs2() {
 #[wasm_bindgen_test]
 pub fn fcvtsl_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = vec![
-        0xd3, 0x8f, 0x2f, 0xd0, // fcvt.s.l x31, f31 (rm: 000)
-    ];
+    let mut mem = rvemu::memory::Memory {
+        dram: vec![
+            0xd3, 0x8f, 0x2f, 0xd0, // fcvt.s.l x31, f31 (rm: 000)
+        ],
+    };
 
     cpu.xregs[31] = -4;
 
@@ -97,9 +103,11 @@ pub fn fcvtsl_rd_rs1_rs2() {
 #[wasm_bindgen_test]
 pub fn fcvtslu_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = vec![
-        0xd3, 0x8f, 0x3f, 0xd0, // fcvt.s.lu x31, f31 (rm: 000)
-    ];
+    let mut mem = rvemu::memory::Memory {
+        dram: vec![
+            0xd3, 0x8f, 0x3f, 0xd0, // fcvt.s.lu x31, f31 (rm: 000)
+        ],
+    };
 
     cpu.xregs[31] = 4;
 
