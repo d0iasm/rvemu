@@ -18,7 +18,7 @@ Supports the following RISC-V ISA features (RV64G):
 The `wasm-pack build` command generates a pkg directory and makes Rust source code into `.wasm` binary. It also generates the JavaScript API for using our Rust-generated WebAssembly. The toolchain's supported target is `wasm32-unknown-unknown`.
 You need to execute this command whenever you change your Rust code.
 ```
-$ wasm-pack build --out-dir www/pkg --target web
+$ wasm-pack build --out-dir public/pkg --target web
 ```
 
 This command installs dependencies in the `node_modules` directory. Need `npm install --save` in the `public` directory at the first time and whenever you change dependencies in package.json.
@@ -34,6 +34,11 @@ $ npm start // at the public directory
 ## Test
 ```
 $ wasm-pack test --firefox --headless
+```
+
+## Publish
+```
+$ firebase deploy
 ```
 
 ## Dependencies
