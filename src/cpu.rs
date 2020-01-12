@@ -42,7 +42,7 @@ impl Cpu {
     }
 
     pub fn start(&mut self, mem: &mut Memory) {
-        let size = mem.dram.len();
+        let size = mem.len();
 
         let mut i = 0;
         while self.pc < size {

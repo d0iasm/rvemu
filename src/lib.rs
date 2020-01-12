@@ -76,8 +76,12 @@ impl Emulator {
             render(&text);
         }
 
+        let text = format!("---------------------");
+        log(&text);
+        render(&text);
+
         for i in 0..REGISTERS_COUNT {
-            let text = format!("f{}: {:#?} {})", i, self.cpu.fregs[i], self.cpu.fregs[i]);
+            let text = format!("f{}: {:#?}", i, self.cpu.fregs[i]);
             log(&text);
             render(&text);
         }
