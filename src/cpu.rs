@@ -22,23 +22,23 @@ pub struct Cpu {
     pub fcsr: u32,
 }
 
-fn set_memory8(index: usize, mem: &mut Vec<u8>, val: u8) {
+fn write_memory8(index: usize, mem: &mut Vec<u8>, val: u8) {
     mem[index] = val
 }
 
-fn set_memory16(index: usize, mem: &mut Vec<u8>, val: u16) {
+fn write_memory16(index: usize, mem: &mut Vec<u8>, val: u16) {
     mem[index] = (val & 0xFF) as u8;
     mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
 }
 
-fn set_memory32(index: usize, mem: &mut Vec<u8>, val: u32) {
+fn write_memory32(index: usize, mem: &mut Vec<u8>, val: u32) {
     mem[index] = (val & 0xFF) as u8;
     mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
     mem[index + 2] = ((val & 0xFF0000) >> 16) as u8;
     mem[index + 3] = ((val & 0xFF000000) >> 24) as u8;
 }
 
-fn set_memory64(index: usize, mem: &mut Vec<u8>, val: u64) {
+fn write_memory64(index: usize, mem: &mut Vec<u8>, val: u64) {
     mem[index] = (val & 0xFF) as u8;
     mem[index + 1] = ((val & 0xFF00) >> 8) as u8;
     mem[index + 2] = ((val & 0xFF0000) >> 16) as u8;
@@ -49,16 +49,16 @@ fn set_memory64(index: usize, mem: &mut Vec<u8>, val: u64) {
     mem[index + 7] = ((val & 0xFF00000000000000) >> 56) as u8;
 }
 
-fn get_memory8(index: usize, mem: &Vec<u8>) -> u8 {
+fn read_memory8(index: usize, mem: &Vec<u8>) -> u8 {
     mem[index]
 }
 
-fn get_memory16(index: usize, mem: &Vec<u8>) -> u16 {
+fn read_memory16(index: usize, mem: &Vec<u8>) -> u16 {
     // little endian
     return (mem[index] as u16) | ((mem[index + 1] as u16) << 8);
 }
 
-fn get_memory32(index: usize, mem: &Vec<u8>) -> u32 {
+fn read_memory32(index: usize, mem: &Vec<u8>) -> u32 {
     // little endian
     return (mem[index] as u32)
         | ((mem[index + 1] as u32) << 8)
@@ -66,7 +66,7 @@ fn get_memory32(index: usize, mem: &Vec<u8>) -> u32 {
         | ((mem[index + 3] as u32) << 24);
 }
 
-fn get_memory64(index: usize, mem: &Vec<u8>) -> u64 {
+fn read_memory64(index: usize, mem: &Vec<u8>) -> u64 {
     // little endian
     return (mem[index] as u64)
         | ((mem[index + 1] as u64) << 8)
@@ -116,7 +116,7 @@ impl Cpu {
     }
 
     fn fetch(&mut self, mem: &Vec<u8>) -> u32 {
-        get_memory32(self.pc, mem)
+        read_memory32(self.pc, mem)
     }
 
     // This function is public because it's called from a unit test.
@@ -142,13 +142,13 @@ impl Cpu {
                 let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
-                    0x0 => xregs[rd] = (get_memory8(addr, mem) as i8) as i64, // lb
-                    0x1 => xregs[rd] = (get_memory16(addr, mem) as i16) as i64, // lh
-                    0x2 => xregs[rd] = (get_memory32(addr, mem) as i32) as i64, // lw
-                    0x3 => xregs[rd] = get_memory64(addr, mem) as i64,        // ld
-                    0x4 => xregs[rd] = (get_memory8(addr, mem) as i64) & 0xFF, // lbu
-                    0x5 => xregs[rd] = (get_memory16(addr, mem) as i64) & 0xFFFF, // lhu
-                    0x6 => xregs[rd] = (get_memory32(addr, mem) as i64) & 0xFFFFFFFF, // lwu
+                    0x0 => xregs[rd] = (read_memory8(addr, mem) as i8) as i64, // lb
+                    0x1 => xregs[rd] = (read_memory16(addr, mem) as i16) as i64, // lh
+                    0x2 => xregs[rd] = (read_memory32(addr, mem) as i32) as i64, // lw
+                    0x3 => xregs[rd] = read_memory64(addr, mem) as i64,        // ld
+                    0x4 => xregs[rd] = (read_memory8(addr, mem) as i64) & 0xFF, // lbu
+                    0x5 => xregs[rd] = (read_memory16(addr, mem) as i64) & 0xFFFF, // lhu
+                    0x6 => xregs[rd] = (read_memory32(addr, mem) as i64) & 0xFFFFFFFF, // lwu
                     _ => {}
                 }
             }
@@ -157,8 +157,8 @@ impl Cpu {
                 let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
-                    0x2 => fregs[rd] = f64::from_bits(get_memory32(addr, mem) as u64), // flw
-                    0x3 => fregs[rd] = f64::from_bits(get_memory64(addr, mem)),        // fld
+                    0x2 => fregs[rd] = f64::from_bits(read_memory32(addr, mem) as u64), // flw
+                    0x3 => fregs[rd] = f64::from_bits(read_memory64(addr, mem)),        // fld
                     _ => {}
                 }
             }
@@ -237,10 +237,10 @@ impl Cpu {
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
-                    0x0 => set_memory8(addr, mem, xregs[rs2] as u8), // sb
-                    0x1 => set_memory16(addr, mem, xregs[rs2] as u16), // sh
-                    0x2 => set_memory32(addr, mem, xregs[rs2] as u32), // sw
-                    0x3 => set_memory64(addr, mem, xregs[rs2] as u64), // sd
+                    0x0 => write_memory8(addr, mem, xregs[rs2] as u8), // sb
+                    0x1 => write_memory16(addr, mem, xregs[rs2] as u16), // sh
+                    0x2 => write_memory32(addr, mem, xregs[rs2] as u32), // sw
+                    0x3 => write_memory64(addr, mem, xregs[rs2] as u64), // sd
                     _ => {}
                 }
             }
@@ -251,8 +251,8 @@ impl Cpu {
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
-                    0x2 => set_memory32(addr, mem, (fregs[rs2] as f32).to_bits()), // fsw
-                    0x3 => set_memory64(addr, mem, fregs[rs2].to_bits()),          // fsd
+                    0x2 => write_memory32(addr, mem, (fregs[rs2] as f32).to_bits()), // fsw
+                    0x3 => write_memory64(addr, mem, fregs[rs2].to_bits()),          // fsd
                     _ => {}
                 }
             }
@@ -266,8 +266,8 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(
                             xregs[rs1] as usize,
                             mem,
                             (t.wrapping_add(xregs[rs2] as i32)) as u32,
@@ -276,78 +276,78 @@ impl Cpu {
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, t.wrapping_add(xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, t.wrapping_add(xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
                         xregs[rd] = t as i64;
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x02) => {
-                        xregs[rd] = (get_memory32(xregs[rs1] as usize, mem) as i32) as i64
+                        xregs[rd] = (read_memory32(xregs[rs1] as usize, mem) as i32) as i64
                     } // lr.w
-                    (0x3, 0x02) => xregs[rd] = get_memory64(xregs[rs1] as usize, mem) as i64, // lr.d
+                    (0x3, 0x02) => xregs[rd] = read_memory64(xregs[rs1] as usize, mem) as i64, // lr.d
                     (0x2, 0x03) => {
                         // TODO: Write a nonzero error code if the store fails.
                         // sc.w
                         xregs[rd] = 0;
-                        set_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
+                        write_memory32(xregs[rs1] as usize, mem, xregs[rs2] as u32);
                     }
                     (0x3, 0x03) => {
                         // TODO: Write a nonzero error code if the store fails.
                         // sc.d
                         xregs[rd] = 0;
-                        set_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
+                        write_memory64(xregs[rs1] as usize, mem, xregs[rs2] as u64);
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, (t ^ (xregs[rs2] as i32)) as u32);
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(xregs[rs1] as usize, mem, (t ^ (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, (t ^ xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, (t ^ xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, (t | (xregs[rs2] as i32)) as u32);
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(xregs[rs1] as usize, mem, (t | (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, (t | xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, (t | xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(xregs[rs1] as usize, mem, (t & (xregs[rs2] as i32)) as u32);
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(xregs[rs1] as usize, mem, (t & (xregs[rs2] as i32)) as u32);
                         xregs[rd] = t as i64;
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, (t & xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, (t & xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(
                             xregs[rs1] as usize,
                             mem,
                             cmp::min(t, xregs[rs2] as i32) as u32,
@@ -356,14 +356,14 @@ impl Cpu {
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = get_memory32(xregs[rs1] as usize, mem) as i32;
-                        set_memory32(
+                        let t = read_memory32(xregs[rs1] as usize, mem) as i32;
+                        write_memory32(
                             xregs[rs1] as usize,
                             mem,
                             cmp::max(t, xregs[rs2] as i32) as u32,
@@ -372,32 +372,32 @@ impl Cpu {
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = get_memory64(xregs[rs1] as usize, mem) as i64;
-                        set_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2]) as u64);
+                        let t = read_memory64(xregs[rs1] as usize, mem) as i64;
+                        write_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2]) as u64);
                         xregs[rd] = t;
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = get_memory32(xregs[rs1] as usize, mem);
-                        set_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u32));
+                        let t = read_memory32(xregs[rs1] as usize, mem);
+                        write_memory32(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u32));
                         xregs[rd] = (t as i32) as i64;
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = get_memory64(xregs[rs1] as usize, mem);
-                        set_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u64));
+                        let t = read_memory64(xregs[rs1] as usize, mem);
+                        write_memory64(xregs[rs1] as usize, mem, cmp::min(t, xregs[rs2] as u64));
                         xregs[rd] = t as i64;
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = get_memory32(xregs[rs1] as usize, mem);
-                        set_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u32));
+                        let t = read_memory32(xregs[rs1] as usize, mem);
+                        write_memory32(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u32));
                         xregs[rd] = (t as i32) as i64;
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = get_memory64(xregs[rs1] as usize, mem);
-                        set_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u64));
+                        let t = read_memory64(xregs[rs1] as usize, mem);
+                        write_memory64(xregs[rs1] as usize, mem, cmp::max(t, xregs[rs2] as u64));
                         xregs[rd] = t as i64;
                     }
                     _ => {}
