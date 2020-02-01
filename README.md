@@ -17,24 +17,24 @@ Supports the following RISC-V ISA features (RV64G):
 - Zicsr (v2.0):
 
 # Usage
-![Demo](https://raw.githubusercontent.com/d0iasm/rvemu/master/demo.gif)
-
 The emulator supports the following commands:
 - upload: Upload a local RISC-V binary/local RISC-V binaries for an execution on the emulator.
 - ls: List the files you uploaded.
 - run [file]: Execute a file.
 - help: Print all commands you can use.
 
-# Roadmap
-## Supports "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213"
-- [] RV64G ISA
+![Demo](https://raw.githubusercontent.com/d0iasm/rvemu/master/demo.gif)
 
-## Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
-- [] Machine CSRs
-- [] Machine-Mode privileged instructions
-- [] Supervisor CSRs
-- [] Supervisor instructions
-- [] Page-Based Virtual-Memory System
+# Roadmap
+### Supports "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213"
+- [ ] RV64G ISA
+
+### Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
+- [ ] Machine CSRs
+- [ ] Machine-Mode privileged instructions
+- [ ] Supervisor CSRs
+- [ ] Supervisor instructions
+- [ ] Page-Based Virtual-Memory System
 
 ## Build and Run
 The `wasm-pack build` command generates a pkg directory and makes Rust source code into `.wasm` binary. It also generates the JavaScript API for using our Rust-generated WebAssembly. The toolchain's supported target is `wasm32-unknown-unknown`.
@@ -80,3 +80,7 @@ $ firebase deploy
 - [wat2wasm demo](https://webassembly.github.io/wabt/demo/wat2wasm/)
 - [RISC-V Software Ecosystem Overview](https://riscv.org/software-status/)
 - [RISC-V Online Simulator](https://www.kvakil.me/venus/)
+
+## Articles about this project
+- [Emulate 32-Bit And 64-Bit RISC-V In Your Browser With Asami’s Open Source rvemu | Gareth Halfacree, Hackster.io](https://riscv.org/2020/01/emulate-32-bit-and-64-bit-risc-v-in-your-browser-with-asamis-open-source-rvemu-gareth-halfacree-hackster-io/)
+- [Emulate 32-Bit and 64-Bit RISC-V in Your Browser with Asami's Open Source rvemu](https://www.hackster.io/news/emulate-32-bit-and-64-bit-risc-v-in-your-browser-with-asami-s-open-source-rvemu-b783f672e463)
