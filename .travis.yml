@@ -5,10 +5,7 @@ rust:
   - nightly
 before-install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-  - npm install npm@latest
-  - npm install xterm
-  - npm install xterm-addon-fit
 install:
-  - wasm-pack build
+  - wasm-pack build --target web
 script:
   - wasm-pack test --firefox --headless
