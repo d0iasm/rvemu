@@ -7,14 +7,14 @@ __NOTE: This project is currently under intensely development. The source code m
 https://riscvemu.web.app/
 
 Supports the following RISC-V ISA features (RV64G):
-- RV32I (v2.1): supports 37/40 instructions (except FENCE, ECALL, and EBREAK)
+- RV32I (v2.1): supports 40/40 instructions (FENCE, ECALL, and EBREAK don't do anything for now)
 - RV64I (v2.1): supports 12/12 instructions (SLLI, SRLI, and SRAI are included in RV32I)
 - RV32M/RV64M (v2.0): supports 13/13 instructions
 - RV32A/RV64A (v2.0): supports 22/22 instructions (no unittests and no atomicity)
 - RV32F/RV64F (v2.2): supports 30/30 instructions
 - RV32D/RV64D (v2.2): supports 32/32 instructions
-- Zifencei (v2.0): supports 0/1 instructions (FENCE.i doesn't do anything for now)
-- Zicsr (v2.0):
+- Zifencei (v2.0): supports 1/1 instructions (FENCE.i doesn't do anything for now)
+- Zicsr (v2.0): supports 6/6 instructions (no unittests and no atomicity)
 
 # Usage
 The emulator supports the following commands:
@@ -24,17 +24,6 @@ The emulator supports the following commands:
 - __help__: Print all commands you can use.
 
 ![Demo](https://raw.githubusercontent.com/d0iasm/rvemu/master/demo.gif)
-
-# Roadmap
-### Supports "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213"
-- [ ] RV64G ISA
-
-### Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
-- [ ] Machine CSRs
-- [ ] Machine-Mode privileged instructions
-- [ ] Supervisor CSRs
-- [ ] Supervisor instructions
-- [ ] Page-Based Virtual-Memory System
 
 ## Build and Run
 The `wasm-pack build` command generates a pkg directory and makes Rust source code into `.wasm` binary. It also generates the JavaScript API for using our Rust-generated WebAssembly. The toolchain's supported target is `wasm32-unknown-unknown`.
@@ -54,11 +43,25 @@ $ npm start // at the public directory
 ```
 
 ## Test
+You need to install a Firefox browser or a Chrome browser to test the project. A browser can be specified by a `--firefox` or a `--chrome` flag.
 ```
 $ wasm-pack test --firefox --headless
 ```
 
+# Roadmap
+### Supports "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213"
+- [x] RV64G ISA
+- [ ] RV64C ISA
+
+### Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
+- [ ] Machine CSRs
+- [ ] Machine-Mode privileged instructions
+- [ ] Supervisor CSRs
+- [ ] Supervisor instructions
+- [ ] Page-Based Virtual-Memory System
+
 ## Publish
+[The site](https://riscvemu.web.app/) is hosted by a firebase for now. It might move in the future.
 ```
 $ firebase deploy
 ```

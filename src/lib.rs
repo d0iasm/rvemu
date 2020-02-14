@@ -1,8 +1,10 @@
 pub mod cpu;
+pub mod csr;
 pub mod memory;
 mod utils;
 
 use crate::cpu::*;
+use crate::csr::*;
 use crate::memory::*;
 
 use wasm_bindgen::prelude::*;

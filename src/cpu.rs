@@ -13,6 +13,7 @@ pub struct Cpu {
     pub xregs: [i64; REGISTERS_COUNT],
     pub fregs: [f64; REGISTERS_COUNT],
     pub pc: usize,
+    pub csr: Csr,
     /*
      *  31       8 7                   5 4                           0
      * | Reserved | Rounding Mode (frm) |  Accrued Exceptions    (fflags)  |
@@ -28,6 +29,7 @@ impl Cpu {
             xregs: [0; REGISTERS_COUNT],
             fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
+            csr: Csr::new(),
             fcsr: 0,
         }
     }
@@ -760,7 +762,7 @@ impl Cpu {
             0x73 => {
                 // I-type
                 let funct12 = (((binary & 0xFFF00000) as i32) as i64) >> 20;
-                let _csr = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let csr_address = (binary & 0xFFF00000) >> 20;
                 match funct3 {
                     0x0 => {
                         match funct12 {
@@ -774,13 +776,39 @@ impl Cpu {
                             _ => {}
                         }
                     }
-                    // TODO: implement RV32/RV64 Zicsr Standard Extension
-                    0x1 => {} // csrrw
-                    0x2 => {} // csrrs
-                    0x3 => {} // csrrc
-                    0x5 => {} // csrrwi
-                    0x6 => {} // csrrsi
-                    0x7 => {} // csrrci
+                    0x1 => {
+                        // csrrw
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, xregs[rs1]);
+                    }
+                    0x2 => {
+                        // csrrs
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, xregs[rd] | xregs[rs1]);
+                    }
+                    0x3 => {
+                        // csrrc
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, xregs[rd] & (!xregs[rs1]));
+                    }
+                    0x5 => {
+                        // csrrwi
+                        let uimm = rs1 as u64 as i64;
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, uimm);
+                    }
+                    0x6 => {
+                        // csrrsi
+                        let uimm = rs1 as u64 as i64;
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, xregs[rd] | uimm);
+                    }
+                    0x7 => {
+                        // csrrci
+                        let uimm = rs1 as u64 as i64;
+                        xregs[rd] = self.csr.read(csr_address);
+                        self.csr.write(csr_address, xregs[rd] & (!uimm));
+                    }
                     _ => {}
                 }
             }
