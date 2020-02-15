@@ -350,8 +350,8 @@ impl Cpu {
                     (0x1, 0x00) => xregs[rd] = ((xregs[rs1] as u64) << shamt) as i64, // sll
                     (0x1, 0x01) => {
                         // mulh
-                        let n1 = bigint::from(xregs[rs1]);
-                        let n2 = bigint::from(xregs[rs2]);
+                        let n1 = BigInt::from(xregs[rs1]);
+                        let n2 = BigInt::from(xregs[rs2]);
                         xregs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x2, 0x00) => xregs[rd] = if xregs[rs1] < xregs[rs2] { 1 } else { 0 }, // slt
@@ -360,8 +360,8 @@ impl Cpu {
                         // get the most significant bit
                         let sign = ((xregs[rs1] as u64) & 0x80000000_00000000) as i64;
                         // xregs[rs1] is signed and xregs[rs2] is unsigned
-                        let n1 = biguint::from((xregs[rs1] as u64) & 0xefffffff_ffffffff);
-                        let n2 = biguint::from(xregs[rs2] as u64);
+                        let n1 = BigUint::from((xregs[rs1] as u64) & 0xefffffff_ffffffff);
+                        let n2 = BigUint::from(xregs[rs2] as u64);
                         xregs[rd] = sign | ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x3, 0x00) => {
@@ -374,8 +374,8 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
-                        let n1 = biguint::from(xregs[rs1] as u64);
-                        let n2 = biguint::from(xregs[rs2] as u64);
+                        let n1 = BigUint::from(xregs[rs1] as u64);
+                        let n2 = BigUint::from(xregs[rs2] as u64);
                         xregs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x4, 0x00) => xregs[rd] = xregs[rs1] ^ xregs[rs2], // xor
@@ -647,20 +647,20 @@ impl Cpu {
                                 // fclass.s
                                 let f = fregs[rs1];
                                 match f.classify() {
-                                    fpcategory::infinite => {
+                                    FpCategory::Infinite => {
                                         xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
                                     }
-                                    fpcategory::normal => {
+                                    FpCategory::Normal => {
                                         xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
                                     }
-                                    fpcategory::subnormal => {
+                                    FpCategory::Subnormal => {
                                         xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
                                     }
-                                    fpcategory::zero => {
+                                    FpCategory::Zero => {
                                         xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
                                     }
                                     // don't support a signaling nan, only support a quiet nan.
-                                    fpcategory::nan => xregs[rd] = 9,
+                                    FpCategory::Nan => xregs[rd] = 9,
                                 }
                             }
                             _ => {}
@@ -673,20 +673,20 @@ impl Cpu {
                                 // fclass.d
                                 let f = fregs[rs1];
                                 match f.classify() {
-                                    fpcategory::infinite => {
+                                    FpCategory::Infinite => {
                                         xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
                                     }
-                                    fpcategory::normal => {
+                                    FpCategory::Normal => {
                                         xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
                                     }
-                                    fpcategory::subnormal => {
+                                    FpCategory::Subnormal => {
                                         xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
                                     }
-                                    fpcategory::zero => {
+                                    FpCategory::Zero => {
                                         xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
                                     }
                                     // don't support a signaling nan, only support a quiet nan.
-                                    fpcategory::nan => xregs[rd] = 9,
+                                    FpCategory::Nan => xregs[rd] = 9,
                                 }
                             }
                             _ => {}
