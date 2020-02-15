@@ -66,6 +66,12 @@ It's a tricky way to debug this project. These is no binary to execute in a cons
 $ wasm-pack test --firefox --headless -- --test debug
 ```
 
+## Publish
+[The site](https://riscvemu.web.app/) is hosted by a firebase for now. It might move in the future.
+```
+$ firebase deploy
+```
+
 # Roadmap
 ### Supports "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213"
 - [x] RV64G ISA
@@ -78,12 +84,6 @@ $ wasm-pack test --firefox --headless -- --test debug
 - [ ] Supervisor CSRs
 - [ ] Supervisor instructions
 - [ ] Page-Based Virtual-Memory System
-
-## Publish
-[The site](https://riscvemu.web.app/) is hosted by a firebase for now. It might move in the future.
-```
-$ firebase deploy
-```
 
 ## Dependencies
 - rust toolchain
