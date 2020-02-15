@@ -54,6 +54,7 @@ $ wasm-pack test --firefox --headless
 - [ ] RV64C ISA
 
 ### Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
+- [ ] Privileged ISA (URET, SRET, MRET, WFI, SFENCE.VMA, HFENCE.BVMA, and HFENCE.GVMA)
 - [ ] Machine CSRs
 - [ ] Machine-Mode privileged instructions
 - [ ] Supervisor CSRs

@@ -210,7 +210,7 @@ impl Cpu {
                 let _aq = (funct7 & 0b0000010) >> 1; // acquire access
                 let _rl = funct7 & 0b0000001; // release access
                 match (funct3, funct5) {
-                    // todo: if the address is not naturally aligned, a misaligned address
+                    // TODO: if the address is not naturally aligned, a misaligned address
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
@@ -242,13 +242,13 @@ impl Cpu {
                     (0x2, 0x02) => xregs[rd] = (mem.read32(xregs[rs1] as usize) as i32) as i64, // lr.w
                     (0x3, 0x02) => xregs[rd] = mem.read64(xregs[rs1] as usize) as i64, // lr.d
                     (0x2, 0x03) => {
-                        // todo: write a nonzero error code if the store fails.
+                        // TODO: write a nonzero error code if the store fails.
                         // sc.w
                         xregs[rd] = 0;
                         mem.write32(xregs[rs1] as usize, xregs[rs2] as u32);
                     }
                     (0x3, 0x03) => {
-                        // todo: write a nonzero error code if the store fails.
+                        // TODO: write a nonzero error code if the store fails.
                         // sc.d
                         xregs[rd] = 0;
                         mem.write64(xregs[rs1] as usize, xregs[rs2] as u64);
@@ -770,18 +770,24 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let funct12 = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let csr_address = (binary & 0xfff00000) >> 20;
                 match funct3 {
                     0x0 => {
-                        match funct12 {
-                            // todo: implement ecall and ebreak
+                        match (rs2, funct7) {
+                            // TODO: implement ecall and ebreak
                             // ecall makes a request of the execution environment by raising an
                             // environment call exception.
                             // ebreak makes a request of the debugger by raising a breakpoint
                             // exception.
-                            0x0 => {} // ecall
-                            0x1 => {} // ebreak
+                            (0x0, 0x0) => {} // ecall
+                            (0x1, 0x0) => {} // ebreak
+                            (0x2, 0x0) => {} // uret
+                            (0x2, 0x8) => {} // sret
+                            (0x2, 0x18) => {} // mret
+                            (0x5, 0x8) => {} // wfi
+                            (_, 0x9) => {} // sfence.vma
+                            (_, 0x11) => {} // hfence.bvma
+                            (_, 0x51) => {} // hfence.bvma
                             _ => {}
                         }
                     }
