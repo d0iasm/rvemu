@@ -55,9 +55,15 @@ $ npm start // at the public directory
 ```
 
 ## Test
-You need to install a Firefox browser or a Chrome browser to test the project. A browser can be specified by a `--firefox` or a `--chrome` flag.
+You need to install a Firefox browser, a Chrome browser, or a Safari browser to test the project. A browser can be specified by a `--firefox` or a `--chrome` flag.
 ```
-$ wasm-pack test --firefox --headless
+$ wasm-pack test --headless --chrome --firefox --safari
+```
+
+## Debug
+It's a tricky way to debug this project. These is no binary to execute in a console because wasm-bindgen usually needs a browser, so use a unit test instead to print messages to a console.
+```
+$ wasm-pack test --firefox --headless -- --test debug
 ```
 
 # Roadmap
