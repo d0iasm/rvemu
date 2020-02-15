@@ -67,12 +67,12 @@ impl Cpu {
 
     // This function is public because it's called from a unit test.
     pub fn execute(&mut self, binary: u32, mem: &mut Memory) {
-        let opcode = binary & 0x0000007F;
-        let rd = ((binary & 0x00000F80) >> 7) as usize;
-        let rs1 = ((binary & 0x000F8000) >> 15) as usize;
-        let rs2 = ((binary & 0x01F00000) >> 20) as usize;
+        let opcode = binary & 0x0000007f;
+        let rd = ((binary & 0x00000f80) >> 7) as usize;
+        let rs1 = ((binary & 0x000f8000) >> 15) as usize;
+        let rs2 = ((binary & 0x01f00000) >> 20) as usize;
         let funct3 = (binary & 0x00007000) >> 12;
-        let funct7 = (binary & 0xFE000000) >> 25;
+        let funct7 = (binary & 0xfe000000) >> 25;
 
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
@@ -85,22 +85,22 @@ impl Cpu {
         match opcode {
             0x03 => {
                 // I-type
-                let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let offset = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
                     0x0 => xregs[rd] = (mem.read8(addr) as i8) as i64, // lb
                     0x1 => xregs[rd] = (mem.read16(addr) as i16) as i64, // lh
                     0x2 => xregs[rd] = (mem.read32(addr) as i32) as i64, // lw
                     0x3 => xregs[rd] = mem.read64(addr) as i64,        // ld
-                    0x4 => xregs[rd] = (mem.read8(addr) as i64) & 0xFF, // lbu
-                    0x5 => xregs[rd] = (mem.read16(addr) as i64) & 0xFFFF, // lhu
-                    0x6 => xregs[rd] = (mem.read32(addr) as i64) & 0xFFFFFFFF, // lwu
+                    0x4 => xregs[rd] = (mem.read8(addr) as i64) & 0xff, // lbu
+                    0x5 => xregs[rd] = (mem.read16(addr) as i64) & 0xffff, // lhu
+                    0x6 => xregs[rd] = (mem.read32(addr) as i64) & 0xffffffff, // lwu
                     _ => {}
                 }
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                let offset = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let offset = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
                     0x2 => fregs[rd] = f64::from_bits(mem.read32(addr) as u64), // flw
@@ -121,10 +121,10 @@ impl Cpu {
             }
             0x13 => {
                 // I-type
-                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
                 // let shamt = (binary & 0x01F00000) >> 20; // This is for RV32I
-                let shamt = (binary & 0x03F00000) >> 20;
+                let shamt = (binary & 0x03f00000) >> 20;
                 let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => xregs[rd] = xregs[rs1].wrapping_add(imm), // addi
@@ -155,19 +155,19 @@ impl Cpu {
                 // U-type
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
-                let imm = ((binary & 0xFFFFF000) as i32) as i64;
+                let imm = ((binary & 0xfffff000) as i32) as i64;
                 xregs[rd] = (self.pc as i64) + imm; // auipc
             }
             0x1B => {
                 // I-type (RV64I only)
-                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
-                let shamt = (binary & 0x01F00000) >> 20;
+                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
+                let shamt = (binary & 0x01f00000) >> 20;
                 match funct3 {
                     0x0 => {
                         // addiw
-                        xregs[rd] = (((xregs[rs1].wrapping_add(imm)) & 0xFFFFFFFF) as i32) as i64
+                        xregs[rd] = (((xregs[rs1].wrapping_add(imm)) & 0xffffffff) as i32) as i64
                     }
-                    0x1 => xregs[rd] = (((xregs[rs1] << shamt) & 0xFFFFFFFF) as i32) as i64, // slliw
+                    0x1 => xregs[rd] = (((xregs[rs1] << shamt) & 0xffffffff) as i32) as i64, // slliw
                     0x5 => {
                         match funct7 {
                             0x00 => xregs[rd] = ((xregs[rs1] as u32) >> shamt) as i64, // srliw
@@ -180,8 +180,8 @@ impl Cpu {
             }
             0x23 => {
                 // S-type
-                let imm11_5 = (((binary & 0xFE000000) as i32) as i64) >> 25;
-                let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;
+                let imm11_5 = (((binary & 0xfe000000) as i32) as i64) >> 25;
+                let imm4_0 = ((binary & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
@@ -194,8 +194,8 @@ impl Cpu {
             }
             0x27 => {
                 // S-type (RV32F and RV64F)
-                let imm11_5 = (((binary & 0xFE000000) as i32) as i64) >> 25;
-                let imm4_0 = ((binary & 0x00000F80) >> 7) as u64;
+                let imm11_5 = (((binary & 0xfe000000) as i32) as i64) >> 25;
+                let imm4_0 = ((binary & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs[rs1] + offset) as usize;
                 match funct3 {
@@ -210,7 +210,7 @@ impl Cpu {
                 let _aq = (funct7 & 0b0000010) >> 1; // acquire access
                 let _rl = funct7 & 0b0000001; // release access
                 match (funct3, funct5) {
-                    // TODO: If the address is not naturally aligned, a misaligned address
+                    // todo: if the address is not naturally aligned, a misaligned address
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
@@ -242,13 +242,13 @@ impl Cpu {
                     (0x2, 0x02) => xregs[rd] = (mem.read32(xregs[rs1] as usize) as i32) as i64, // lr.w
                     (0x3, 0x02) => xregs[rd] = mem.read64(xregs[rs1] as usize) as i64, // lr.d
                     (0x2, 0x03) => {
-                        // TODO: Write a nonzero error code if the store fails.
+                        // todo: write a nonzero error code if the store fails.
                         // sc.w
                         xregs[rd] = 0;
                         mem.write32(xregs[rs1] as usize, xregs[rs2] as u32);
                     }
                     (0x3, 0x03) => {
-                        // TODO: Write a nonzero error code if the store fails.
+                        // todo: write a nonzero error code if the store fails.
                         // sc.d
                         xregs[rd] = 0;
                         mem.write64(xregs[rs1] as usize, xregs[rs2] as u64);
@@ -350,8 +350,8 @@ impl Cpu {
                     (0x1, 0x00) => xregs[rd] = ((xregs[rs1] as u64) << shamt) as i64, // sll
                     (0x1, 0x01) => {
                         // mulh
-                        let n1 = BigInt::from(xregs[rs1]);
-                        let n2 = BigInt::from(xregs[rs2]);
+                        let n1 = bigint::from(xregs[rs1]);
+                        let n2 = bigint::from(xregs[rs2]);
                         xregs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x2, 0x00) => xregs[rd] = if xregs[rs1] < xregs[rs2] { 1 } else { 0 }, // slt
@@ -360,8 +360,8 @@ impl Cpu {
                         // get the most significant bit
                         let sign = ((xregs[rs1] as u64) & 0x80000000_00000000) as i64;
                         // xregs[rs1] is signed and xregs[rs2] is unsigned
-                        let n1 = BigUint::from((xregs[rs1] as u64) & 0xefffffff_ffffffff);
-                        let n2 = BigUint::from(xregs[rs2] as u64);
+                        let n1 = biguint::from((xregs[rs1] as u64) & 0xefffffff_ffffffff);
+                        let n2 = biguint::from(xregs[rs2] as u64);
                         xregs[rd] = sign | ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x3, 0x00) => {
@@ -374,8 +374,8 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
-                        let n1 = BigUint::from(xregs[rs1] as u64);
-                        let n2 = BigUint::from(xregs[rs2] as u64);
+                        let n1 = biguint::from(xregs[rs1] as u64);
+                        let n2 = biguint::from(xregs[rs2] as u64);
                         xregs[rd] = ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x4, 0x00) => xregs[rd] = xregs[rs1] ^ xregs[rs2], // xor
@@ -404,12 +404,12 @@ impl Cpu {
                 // U-type
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
-                xregs[rd] = ((binary & 0xFFFFF000) as i32) as i64; // lui
+                xregs[rd] = ((binary & 0xfffff000) as i32) as i64; // lui
             }
             0x3B => {
                 // R-type (RV64I and RV64M)
                 // The shift amount is given by rs2[4:0].
-                let shamt = (xregs[rs2] & 0x1F) as u32;
+                let shamt = (xregs[rs2] & 0x1f) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // addw
@@ -459,7 +459,7 @@ impl Cpu {
             0x43 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -474,7 +474,7 @@ impl Cpu {
             0x47 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -490,7 +490,7 @@ impl Cpu {
             0x4B => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -506,7 +506,7 @@ impl Cpu {
             0x4F => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xF8000000) >> 27) as usize;
+                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -549,7 +549,7 @@ impl Cpu {
                             0x2 => {
                                 let sign1 = (fregs[rs1] as f32).to_bits() & 0x80000000;
                                 let sign2 = (fregs[rs2] as f32).to_bits() & 0x80000000;
-                                let other = (fregs[rs1] as f32).to_bits() & 0x7FFFFFFF;
+                                let other = (fregs[rs1] as f32).to_bits() & 0x7fffffff;
                                 // fsgnjx.s
                                 fregs[rd] = f32::from_bits((sign1 ^ sign2) | other) as f64;
                             }
@@ -563,7 +563,7 @@ impl Cpu {
                             0x2 => {
                                 let sign1 = fregs[rs1].to_bits() & 0x80000000_00000000;
                                 let sign2 = fregs[rs2].to_bits() & 0x80000000_00000000;
-                                let other = fregs[rs1].to_bits() & 0x7FFFFFFF_FFFFFFFF;
+                                let other = fregs[rs1].to_bits() & 0x7fffffff_ffffffff;
                                 // fsgnjx.d
                                 fregs[rd] = f64::from_bits((sign1 ^ sign2) | other);
                             }
@@ -647,20 +647,20 @@ impl Cpu {
                                 // fclass.s
                                 let f = fregs[rs1];
                                 match f.classify() {
-                                    FpCategory::Infinite => {
+                                    fpcategory::infinite => {
                                         xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
                                     }
-                                    FpCategory::Normal => {
+                                    fpcategory::normal => {
                                         xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
                                     }
-                                    FpCategory::Subnormal => {
+                                    fpcategory::subnormal => {
                                         xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
                                     }
-                                    FpCategory::Zero => {
+                                    fpcategory::zero => {
                                         xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
                                     }
-                                    // Don't support a signaling NaN, only support a quiet NaN.
-                                    FpCategory::Nan => xregs[rd] = 9,
+                                    // don't support a signaling nan, only support a quiet nan.
+                                    fpcategory::nan => xregs[rd] = 9,
                                 }
                             }
                             _ => {}
@@ -673,20 +673,20 @@ impl Cpu {
                                 // fclass.d
                                 let f = fregs[rs1];
                                 match f.classify() {
-                                    FpCategory::Infinite => {
+                                    fpcategory::infinite => {
                                         xregs[rd] = if f.is_sign_negative() { 0 } else { 7 }
                                     }
-                                    FpCategory::Normal => {
+                                    fpcategory::normal => {
                                         xregs[rd] = if f.is_sign_negative() { 1 } else { 6 }
                                     }
-                                    FpCategory::Subnormal => {
+                                    fpcategory::subnormal => {
                                         xregs[rd] = if f.is_sign_negative() { 2 } else { 5 }
                                     }
-                                    FpCategory::Zero => {
+                                    fpcategory::zero => {
                                         xregs[rd] = if f.is_sign_negative() { 3 } else { 4 }
                                     }
-                                    // Don't support a signaling NaN, only support a quiet NaN.
-                                    FpCategory::Nan => xregs[rd] = 9,
+                                    // don't support a signaling nan, only support a quiet nan.
+                                    fpcategory::nan => xregs[rd] = 9,
                                 }
                             }
                             _ => {}
@@ -700,8 +700,8 @@ impl Cpu {
             0x63 => {
                 // B-type
                 let imm12 = (((binary & 0x80000000) as i32) as i64) >> 31;
-                let imm10_5 = ((binary & 0x7E000000) >> 25) as u64;
-                let imm4_1 = ((binary & 0x00000F00) >> 8) as u64;
+                let imm10_5 = ((binary & 0x7e000000) >> 25) as u64;
+                let imm4_1 = ((binary & 0x00000f00) >> 8) as u64;
                 let imm11 = ((binary & 0x00000080) >> 7) as u64;
                 let offset =
                     ((imm12 << 12) as u64 | (imm11 << 11) | (imm10_5 << 5) | (imm4_1 << 1)) as i64;
@@ -750,7 +750,7 @@ impl Cpu {
                 // jalr
                 xregs[rd] = (self.pc as i64) + 4;
 
-                let imm = (((binary & 0xFFF00000) as i32) as i64) >> 20;
+                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 self.pc = ((xregs[rs1] + imm - 4) & !1) as usize;
             }
             0x6F => {
@@ -759,9 +759,9 @@ impl Cpu {
                 xregs[rd] = (self.pc as i64) + 4;
 
                 let imm20 = (((binary & 0x80000000) as i32) as i64) >> 31;
-                let imm10_1 = ((binary & 0x7FE00000) >> 21) as u64;
+                let imm10_1 = ((binary & 0x7fe00000) >> 21) as u64;
                 let imm11 = ((binary & 0x100000) >> 20) as u64;
-                let imm19_12 = ((binary & 0xFF000) >> 12) as u64;
+                let imm19_12 = ((binary & 0xff000) >> 12) as u64;
                 let offset =
                     ((imm20 << 20) as u64 | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1))
                         as i64;
@@ -770,12 +770,12 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let funct12 = (((binary & 0xFFF00000) as i32) as i64) >> 20;
-                let csr_address = (binary & 0xFFF00000) >> 20;
+                let funct12 = (((binary & 0xfff00000) as i32) as i64) >> 20;
+                let csr_address = (binary & 0xfff00000) >> 20;
                 match funct3 {
                     0x0 => {
                         match funct12 {
-                            // TODO: implement ecall and ebreak
+                            // todo: implement ecall and ebreak
                             // ecall makes a request of the execution environment by raising an
                             // environment call exception.
                             // ebreak makes a request of the debugger by raising a breakpoint
