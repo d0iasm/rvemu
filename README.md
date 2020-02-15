@@ -16,6 +16,18 @@ Supports the following RISC-V ISA features (RV64G):
 - Zifencei (v2.0): supports 1/1 instructions (FENCE.i doesn't do anything for now)
 - Zicsr (v2.0): supports 6/6 instructions (no unittests and no atomicity)
 
+Supports CSRs:
+- mhartid: Hardware thread ID.
+- mstatus: Machine status register.
+- misa: ISA and extensions.
+- medeleg: Machine exception delegation register.
+- mideleg: Machine interrupt delegation register.
+- mie: Machine interrupt-enable register.
+- mtvec: Machine trap-handler base address.
+- mepc: Machine exception program coutner.
+- mcause: Machine trap cause.
+- mip: Machine interrupt pending.
+
 # Usage
 The emulator supports the following commands:
 - __upload__: Upload a local RISC-V binary/local RISC-V binaries for an execution on the emulator.
@@ -84,6 +96,7 @@ $ firebase deploy
 - [wat2wasm demo](https://webassembly.github.io/wabt/demo/wat2wasm/)
 - [RISC-V Software Ecosystem Overview](https://riscv.org/software-status/)
 - [RISC-V Online Simulator](https://www.kvakil.me/venus/)
+- [Running 64- and 32-bit RISC-V Linux on QEMU](https://risc-v-getting-started-guide.readthedocs.io/en/latest/linux-qemu.html)
 
 ## Articles about this project
 - [Emulate 32-Bit And 64-Bit RISC-V In Your Browser With Asami’s Open Source rvemu | Gareth Halfacree, Hackster.io](https://riscv.org/2020/01/emulate-32-bit-and-64-bit-risc-v-in-your-browser-with-asamis-open-source-rvemu-gareth-halfacree-hackster-io/)
