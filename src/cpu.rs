@@ -131,13 +131,14 @@ impl Cpu {
                     0x1 => xregs[rd] = ((xregs[rs1] as u64) << shamt) as i64, // slli
                     0x2 => xregs[rd] = if xregs[rs1] < imm { 1 } else { 0 }, // slti
                     0x3 => {
+                        // sltiu
                         xregs[rd] = if (xregs[rs1] as u64) < (imm as u64) {
                             1
                         } else {
                             0
                         }
-                    } // sltiu
-                    0x4 => xregs[rd] = xregs[rs1] ^ imm,             // xori
+                    }
+                    0x4 => xregs[rd] = xregs[rs1] ^ imm, // xori
                     0x5 => {
                         match funct6 {
                             0x00 => xregs[rd] = ((xregs[rs1] as u64) >> shamt) as i64, // srli
@@ -163,8 +164,9 @@ impl Cpu {
                 let shamt = (binary & 0x01F00000) >> 20;
                 match funct3 {
                     0x0 => {
+                        // addiw
                         xregs[rd] = (((xregs[rs1].wrapping_add(imm)) & 0xFFFFFFFF) as i32) as i64
-                    } // addiw
+                    }
                     0x1 => xregs[rd] = (((xregs[rs1] << shamt) & 0xFFFFFFFF) as i32) as i64, // slliw
                     0x5 => {
                         match funct7 {
@@ -363,12 +365,13 @@ impl Cpu {
                         xregs[rd] = sign | ((n1 * n2) >> 64).to_i64().unwrap();
                     }
                     (0x3, 0x00) => {
+                        // sltu
                         xregs[rd] = if (xregs[rs1] as u64) < (xregs[rs2] as u64) {
                             1
                         } else {
                             0
                         }
-                    } // sltu
+                    }
                     (0x3, 0x01) => {
                         // mulhu
                         let n1 = BigUint::from(xregs[rs1] as u64);
@@ -409,8 +412,9 @@ impl Cpu {
                 let shamt = (xregs[rs2] & 0x1F) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
+                        // addw
                         xregs[rd] = ((xregs[rs1].wrapping_add(xregs[rs2])) as i32) as i64
-                    } // addw
+                    }
                     (0x0, 0x01) => {
                         // mulw
                         let n1 = xregs[rs1] as i32;
@@ -419,8 +423,9 @@ impl Cpu {
                         xregs[rd] = result as i64;
                     }
                     (0x0, 0x20) => {
+                        // subw
                         xregs[rd] = ((xregs[rs1].wrapping_sub(xregs[rs2])) as i32) as i64
-                    } // subw
+                    }
                     (0x1, 0x00) => xregs[rd] = (((xregs[rs1] as u32) << shamt) as i32) as i64, // sllw
                     (0x4, 0x01) => {
                         // divw
@@ -458,9 +463,10 @@ impl Cpu {
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
+                        // fmadd.s
                         fregs[rd] =
                             (fregs[rs1] as f32).mul_add(fregs[rs2] as f32, fregs[rs3] as f32) as f64
-                    } // fmadd.s
+                    }
                     0x1 => fregs[rd] = fregs[rs1].mul_add(fregs[rs2], fregs[rs3]), // fmadd.d
                     _ => {}
                 }
@@ -472,10 +478,11 @@ impl Cpu {
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
+                        // fmsub.s
                         fregs[rd] = (fregs[rs1] as f32)
                             .mul_add(fregs[rs2] as f32, -fregs[rs3] as f32)
                             as f64
-                    } // fmsub.s
+                    }
                     0x1 => fregs[rd] = fregs[rs1].mul_add(fregs[rs2], -fregs[rs3]), // fmsub.d
                     _ => {}
                 }
@@ -487,10 +494,11 @@ impl Cpu {
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
+                        // fnmadd.s
                         fregs[rd] = (-fregs[rs1] as f32)
                             .mul_add(fregs[rs2] as f32, fregs[rs3] as f32)
                             as f64
-                    } // fnmadd.s
+                    }
                     0x1 => fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], fregs[rs3]), // fnmadd.d
                     _ => {}
                 }
@@ -502,10 +510,11 @@ impl Cpu {
                 let funct2 = (binary & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
+                        // fnmsub.s
                         fregs[rd] = (-fregs[rs1] as f32)
                             .mul_add(fregs[rs2] as f32, -fregs[rs3] as f32)
                             as f64
-                    } // fnmsub.s
+                    }
                     0x1 => fregs[rd] = (-fregs[rs1]).mul_add(fregs[rs2], -fregs[rs3]), // fnmsub.d
                     _ => {}
                 }
