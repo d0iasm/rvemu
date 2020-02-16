@@ -1,17 +1,24 @@
+pub mod fcsr;
+
 use std::collections::HashMap;
 
+// User floating-point CSRs.
+pub const FFLAGS: u32 = 0x001; // Flating-point accrued exceptions.
+pub const FRB: u32 = 0x002; // Floating-point dynamic rounding mode.
+pub const FCSR: u32 = 0x003; // Floating-point control and status register (frm + fflags).
+
 // Machine trap setup.
-const MSTATUS: u32 = 0x300; // Machine status register.
-const MISA: u32 = 0x301; // ISA and extensions.
-const MEDELEG: u32 = 0x302; // Machine exception delefation register.
-const MIDELEG: u32 = 0x303; // Machine interrupt delefation register.
-const MIE: u32 = 0x304; // Machine interrupt-enable register.
-const MTVEC: u32 = 0x305; // Machine trap-handler base address.
+pub const MSTATUS: u32 = 0x300; // Machine status register.
+pub const MISA: u32 = 0x301; // ISA and extensions.
+pub const MEDELEG: u32 = 0x302; // Machine exception delefation register.
+pub const MIDELEG: u32 = 0x303; // Machine interrupt delefation register.
+pub const MIE: u32 = 0x304; // Machine interrupt-enable register.
+pub const MTVEC: u32 = 0x305; // Machine trap-handler base address.
 
 // Machine trap handling.
-const MEPC: u32 = 0x342; // Machine exception program counter.
-const MCAUSE: u32 = 0x342; // Machine trap cause.
-const MIP: u32 = 0x344; // Machine interrupt pending.
+pub const MEPC: u32 = 0x342; // Machine exception program counter.
+pub const MCAUSE: u32 = 0x342; // Machine trap cause.
+pub const MIP: u32 = 0x344; // Machine interrupt pending.
 
 // Machine information registers.
 const MHARTID: u32 = 0xf14; // Hardware thread ID.
@@ -27,6 +34,10 @@ impl Csr {
         // csr[11:10]: Whether the register is read/write (00, 01, or 10) or read-only (11).
         // csr[9:8]: The lowest privilege level that can access the CSR. User (00), supervisor
         // (01), hypervisor (10), and machine (11).
+        regs.insert(0b00 << 00 | 0b00 << 8 | FFLAGS, 0);
+        regs.insert(0b00 << 00 | 0b00 << 8 | FRB, 0);
+        regs.insert(0b00 << 00 | 0b00 << 8 | FCSR, 0);
+
         regs.insert(0b00 << 00 | 0b11 << 8 | MSTATUS, 0);
         regs.insert(0b00 << 00 | 0b11 << 8 | MISA, 0);
         regs.insert(0b00 << 00 | 0b11 << 8 | MEDELEG, 0);
@@ -51,5 +62,11 @@ impl Csr {
             .get_mut(&csr_address)
             .expect("failed to get a csr");
         *original = value;
+    }
+
+    pub fn clear(&mut self) {
+        for csr in self.regs.values_mut() {
+            *csr = 0;
+        }
     }
 }

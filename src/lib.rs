@@ -4,6 +4,9 @@ pub mod exception;
 pub mod memory;
 mod utils;
 
+#[macro_use]
+extern crate bitflags;
+
 use crate::cpu::*;
 use crate::csr::*;
 use crate::exception::*;

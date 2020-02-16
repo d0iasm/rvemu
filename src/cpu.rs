@@ -8,19 +8,13 @@ use num_bigint::{BigInt, BigUint};
 use num_traits::cast::ToPrimitive;
 
 use crate::*;
+use fcsr::*;
 
 pub struct Cpu {
     pub xregs: [i64; REGISTERS_COUNT],
     pub fregs: [f64; REGISTERS_COUNT],
     pub pc: usize,
     pub csr: Csr,
-    /*
-     *  31       8 7                   5 4                           0
-     * | Reserved | Rounding Mode (frm) |  Accrued Exceptions    (fflags)  |
-     *                                  |  NV  |  DZ  |  OF  |  UF  |  NX  |
-     *      24              3              1      1      1      1      1
-     */
-    pub fcsr: u32,
 }
 
 impl Cpu {
@@ -30,13 +24,12 @@ impl Cpu {
             fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
             csr: Csr::new(),
-            fcsr: 0,
         }
     }
 
     pub fn reset(&mut self) {
         self.pc = 0;
-        self.fcsr = 0;
+        self.csr.clear();
         for i in 0..REGISTERS_COUNT {
             self.xregs[i] = 0;
             self.fregs[i] = 0.0;
@@ -533,6 +526,15 @@ impl Cpu {
                  * 31                                     0
                  *
                  */
+
+                let fcsr = self.csr.read(FCSR) as u64 as u32;
+                let frm = (Fcsr::from_bits(fcsr).expect("failed to convert fcsr") & Fcsr::FRM)
+                    .bits()
+                    >> 5;
+                if frm == 0b101 || frm == 0b110 {
+                    return Err(Exception::IllegalInstruction);
+                }
+
                 match funct7 {
                     0x00 => fregs[rd] = (fregs[rs1] as f32 + fregs[rs2] as f32) as f64, // fadd.s
                     0x01 => fregs[rd] = fregs[rs1] + fregs[rs2],                        // fadd.d
