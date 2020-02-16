@@ -776,7 +776,7 @@ pub fn jalr_rd_imm() {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
-            0x67, 0x09, 0xa0, 0x02, // jalr x18, x0, 42
+            0x67, 0x09, 0xc0, 0x02, // jalr x18, x0, 44
         ],
     };
 
@@ -789,7 +789,7 @@ pub fn jalr_rd_imm() {
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
     }
-    assert_eq!(42, cpu.pc);
+    assert_eq!(44, cpu.pc);
 }
 
 #[wasm_bindgen_test]

@@ -57,7 +57,7 @@ $ npm start // at the public directory
 ## Test
 You need to install a Firefox browser, a Chrome browser, or a Safari browser to test the project. A browser can be specified by a `--firefox` or a `--chrome` flag.
 ```
-$ wasm-pack test --headless --chrome --firefox --safari
+$ wasm-pack test --headless --firefox
 ```
 
 ## Debug

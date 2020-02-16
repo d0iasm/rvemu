@@ -49,7 +49,7 @@ impl Cpu {
         let mut i = 0;
         while self.pc < size {
             let binary = self.fetch(mem);
-            self.execute(binary, mem);
+            let _ = self.execute(binary, mem).map_err(|e| e.take_trap());
             self.pc += 4;
 
             // TODO: Remove the following check.
@@ -66,7 +66,7 @@ impl Cpu {
     }
 
     // This function is public because it's called from a unit test.
-    pub fn execute(&mut self, binary: u32, mem: &mut Memory) {
+    pub fn execute(&mut self, binary: u32, mem: &mut Memory) -> Result<(), Exception> {
         let opcode = binary & 0x0000007f;
         let rd = ((binary & 0x00000f80) >> 7) as usize;
         let rs1 = ((binary & 0x000f8000) >> 15) as usize;
@@ -709,37 +709,61 @@ impl Cpu {
                     0x0 => {
                         // beq
                         if xregs[rs1] == xregs[rs2] {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     0x1 => {
                         // bne
                         if xregs[rs1] != xregs[rs2] {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     0x4 => {
                         // blt
                         if xregs[rs1] < xregs[rs2] {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     0x5 => {
                         // bge
                         if xregs[rs1] >= xregs[rs2] {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     0x6 => {
                         // bltu
                         if (xregs[rs1] as u64) < (xregs[rs2] as u64) {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     0x7 => {
                         // bgeu
                         if (xregs[rs1] as u64) >= (xregs[rs2] as u64) {
-                            self.pc = ((self.pc as i64) + offset - 4) as usize;
+                            let target = (self.pc as i64) + offset - 4;
+                            if target % 4 != 0 {
+                                return Err(Exception::InstructionAddressMisaligned);
+                            }
+                            self.pc = target as usize;
                         }
                     }
                     _ => {}
@@ -751,7 +775,11 @@ impl Cpu {
                 xregs[rd] = (self.pc as i64) + 4;
 
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                self.pc = ((xregs[rs1] + imm - 4) & !1) as usize;
+                let target = (xregs[rs1] + imm - 4) & !1;
+                if target % 4 != 0 {
+                    return Err(Exception::InstructionAddressMisaligned);
+                }
+                self.pc = target as usize;
             }
             0x6F => {
                 // J-type
@@ -765,8 +793,11 @@ impl Cpu {
                 let offset =
                     ((imm20 << 20) as u64 | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1))
                         as i64;
-                let tmp = (self.pc as i64) + offset - 4;
-                self.pc = tmp as usize;
+                let target = (self.pc as i64) + offset - 4;
+                if target % 4 != 0 {
+                    return Err(Exception::InstructionAddressMisaligned);
+                }
+                self.pc = target as usize;
             }
             0x73 => {
                 // I-type
@@ -779,15 +810,15 @@ impl Cpu {
                             // environment call exception.
                             // ebreak makes a request of the debugger by raising a breakpoint
                             // exception.
-                            (0x0, 0x0) => {} // ecall
-                            (0x1, 0x0) => {} // ebreak
-                            (0x2, 0x0) => {} // uret
-                            (0x2, 0x8) => {} // sret
+                            (0x0, 0x0) => {}  // ecall
+                            (0x1, 0x0) => {}  // ebreak
+                            (0x2, 0x0) => {}  // uret
+                            (0x2, 0x8) => {}  // sret
                             (0x2, 0x18) => {} // mret
-                            (0x5, 0x8) => {} // wfi
-                            (_, 0x9) => {} // sfence.vma
-                            (_, 0x11) => {} // hfence.bvma
-                            (_, 0x51) => {} // hfence.bvma
+                            (0x5, 0x8) => {}  // wfi
+                            (_, 0x9) => {}    // sfence.vma
+                            (_, 0x11) => {}   // hfence.bvma
+                            (_, 0x51) => {}   // hfence.bvma
                             _ => {}
                         }
                     }
@@ -837,5 +868,6 @@ impl Cpu {
                 exit(1);
             }
         }
+        Ok(())
     }
 }

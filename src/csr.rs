@@ -7,10 +7,12 @@ const MEDELEG: u32 = 0x302; // Machine exception delefation register.
 const MIDELEG: u32 = 0x303; // Machine interrupt delefation register.
 const MIE: u32 = 0x304; // Machine interrupt-enable register.
 const MTVEC: u32 = 0x305; // Machine trap-handler base address.
+
 // Machine trap handling.
 const MEPC: u32 = 0x342; // Machine exception program counter.
 const MCAUSE: u32 = 0x342; // Machine trap cause.
 const MIP: u32 = 0x344; // Machine interrupt pending.
+
 // Machine information registers.
 const MHARTID: u32 = 0xf14; // Hardware thread ID.
 
@@ -44,7 +46,10 @@ impl Csr {
     }
 
     pub fn write(&mut self, csr_address: u32, value: i64) {
-        let original = self.regs.get_mut(&csr_address).expect("failed to get a csr");
+        let original = self
+            .regs
+            .get_mut(&csr_address)
+            .expect("failed to get a csr");
         *original = value;
     }
 }
