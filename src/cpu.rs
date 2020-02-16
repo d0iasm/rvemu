@@ -867,7 +867,7 @@ impl Cpu {
                 );
                 log(&text);
                 render(&text);
-                exit(1);
+                return Err(Exception::IllegalInstruction);
             }
         }
         Ok(())
