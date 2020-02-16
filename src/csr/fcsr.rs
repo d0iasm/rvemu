@@ -17,8 +17,32 @@ bitflags! {
     }
 }
 
+#[derive(PartialEq, Eq)]
+pub enum RoundingMode {
+    Rne = 0b000, // Round to nearest, ties to even.
+    Rtz = 0b001, // Round towards zero.
+    Rdn = 0b010, // Round down (towards -∞).
+    Rup = 0b011, // Round up (towards +∞).
+    Rmm = 0b100, // Round to nearest, ties to max maagnitude.
+    Dyn = 0b111, // In instruction's rm field, selects dynamic rounding mode; In rounding mode register, invalid.
+    Invalid,
+}
+
 impl Fcsr {
     pub fn clear(&mut self) {
         self.bits = 0;
+    }
+
+    pub fn get_rounding_mode(self) -> RoundingMode {
+        let frm = (self & Fcsr::FRM).bits() >> 5;
+        match frm {
+            0b000 => RoundingMode::Rne,
+            0b001 => RoundingMode::Rtz,
+            0b010 => RoundingMode::Rdn,
+            0b011 => RoundingMode::Rup,
+            0b100 => RoundingMode::Rmm,
+            0b111 => RoundingMode::Dyn,
+            _ => RoundingMode::Invalid,
+        }
     }
 }

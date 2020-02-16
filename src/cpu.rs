@@ -532,11 +532,13 @@ impl Cpu {
                  */
 
                 let fcsr = self.csr.read(FCSR)? as u64 as u32;
-                let frm = (Fcsr::from_bits(fcsr).expect("failed to convert fcsr") & Fcsr::FRM)
-                    .bits()
-                    >> 5;
-                if frm == 0b101 || frm == 0b110 {
-                    return Err(Exception::IllegalInstruction(String::from("frm is set to an invalid value (101–110)")));
+                let frm = Fcsr::from_bits(fcsr)
+                    .expect("failed to convert fcsr")
+                    .get_rounding_mode();
+                if frm == RoundingMode::Invalid {
+                    return Err(Exception::IllegalInstruction(String::from(
+                        "frm is set to an invalid value (101–110)",
+                    )));
                 }
 
                 match funct7 {
@@ -717,7 +719,9 @@ impl Cpu {
                         if xregs[rs1] == xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -727,7 +731,9 @@ impl Cpu {
                         if xregs[rs1] != xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -737,7 +743,9 @@ impl Cpu {
                         if xregs[rs1] < xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -747,7 +755,9 @@ impl Cpu {
                         if xregs[rs1] >= xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -757,7 +767,9 @@ impl Cpu {
                         if (xregs[rs1] as u64) < (xregs[rs2] as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -767,7 +779,9 @@ impl Cpu {
                         if (xregs[rs1] as u64) >= (xregs[rs2] as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                                return Err(Exception::InstructionAddressMisaligned(String::from(
+                                    "must be aligned on a four-byte boundary",
+                                )));
                             }
                             self.pc = target as usize;
                         }
@@ -783,7 +797,9 @@ impl Cpu {
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let target = (xregs[rs1] + imm - 4) & !1;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                    return Err(Exception::InstructionAddressMisaligned(String::from(
+                        "must be aligned on a four-byte boundary",
+                    )));
                 }
                 self.pc = target as usize;
             }
@@ -801,7 +817,9 @@ impl Cpu {
                         as i64;
                 let target = (self.pc as i64) + offset - 4;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
+                    return Err(Exception::InstructionAddressMisaligned(String::from(
+                        "must be aligned on a four-byte boundary",
+                    )));
                 }
                 self.pc = target as usize;
             }
@@ -865,7 +883,10 @@ impl Cpu {
                 }
             }
             _ => {
-                return Err(Exception::IllegalInstruction(String::from(format!("not implemented opcode {:#x}", opcode))));
+                return Err(Exception::IllegalInstruction(String::from(format!(
+                    "not implemented opcode {:#x}",
+                    opcode
+                ))));
             }
         }
         Ok(())

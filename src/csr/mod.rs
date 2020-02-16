@@ -58,15 +58,19 @@ impl Csr {
         if let Some(csr_val) = self.regs.get(&csr_address) {
             Ok(*csr_val)
         } else {
-            Err(Exception::IllegalInstruction(String::from("failed to read a csr.")))
+            Err(Exception::IllegalInstruction(String::from(
+                "failed to read a csr.",
+            )))
         }
     }
 
-    pub fn write(&mut self, csr_address: u32, value: i64) -> Result<(), Exception>{
+    pub fn write(&mut self, csr_address: u32, value: i64) -> Result<(), Exception> {
         if let Some(csr_val) = self.regs.get_mut(&csr_address) {
             Ok(*csr_val = value)
         } else {
-            Err(Exception::IllegalInstruction(String::from("failed to write a csr.")))
+            Err(Exception::IllegalInstruction(String::from(
+                "failed to write a csr.",
+            )))
         }
     }
 
