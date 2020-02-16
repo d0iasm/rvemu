@@ -16,18 +16,6 @@ Supports the following RISC-V ISA features (RV64G):
 - Zifencei (v2.0): supports 1/1 instructions (FENCE.i doesn't do anything for now)
 - Zicsr (v2.0): supports 6/6 instructions (no unittests and no atomicity)
 
-Supports CSRs:
-- mhartid: Hardware thread ID.
-- mstatus: Machine status register.
-- misa: ISA and extensions.
-- medeleg: Machine exception delegation register.
-- mideleg: Machine interrupt delegation register.
-- mie: Machine interrupt-enable register.
-- mtvec: Machine trap-handler base address.
-- mepc: Machine exception program coutner.
-- mcause: Machine trap cause.
-- mip: Machine interrupt pending.
-
 # Usage
 The emulator supports the following commands:
 - __upload__: Upload a local RISC-V binary/local RISC-V binaries for an execution on the emulator.
@@ -79,11 +67,12 @@ $ firebase deploy
 
 ### Supports "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified"
 - [ ] Privileged ISA (URET, SRET, MRET, WFI, SFENCE.VMA, HFENCE.BVMA, and HFENCE.GVMA)
-- [ ] Machine CSRs
+- [ ] Machine-level CSRs
 - [ ] Machine-Mode privileged instructions
-- [ ] Supervisor CSRs
+- [ ] Supervisor-level CSRs
 - [ ] Supervisor instructions
 - [ ] Page-Based Virtual-Memory System
+- [ ] User-level CSRs
 
 ## Dependencies
 - rust toolchain

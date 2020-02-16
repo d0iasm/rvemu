@@ -10,11 +10,19 @@ use num_traits::cast::ToPrimitive;
 use crate::*;
 use fcsr::*;
 
+pub enum Mode {
+    User,
+    Supervisor,
+    Machine,
+    Debug,
+}
+
 pub struct Cpu {
     pub xregs: [i64; REGISTERS_COUNT],
     pub fregs: [f64; REGISTERS_COUNT],
     pub pc: usize,
     pub csr: Csr,
+    pub mode: Mode,
 }
 
 impl Cpu {
@@ -24,6 +32,7 @@ impl Cpu {
             fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
             csr: Csr::new(),
+            mode: Mode::Machine,
         }
     }
 
@@ -31,6 +40,7 @@ impl Cpu {
     pub fn reset(&mut self) {
         self.pc = 0;
         self.csr.clear();
+        // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
             self.xregs[i] = 0;
             self.fregs[i] = 0.0;
@@ -834,8 +844,23 @@ impl Cpu {
                             // environment call exception.
                             // ebreak makes a request of the debugger by raising a breakpoint
                             // exception.
-                            (0x0, 0x0) => {}  // ecall
-                            (0x1, 0x0) => {}  // ebreak
+                            (0x0, 0x0) => {
+                                // ecall
+                                match self.mode {
+                                    Mode::User => return Err(Exception::EnvironmentCallFromUMode),
+                                    Mode::Supervisor => {
+                                        return Err(Exception::EnvironmentCallFromSMode)
+                                    }
+                                    Mode::Machine => {
+                                        return Err(Exception::EnvironmentCallFromMMode)
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            (0x1, 0x0) => {
+                                // ebreak
+                                return Err(Exception::Breakpoint);
+                            }
                             (0x2, 0x0) => {}  // uret
                             (0x2, 0x8) => {}  // sret
                             (0x2, 0x18) => {} // mret

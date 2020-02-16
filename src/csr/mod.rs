@@ -4,11 +4,22 @@ use std::collections::HashMap;
 
 use crate::exception::Exception;
 
+// ***** User-level CSR addresses *****
+// User trap handling.
+pub const UEPC: u32 = 0x041; // User exception program counter.
+pub const UCAUSE: u32 = 0x042; // User trap cause.
+
 // User floating-point CSRs.
 pub const FFLAGS: u32 = 0x001; // Flating-point accrued exceptions.
 pub const FRB: u32 = 0x002; // Floating-point dynamic rounding mode.
 pub const FCSR: u32 = 0x003; // Floating-point control and status register (frm + fflags).
 
+// ***** Supervisor-level CSR addresses *****
+// Supervisor trap handling.
+pub const SEPC: u32 = 0x141; // Supervisor exception program counter.
+pub const SCAUSE: u32 = 0x142; // Supervisor trap cause.
+
+// ***** Machine-level CSR addresses *****
 // Machine trap setup.
 pub const MSTATUS: u32 = 0x300; // Machine status register.
 pub const MISA: u32 = 0x301; // ISA and extensions.
@@ -36,9 +47,14 @@ impl Csr {
         // csr[11:10]: Whether the register is read/write (00, 01, or 10) or read-only (11).
         // csr[9:8]: The lowest privilege level that can access the CSR. User (00), supervisor
         // (01), hypervisor (10), and machine (11).
+        regs.insert(0b01 << 00 | 0b00 << 8 | UEPC, 0);
+        regs.insert(0b01 << 00 | 0b00 << 8 | UCAUSE, 0);
         regs.insert(0b00 << 00 | 0b00 << 8 | FFLAGS, 0);
         regs.insert(0b00 << 00 | 0b00 << 8 | FRB, 0);
         regs.insert(0b00 << 00 | 0b00 << 8 | FCSR, 0);
+
+        regs.insert(0b00 << 00 | 0b01 << 8 | SEPC, 0);
+        regs.insert(0b00 << 00 | 0b01 << 8 | SCAUSE, 0);
 
         regs.insert(0b00 << 00 | 0b11 << 8 | MSTATUS, 0);
         regs.insert(0b00 << 00 | 0b11 << 8 | MISA, 0);
