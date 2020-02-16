@@ -27,6 +27,7 @@ impl Cpu {
         }
     }
 
+    /// Reset CPU states.
     pub fn reset(&mut self) {
         self.pc = 0;
         self.csr.clear();
@@ -36,6 +37,7 @@ impl Cpu {
         }
     }
 
+    /// Start executing the CPU.
     pub fn start(&mut self, mem: &mut Memory) {
         let size = mem.len();
 
@@ -54,10 +56,12 @@ impl Cpu {
         }
     }
 
+    /// Fetch the next instruction from a memory at the current program counter.
     fn fetch(&mut self, mem: &Memory) -> u32 {
         mem.read32(self.pc)
     }
 
+    /// Execute an instruction.
     // This function is public because it's called from a unit test.
     pub fn execute(&mut self, binary: u32, mem: &mut Memory) -> Result<(), Exception> {
         let opcode = binary & 0x0000007f;
@@ -70,7 +74,7 @@ impl Cpu {
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
 
-        log(&format!(
+        output(&format!(
             "execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b}), binary: {:#x}",
             self.pc, self.pc, opcode, opcode, opcode, binary
         ));
@@ -861,12 +865,10 @@ impl Cpu {
                 }
             }
             _ => {
-                let text = format!(
+                output(&format!(
                     "not implemented opcode {} ({:#x}, {:#b})",
                     opcode, opcode, opcode
-                );
-                log(&text);
-                render(&text);
+                ));
                 return Err(Exception::IllegalInstruction);
             }
         }

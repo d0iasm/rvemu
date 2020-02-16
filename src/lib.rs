@@ -20,7 +20,8 @@ extern "C" {
     fn log(s: &str);
 }
 
-pub fn render(content: &str) {
+/// Output a message to an emulator console.
+fn render(message: &str) {
     let window = web_sys::window().expect("no global `window` exists");
     let document = window.document().expect("should have a document on window");
     let buffer = document
@@ -30,13 +31,20 @@ pub fn render(content: &str) {
     let span = document
         .create_element("span")
         .expect("span element should be created successfully");
-    span.set_inner_html(content);
+    span.set_inner_html(message);
     let result = buffer.append_child(&span);
     if result.is_err() {
         panic!("can't append a span node to a buffer node")
     }
 }
 
+/// Output a message to both a browser console and an emulator console.
+pub fn output(message: &str) {
+    log(message);
+    render(message);
+}
+
+/// An emulator struct to holds a CPU and a memory.
 #[wasm_bindgen]
 pub struct Emulator {
     cpu: Cpu,
@@ -45,6 +53,7 @@ pub struct Emulator {
 
 #[wasm_bindgen]
 impl Emulator {
+    /// Constructor for an emulator.
     pub fn new() -> Emulator {
         // Initialize for putting error messages to a browser console.
         utils::set_panic_hook();
@@ -55,10 +64,12 @@ impl Emulator {
         }
     }
 
+    /// Reset CPU state.
     pub fn reset(&mut self) {
         self.cpu.reset()
     }
 
+    /// Set a binary from the emulator console of a browser.
     pub fn set_binary(&mut self, bin: Vec<u8>) {
         self.mem.set_binary(bin);
         log(&format!(
@@ -68,32 +79,27 @@ impl Emulator {
         ));
     }
 
+    /// Start executing.
     pub fn execute(&mut self) {
         self.cpu.start(&mut self.mem);
         self.dump_registers();
     }
 
+    /// Output current registers.
     pub fn dump_registers(&self) {
         for i in 0..REGISTERS_COUNT {
-            let text = format!(
+            output(&format!(
                 "x{}: {:#x} ({}, {:#b})",
                 i, self.cpu.xregs[i], self.cpu.xregs[i], self.cpu.xregs[i]
-            );
-            log(&text);
-            render(&text);
+            ));
         }
 
-        let text = format!("---------------------");
-        log(&text);
-        render(&text);
+        output(&format!("---------------------"));
 
         for i in 0..REGISTERS_COUNT {
-            let text = format!("f{}: {:#?}", i, self.cpu.fregs[i]);
-            log(&text);
-            render(&text);
+            output(&format!("f{}: {:#?}", i, self.cpu.fregs[i]));
         }
 
-        log(&format!("pc: {}", self.cpu.pc));
-        render(&format!("pc: {}", self.cpu.pc));
+        output(&format!("pc: {}", self.cpu.pc));
     }
 }

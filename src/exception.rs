@@ -10,7 +10,7 @@ pub enum Exception {
 
 impl Exception {
     pub fn take_trap(&self) {
-        log(&format!("exception: {:#?}", self));
+        output(&format!("exception: {:#?}", self));
         exit(1);
     }
 }
