@@ -4,8 +4,8 @@ use crate::*;
 
 #[derive(Debug)]
 pub enum Exception {
-    InstructionAddressMisaligned,
-    IllegalInstruction,
+    InstructionAddressMisaligned(String),
+    IllegalInstruction(String),
 }
 
 impl Exception {

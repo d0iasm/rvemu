@@ -74,7 +74,7 @@ impl Cpu {
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
 
-        output(&format!(
+        log(&format!(
             "execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b}), binary: {:#x}",
             self.pc, self.pc, opcode, opcode, opcode, binary
         ));
@@ -531,12 +531,12 @@ impl Cpu {
                  *
                  */
 
-                let fcsr = self.csr.read(FCSR) as u64 as u32;
+                let fcsr = self.csr.read(FCSR)? as u64 as u32;
                 let frm = (Fcsr::from_bits(fcsr).expect("failed to convert fcsr") & Fcsr::FRM)
                     .bits()
                     >> 5;
                 if frm == 0b101 || frm == 0b110 {
-                    return Err(Exception::IllegalInstruction);
+                    return Err(Exception::IllegalInstruction(String::from("frm is set to an invalid value (101–110)")));
                 }
 
                 match funct7 {
@@ -717,7 +717,7 @@ impl Cpu {
                         if xregs[rs1] == xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -727,7 +727,7 @@ impl Cpu {
                         if xregs[rs1] != xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -737,7 +737,7 @@ impl Cpu {
                         if xregs[rs1] < xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -747,7 +747,7 @@ impl Cpu {
                         if xregs[rs1] >= xregs[rs2] {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -757,7 +757,7 @@ impl Cpu {
                         if (xregs[rs1] as u64) < (xregs[rs2] as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -767,7 +767,7 @@ impl Cpu {
                         if (xregs[rs1] as u64) >= (xregs[rs2] as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
+                                return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                             }
                             self.pc = target as usize;
                         }
@@ -783,7 +783,7 @@ impl Cpu {
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let target = (xregs[rs1] + imm - 4) & !1;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned);
+                    return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                 }
                 self.pc = target as usize;
             }
@@ -801,7 +801,7 @@ impl Cpu {
                         as i64;
                 let target = (self.pc as i64) + offset - 4;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned);
+                    return Err(Exception::InstructionAddressMisaligned(String::from("must be aligned on a four-byte boundary")));
                 }
                 self.pc = target as usize;
             }
@@ -830,46 +830,42 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, xregs[rs1]);
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, xregs[rs1])?;
                     }
                     0x2 => {
                         // csrrs
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, xregs[rd] | xregs[rs1]);
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, xregs[rd] | xregs[rs1])?;
                     }
                     0x3 => {
                         // csrrc
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, xregs[rd] & (!xregs[rs1]));
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, xregs[rd] & (!xregs[rs1]))?;
                     }
                     0x5 => {
                         // csrrwi
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, uimm);
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, uimm)?;
                     }
                     0x6 => {
                         // csrrsi
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, xregs[rd] | uimm);
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, xregs[rd] | uimm)?;
                     }
                     0x7 => {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address);
-                        self.csr.write(csr_address, xregs[rd] & (!uimm));
+                        xregs[rd] = self.csr.read(csr_address)?;
+                        self.csr.write(csr_address, xregs[rd] & (!uimm))?;
                     }
                     _ => {}
                 }
             }
             _ => {
-                output(&format!(
-                    "not implemented opcode {} ({:#x}, {:#b})",
-                    opcode, opcode, opcode
-                ));
-                return Err(Exception::IllegalInstruction);
+                return Err(Exception::IllegalInstruction(String::from(format!("not implemented opcode {:#x}", opcode))));
             }
         }
         Ok(())

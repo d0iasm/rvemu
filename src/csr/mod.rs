@@ -2,6 +2,8 @@ pub mod fcsr;
 
 use std::collections::HashMap;
 
+use crate::exception::Exception;
+
 // User floating-point CSRs.
 pub const FFLAGS: u32 = 0x001; // Flating-point accrued exceptions.
 pub const FRB: u32 = 0x002; // Floating-point dynamic rounding mode.
@@ -52,21 +54,25 @@ impl Csr {
         Self { regs }
     }
 
-    pub fn read(&self, csr_address: u32) -> i64 {
-        *self.regs.get(&csr_address).expect("failed to read a csr")
+    pub fn read(&self, csr_address: u32) -> Result<i64, Exception> {
+        if let Some(csr_val) = self.regs.get(&csr_address) {
+            Ok(*csr_val)
+        } else {
+            Err(Exception::IllegalInstruction(String::from("failed to read a csr.")))
+        }
     }
 
-    pub fn write(&mut self, csr_address: u32, value: i64) {
-        let original = self
-            .regs
-            .get_mut(&csr_address)
-            .expect("failed to get a csr");
-        *original = value;
+    pub fn write(&mut self, csr_address: u32, value: i64) -> Result<(), Exception>{
+        if let Some(csr_val) = self.regs.get_mut(&csr_address) {
+            Ok(*csr_val = value)
+        } else {
+            Err(Exception::IllegalInstruction(String::from("failed to write a csr.")))
+        }
     }
 
     pub fn clear(&mut self) {
-        for csr in self.regs.values_mut() {
-            *csr = 0;
+        for csr_val in self.regs.values_mut() {
+            *csr_val = 0;
         }
     }
 }
