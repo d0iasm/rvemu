@@ -58,6 +58,7 @@ async function initialize() {
     const bin = new Uint8Array(fileReader.result);
     emu.set_binary(bin);
     emu.execute();
+    emu.free();
   };
 
   fileIn.onchange = e => {
@@ -65,12 +66,12 @@ async function initialize() {
     for (let i=0; i<file.files.length; i++) {
       names += file.files[i].name;
       if (i < file.files.length-1) {
-        names += ", ";
+        names += "\t";
       }
     }
     files.push.apply(files, file.files);
     term.write(deleteLine);
-    term.write("uploaded " + names);
+    term.write("uploaded:\t" + names);
     prompt();
   };
 }
@@ -106,7 +107,7 @@ function ls() {
   for (let i=0; i<files.length; i++) {
     names += files[i].name;
     if (i < files.length-1) {
-      names += ", ";
+      names += "\t";
     }
   }
   term.write("\r\n" + names);
