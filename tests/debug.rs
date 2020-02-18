@@ -16,6 +16,4 @@ pub fn debug() {
     };
 
     cpu.start(&mut mem);
-
-    let elf = rvemu::elf::Elf64Ehdr::new(&mem.dram);
 }
