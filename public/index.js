@@ -144,6 +144,16 @@ function command(input) {
   }
 }
 
+function loadApps() {
+  fetch("./apps/fib")
+    .then(response => response.blob())
+    .then(blob => {
+      const sampleFile = new File([blob], "fib");
+      files.push(sampleFile);
+      console.log("Loaded apps:", files);
+    });
+}
+
 function runTerminal() {
   if (term._initialized) {
       return;
@@ -162,6 +172,8 @@ function runTerminal() {
   help();
   term.writeln("");
   prompt();
+
+  loadApps();
 
   let input = "";
   let cursor = 0;
