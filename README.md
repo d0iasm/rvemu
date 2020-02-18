@@ -42,6 +42,13 @@ You can see the website via http://localhost:8000. `npm start` is the alias of `
 $ npm start // at the public directory
 ```
 
+## Build RISC-V binary that can be executed on the emulator
+This emulator starts to execute at the address 0, so you need to extract .text section to execute your binary file on the emulator.
+```
+$ riscv64-unknown-elf-gcc -o hello hello.c
+$ riscv64-unknown-elf-objcopy -O binary --only-section=.text hello hello.text 
+```
+
 ## Test
 You need to install a Firefox browser, a Chrome browser, or a Safari browser to test the project. A browser can be specified by a `--firefox` or a `--chrome` flag.
 ```
