@@ -1,5 +1,6 @@
 pub mod cpu;
 pub mod csr;
+pub mod elf;
 pub mod exception;
 pub mod memory;
 mod utils;
@@ -9,6 +10,7 @@ extern crate bitflags;
 
 use crate::cpu::*;
 use crate::csr::*;
+use crate::elf::*;
 use crate::exception::*;
 use crate::memory::*;
 
@@ -71,12 +73,13 @@ impl Emulator {
 
     /// Set a binary from the emulator console of a browser.
     pub fn set_binary(&mut self, bin: Vec<u8>) {
+        let elf_header = Elf64Ehdr::new(&bin);
+        if !elf_header.verify() {
+            output(&format!("unexpected ELF format"))
+        }
+        log(&format!("{:#?}", elf_header));
+
         self.mem.set_binary(bin);
-        log(&format!(
-            "binary size: {} ({:#x})",
-            self.mem.len(),
-            self.mem.len()
-        ));
     }
 
     /// Start executing.
