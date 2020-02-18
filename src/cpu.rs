@@ -54,7 +54,7 @@ impl Cpu {
         let mut i = 0;
         while self.pc < size {
             let binary = self.fetch(mem);
-            let _ = self.execute(binary, mem).map_err(|e| e.take_trap());
+            let _ = self.execute(binary, mem).map_err(|e| e.take_trap(self));
             self.pc += 4;
 
             // TODO: Remove the following check.
