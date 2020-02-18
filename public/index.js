@@ -54,8 +54,16 @@ async function initialize() {
     const emu = Emulator.new();
     const bin = new Uint8Array(fileReader.result);
     emu.set_binary(bin);
-    emu.execute();
-    emu.free();
+    try {
+      emu.execute();
+    } catch(err) {
+      term.write(deleteLine);
+      term.write(err.message);
+      prompt();
+      console.log(err);
+    } finally {
+      emu.free();
+    }
   };
 
   fileIn.onchange = e => {
