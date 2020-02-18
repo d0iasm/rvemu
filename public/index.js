@@ -21,9 +21,6 @@ const buffer = document.getElementById("buffer");
 const termContainer = document.getElementById("terminal");
 const term  = new Terminal({cursorBlink: true});
 
-console.log(Terminal);
-console.log(FitAddon.FitAddon);
-
 const fitAddon = new FitAddon.FitAddon();
 const newLine = "\r\n$ ";
 const deleteLine = "\x1b[2K\r";
