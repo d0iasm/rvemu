@@ -1,6 +1,6 @@
 pub mod cpu;
 pub mod csr;
-pub mod elf;
+//pub mod elf;
 pub mod exception;
 pub mod memory;
 mod utils;
@@ -10,7 +10,7 @@ extern crate bitflags;
 
 use crate::cpu::*;
 use crate::csr::*;
-use crate::elf::*;
+//use crate::elf::*;
 use crate::exception::*;
 use crate::memory::*;
 

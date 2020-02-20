@@ -4,7 +4,9 @@ use std::collections::HashMap;
 
 use crate::exception::Exception;
 
-// ***** User-level CSR addresses *****
+//////////////////////////////
+// User-level CSR addresses //
+//////////////////////////////
 // User trap handling.
 pub const UEPC: u32 = 0x041; // User exception program counter.
 pub const UCAUSE: u32 = 0x042; // User trap cause.
@@ -14,12 +16,19 @@ pub const FFLAGS: u32 = 0x001; // Flating-point accrued exceptions.
 pub const FRB: u32 = 0x002; // Floating-point dynamic rounding mode.
 pub const FCSR: u32 = 0x003; // Floating-point control and status register (frm + fflags).
 
-// ***** Supervisor-level CSR addresses *****
+////////////////////////////////////
+// Supervisor-level CSR addresses //
+////////////////////////////////////
 // Supervisor trap handling.
 pub const SEPC: u32 = 0x141; // Supervisor exception program counter.
 pub const SCAUSE: u32 = 0x142; // Supervisor trap cause.
 
-// ***** Machine-level CSR addresses *****
+/////////////////////////////////
+// Machine-level CSR addresses //
+/////////////////////////////////
+// Machine information registers.
+pub const MHARTID: u32 = 0xf14; // Hardware thread ID.
+
 // Machine trap setup.
 pub const MSTATUS: u32 = 0x300; // Machine status register.
 pub const MISA: u32 = 0x301; // ISA and extensions.
@@ -27,14 +36,14 @@ pub const MEDELEG: u32 = 0x302; // Machine exception delefation register.
 pub const MIDELEG: u32 = 0x303; // Machine interrupt delefation register.
 pub const MIE: u32 = 0x304; // Machine interrupt-enable register.
 pub const MTVEC: u32 = 0x305; // Machine trap-handler base address.
+pub const MCOUNTEREN: u32 = 0x306; // Machine counter enable.
 
 // Machine trap handling.
-pub const MEPC: u32 = 0x342; // Machine exception program counter.
+pub const MSCRATCH: u32 = 0x340; // Scratch register for machine trap handlers.
+pub const MEPC: u32 = 0x341; // Machine exception program counter.
 pub const MCAUSE: u32 = 0x342; // Machine trap cause.
+pub const MTVAL: u32 = 0x343; // Machine bad address or instruction.
 pub const MIP: u32 = 0x344; // Machine interrupt pending.
-
-// Machine information registers.
-pub const MHARTID: u32 = 0xf14; // Hardware thread ID.
 
 pub struct Csr {
     regs: HashMap<u32, i64>,
@@ -56,16 +65,19 @@ impl Csr {
         regs.insert(SEPC, 0);
         regs.insert(SCAUSE, 0);
 
+        regs.insert(MHARTID, 0); // read-only
         regs.insert(MSTATUS, 0);
         regs.insert(MISA, 0);
         regs.insert(MEDELEG, 0);
         regs.insert(MIDELEG, 0);
         regs.insert(MIE, 0);
         regs.insert(MTVEC, 0);
+        regs.insert(MCOUNTEREN, 0);
+        regs.insert(MSCRATCH, 0);
         regs.insert(MEPC, 0);
         regs.insert(MCAUSE, 0);
+        regs.insert(MTVAL, 0);
         regs.insert(MIP, 0);
-        regs.insert(MHARTID, 0); // read-only
 
         Self { regs }
     }
