@@ -61,9 +61,11 @@ impl Cpu {
             // This is for avoiding an infinite execution.
             i += 1;
             if i > 1000 {
+                log(&format!("execute more than 1000"));
                 exit(1);
             }
         }
+        log(&format!("executed {}, size {}", i, size));
     }
 
     /// Fetch the next instruction from a memory at the current program counter.

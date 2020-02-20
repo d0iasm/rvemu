@@ -42,33 +42,33 @@ pub struct Elf32Ehdr {
 #[derive(Default, Debug)]
 pub struct Elf64Ehdr {
     /// Elf identification
-    e_indent: [Elf64Byte; EI_NIDENT],
+    pub e_indent: [Elf64Byte; EI_NIDENT],
     /// Object file type
-    e_type: Elf64Half,
+    pub e_type: Elf64Half,
     /// Machine type
-    e_machine: Elf64Half,
+    pub e_machine: Elf64Half,
     /// Object file version
-    e_version: Elf64Word,
+    pub e_version: Elf64Word,
     /// Entry point address
-    e_entry: Elf64Addr,
+    pub e_entry: Elf64Addr,
     /// Program header offset
-    e_phoff: Elf64Off,
+    pub e_phoff: Elf64Off,
     /// Section header offset
-    e_shoff: Elf64Off,
+    pub e_shoff: Elf64Off,
     /// Processor-specific flags
-    e_flags: Elf64Word,
+    pub e_flags: Elf64Word,
     /// ELF header size
-    e_ehsize: Elf64Half,
+    pub e_ehsize: Elf64Half,
     /// Size of program header entry
-    e_phentsize: Elf64Half,
+    pub e_phentsize: Elf64Half,
     /// Number of program header entries
-    e_phnum: Elf64Half,
+    pub e_phnum: Elf64Half,
     /// Size of section header entry
-    e_shentsize: Elf64Half,
+    pub e_shentsize: Elf64Half,
     /// Number of section header entries
-    e_shnum: Elf64Half,
+    pub e_shnum: Elf64Half,
     /// Section name string table index
-    e_shstrndx: Elf64Half,
+    pub e_shstrndx: Elf64Half,
 }
 
 unsafe impl Plain for Elf64Ehdr {}
@@ -89,7 +89,7 @@ impl Elf64Ehdr {
     }
 }
 
-// 32-bit program header (Phdr)
+/// 32-bit program header (Phdr)
 pub struct Elf32Phdr {
     p_type: Elf32Word,   // Type of segment
     p_offset: Elf32Off,  // Offset in file
@@ -101,7 +101,7 @@ pub struct Elf32Phdr {
     p_align: Elf32Word,  // Alignment of segment
 }
 
-// 64-bit program header (Phdr)
+/// 64-bit program header (Phdr)
 pub struct Elf64Phdr {
     p_type: Elf64Word,    // Type of segment
     p_flags: Elf64Word,   // Segment attributes
@@ -113,7 +113,7 @@ pub struct Elf64Phdr {
     p_align: Elf64XWord,  // Alignment of segment
 }
 
-// 32-bit section header (Shdr)
+/// 32-bit section header (Shdr)
 pub struct Elf32Shdr {
     sh_name: Elf32Word,      // Section name
     sh_type: Elf32Word,      // Section type
@@ -127,7 +127,7 @@ pub struct Elf32Shdr {
     sh_entsize: Elf32Word,   // Size of entries, if section has table
 }
 
-// 64-bit section header (Shdr)
+/// 64-bit section header (Shdr)
 pub struct Elf64Shdr {
     sh_name: Elf64Word,       // Section name
     sh_type: Elf64Word,       // Section type
@@ -141,7 +141,7 @@ pub struct Elf64Shdr {
     sh_entsize: Elf64XWord,   // Size of entries, if section has table
 }
 
-// 32-bit string and symbol tables
+/// 32-bit string and symbol tables
 pub struct Elf32Sym {
     st_name: Elf32Word,  // Symbol name
     st_value: Elf32Addr, // Symbol value
@@ -151,7 +151,7 @@ pub struct Elf32Sym {
     st_shndx: Elf32Half, // Section table index
 }
 
-// 64-bit string and symbol tables
+/// 64-bit string and symbol tables
 pub struct Elf64Sym {
     st_name: Elf64Word,  // Symbol name
     st_info: Elf64Byte,  // Type and binding attributes

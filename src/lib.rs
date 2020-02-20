@@ -73,11 +73,13 @@ impl Emulator {
 
     /// Set a binary from the emulator console of a browser.
     pub fn set_binary(&mut self, bin: Vec<u8>) {
-        let elf_header = Elf64Ehdr::new(&bin);
-        if !elf_header.verify() {
-            output(&format!("unexpected ELF format"))
-        }
-        log(&format!("{:#?}", elf_header));
+        //let header = Elf64Ehdr::new(&bin);
+        //if !header.verify() {
+        //output(&format!("unexpected ELF format"))
+        //}
+        //log(&format!("{:#?}", header));
+        // Set an entry point. Divide 8 because `e_entry` is the number of bits.
+        //self.cpu.pc = header.e_entry as usize;
 
         self.mem.set_binary(bin);
     }

@@ -42,11 +42,12 @@ You can see the website via http://localhost:8000. `npm start` is the alias of `
 $ npm start // at the public directory
 ```
 
-## Build RISC-V binary that can be executed on the emulator
+## Build RISC-V binary
+TODO: This is wrong solution. Need to research more.
 This emulator starts to execute at the address 0, so you need to extract .text section to execute your binary file on the emulator.
 ```
-$ riscv64-unknown-elf-gcc -o hello hello.c
-$ riscv64-unknown-elf-objcopy -O binary --only-section=.text hello hello.text 
+$ riscv64-unknown-elf-gcc -o hello hello.c -static
+$ riscv64-unknown-elf-objcopy -O binary --only-section=.text hello hello.text
 ```
 
 ## Test
