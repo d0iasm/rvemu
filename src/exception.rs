@@ -69,14 +69,14 @@ impl Exception {
         }
 
         match cpu.mode {
-            Mode::Machine => cpu.csr.write(MCAUSE, 0 << 63 | exception_code)?,
-            Mode::Supervisor => cpu.csr.write(SCAUSE, 0 << 63 | exception_code)?,
-            Mode::User => cpu.csr.write(UCAUSE, 0 << 63 | exception_code)?,
+            Mode::Machine => cpu.state.write(MCAUSE, 0 << 63 | exception_code)?,
+            Mode::Supervisor => cpu.state.write(SCAUSE, 0 << 63 | exception_code)?,
+            Mode::User => cpu.state.write(UCAUSE, 0 << 63 | exception_code)?,
             _ => {}
         }
 
         output(&format!("exception: {:#?}", self));
-        output(&format!("mcause: {:#?}", cpu.csr.read(MCAUSE)));
+        output(&format!("mcause: {:#?}", cpu.state.read(MCAUSE)));
         exit(1);
     }
 }

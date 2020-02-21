@@ -17,7 +17,6 @@ default = ["console_error_panic_hook"]
 bitflags = "1.2.1"
 num-bigint = "0.2.6"
 num-traits = "0.2.11"
-plain = "0.2.3"
 wasm-bindgen = "0.2.58"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

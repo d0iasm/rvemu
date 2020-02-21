@@ -21,7 +21,7 @@ pub struct Cpu {
     pub xregs: [i64; REGISTERS_COUNT],
     pub fregs: [f64; REGISTERS_COUNT],
     pub pc: usize,
-    pub csr: Csr,
+    pub state: State,
     pub mode: Mode,
 }
 
@@ -31,7 +31,7 @@ impl Cpu {
             xregs: [0; REGISTERS_COUNT],
             fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
-            csr: Csr::new(),
+            state: State::new(),
             mode: Mode::Machine,
         }
     }
@@ -39,7 +39,7 @@ impl Cpu {
     /// Reset CPU states.
     pub fn reset(&mut self) {
         self.pc = 0;
-        self.csr.clear();
+        self.state.clear();
         // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
             self.xregs[i] = 0;
@@ -543,7 +543,8 @@ impl Cpu {
                  *
                  */
 
-                let fcsr = self.csr.read(FCSR)? as u64 as u32;
+                /*
+                let fcsr = self.state.read(FCSR)? as u64 as u32;
                 let frm = Fcsr::from_bits(fcsr)
                     .expect("failed to convert fcsr")
                     .get_rounding_mode();
@@ -552,6 +553,7 @@ impl Cpu {
                         "frm is set to an invalid value (101–110)",
                     )));
                 }
+                */
 
                 match funct7 {
                     0x00 => fregs[rd] = (fregs[rs1] as f32 + fregs[rs2] as f32) as f64, // fadd.s
@@ -875,36 +877,36 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, xregs[rs1])?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, xregs[rs1])?;
                     }
                     0x2 => {
                         // csrrs
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, xregs[rd] | xregs[rs1])?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, xregs[rd] | xregs[rs1])?;
                     }
                     0x3 => {
                         // csrrc
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, xregs[rd] & (!xregs[rs1]))?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, xregs[rd] & (!xregs[rs1]))?;
                     }
                     0x5 => {
                         // csrrwi
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, uimm)?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, uimm)?;
                     }
                     0x6 => {
                         // csrrsi
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, xregs[rd] | uimm)?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, xregs[rd] | uimm)?;
                     }
                     0x7 => {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
-                        xregs[rd] = self.csr.read(csr_address)?;
-                        self.csr.write(csr_address, xregs[rd] & (!uimm))?;
+                        xregs[rd] = self.state.read(csr_address)?;
+                        self.state.write(csr_address, xregs[rd] & (!uimm))?;
                     }
                     _ => {}
                 }
