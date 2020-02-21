@@ -1,4 +1,5 @@
 pub mod fcsr;
+pub mod misa;
 
 use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};

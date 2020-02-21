@@ -40,7 +40,7 @@ impl Fcsr {
      *                                  |   NV | DZ | OF | UF | NX   |
      *      24              3               1    1    1    1    1
      */
-    pub fn clear(&mut self) {
+    pub fn reset(&mut self) {
         self.csr.clear();
     }
 
