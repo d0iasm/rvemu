@@ -165,11 +165,8 @@ impl ReadWrite {
             // TODO: ranse exception?
         }
 
-        let bitmask = !(!0 << (Self::BIT_LENGTH - range.end)
-            >> (Self::BIT_LENGTH - range.end)
-            >> range.start
-            << range.start);
-        // set bits
+        let bitmask = (!0 << range.end) | !(!0 << range.start);
+        // Set bits.
         self.value = (self.value & bitmask) | (value << range.start);
     }
 
@@ -190,10 +187,11 @@ impl ReadWrite {
             // TODO: ranse exception?
         }
 
-        // shift away high bits
-        let bits = self.value << (Self::BIT_LENGTH - range.end) >> (Self::BIT_LENGTH - range.end);
-        // shift away low bits
-        bits >> range.start
+        // Bitmask for high bits.
+        let bitmask = !0 << range.end;
+
+        // Shift away low bits.
+        (self.value & !bitmask) >> range.start
     }
 }
 
@@ -221,10 +219,11 @@ impl ReadOnly {
             // TODO: ranse exception?
         }
 
-        // shift away high bits
-        let bits = self.value << (Self::BIT_LENGTH - range.end) >> (Self::BIT_LENGTH - range.end);
-        // shift away low bits
-        bits >> range.start
+        // Bitmask for high bits.
+        let bitmask = !0 << range.end;
+
+        // Shift away low bits.
+        (self.value & !bitmask) >> range.start
     }
 }
 
