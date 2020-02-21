@@ -85,6 +85,16 @@ impl State {
         Self { csrs }
     }
 
+    pub fn get(&self, csr_address: CsrAddress) -> Result<&Csr, Exception> {
+        if let Some(csr) = self.csrs.get(&csr_address) {
+            Ok(csr)
+        } else {
+            Err(Exception::IllegalInstruction(String::from(
+                "failed to get a csr.",
+            )))
+        }
+    }
+
     pub fn read(&self, csr_address: u32) -> Result<i64, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
@@ -121,6 +131,7 @@ impl State {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Csr {
     RW(ReadWrite),
     RO(ReadOnly),
@@ -141,6 +152,10 @@ impl ReadWrite {
 
     pub fn new(value: i64) -> Self {
         Self { value }
+    }
+
+    pub fn clear(&mut self) {
+        self.value = 0;
     }
 
     pub fn write_bit(&mut self, bit: usize, value: bool) {
@@ -200,6 +215,10 @@ impl ReadOnly {
 
     pub fn new(value: i64) -> Self {
         Self { value }
+    }
+
+    pub fn clear(&mut self) {
+        self.value = 0;
     }
 
     pub fn read_bit(&self, bit: usize) -> bool {

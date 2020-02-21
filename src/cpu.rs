@@ -50,7 +50,6 @@ impl Cpu {
     /// Start executing the CPU.
     pub fn start(&mut self, mem: &mut Memory) {
         let size = mem.len();
-
         let mut i = 0;
         while self.pc < size {
             let binary = self.fetch(mem);
@@ -543,17 +542,12 @@ impl Cpu {
                  *
                  */
 
-                /*
-                let fcsr = self.state.read(FCSR)? as u64 as u32;
-                let frm = Fcsr::from_bits(fcsr)
-                    .expect("failed to convert fcsr")
-                    .get_rounding_mode();
-                if frm == RoundingMode::Invalid {
+                let fcsr = Fcsr::from(*self.state.get(FCSR)?);
+                if fcsr.read_frm() == RoundingMode::Invalid {
                     return Err(Exception::IllegalInstruction(String::from(
                         "frm is set to an invalid value (101–110)",
                     )));
                 }
-                */
 
                 match funct7 {
                     0x00 => fregs[rd] = (fregs[rs1] as f32 + fregs[rs2] as f32) as f64, // fadd.s
