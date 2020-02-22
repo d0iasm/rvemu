@@ -3,6 +3,7 @@ pub mod marchid;
 pub mod mhartid;
 pub mod mimpid;
 pub mod misa;
+pub mod mstatus;
 pub mod mvendorid;
 
 use std::collections::HashMap;
@@ -13,6 +14,7 @@ use crate::csr::marchid::Marchid;
 use crate::csr::mhartid::Mhartid;
 use crate::csr::mimpid::Mimpid;
 use crate::csr::misa::Misa;
+use crate::csr::mstatus::Mstatus;
 use crate::csr::mvendorid::Mvendorid;
 use crate::exception::Exception;
 
@@ -100,6 +102,7 @@ pub enum Csr {
     Marchid(Marchid),
     Mimpid(Mimpid),
     Mhartid(Mhartid),
+    Mstatus(Mstatus),
     Misa(Misa),
 }
 
@@ -118,6 +121,7 @@ impl State {
         csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
         csrs.insert(MHARTID, Csr::Mhartid(Mhartid::new(0)));
 
+        csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
         /*
@@ -166,6 +170,7 @@ impl State {
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
                 Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
                 Csr::Mhartid(mhartid) => Ok(mhartid.read_value()),
+                Csr::Mstatus(mstatus) => Ok(mstatus.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
@@ -199,6 +204,7 @@ impl State {
                         "mhartid is a read-only csr",
                     )))
                 }
+                Csr::Mstatus(mstatus) => mstatus.write_value(value),
                 Csr::Misa(misa) => misa.write_value(value),
             }
             Ok(())
@@ -217,6 +223,7 @@ impl State {
                 Csr::Marchid(marchid) => marchid.reset(),
                 Csr::Mimpid(mimpid) => mimpid.reset(),
                 Csr::Mhartid(mhartid) => mhartid.reset(),
+                Csr::Mstatus(mstatus) => mstatus.reset(),
                 Csr::Misa(misa) => misa.reset(),
             }
         }
