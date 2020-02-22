@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
+use crate::csr::misa::Misa;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
@@ -58,18 +59,21 @@ pub struct State {
 
 pub enum Csr {
     Fcsr(Fcsr),
-    //Misa(Misa2),
+    Misa(Misa),
 }
 
 impl State {
     pub fn new() -> Self {
         let mut csrs = HashMap::new();
 
+        // User-level CSRs.
         csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
 
-        // csr[11:10]: Whether the register is read/write (00, 01, or 10) or read-only (11).
-        // csr[9:8]: The lowest privilege level that can access the CSR. User (00), supervisor
-        // (01), hypervisor (10), and machine (11).
+        // Supervisor-level CSRs.
+
+        // Machine-level CSRs.
+        csrs.insert(MISA, Csr::Misa(Misa::new(0)));
+
         /*
         csrs.insert(UEPC, Csr::RW(ReadWrite::new(0)));
         csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
@@ -112,6 +116,7 @@ impl State {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => Ok(fcsr.get_value()),
+                Csr::Misa(misa) => Ok(misa.get_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
@@ -124,6 +129,7 @@ impl State {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.set_value(value),
+                Csr::Misa(misa) => misa.set_value(value),
             }
             Ok(())
         } else {
@@ -133,10 +139,11 @@ impl State {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub fn reset(&mut self) {
         for csr in self.csrs.values_mut() {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.reset(),
+                Csr::Misa(misa) => misa.reset(),
             }
         }
     }

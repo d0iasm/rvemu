@@ -40,7 +40,7 @@ impl Cpu {
     /// Reset CPU states.
     pub fn reset(&mut self) {
         self.pc = 0;
-        self.state.clear();
+        self.state.reset();
         // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
             self.xregs[i] = 0;
