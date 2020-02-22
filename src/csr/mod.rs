@@ -1,5 +1,6 @@
 pub mod fcsr;
 pub mod marchid;
+pub mod mhartid;
 pub mod mimpid;
 pub mod misa;
 pub mod mvendorid;
@@ -9,6 +10,7 @@ use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
 use crate::csr::marchid::Marchid;
+use crate::csr::mhartid::Mhartid;
 use crate::csr::mimpid::Mimpid;
 use crate::csr::misa::Misa;
 use crate::csr::mvendorid::Mvendorid;
@@ -90,10 +92,14 @@ pub struct State {
 }
 
 pub enum Csr {
+    // User-level CSRs.
     Fcsr(Fcsr),
+    // Supervisor-level CSRs.
+    // Machine-level CSRs.
     Mvendorid(Mvendorid),
     Marchid(Marchid),
     Mimpid(Mimpid),
+    Mhartid(Mhartid),
     Misa(Misa),
 }
 
@@ -110,6 +116,7 @@ impl State {
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
         csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
         csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
+        csrs.insert(MHARTID, Csr::Mhartid(Mhartid::new(0)));
 
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
@@ -158,6 +165,7 @@ impl State {
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
                 Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
+                Csr::Mhartid(mhartid) => Ok(mhartid.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
@@ -186,6 +194,11 @@ impl State {
                         "mimpid is a read-only csr",
                     )))
                 }
+                Csr::Mhartid(_) => {
+                    return Err(Exception::IllegalInstruction(String::from(
+                        "mhartid is a read-only csr",
+                    )))
+                }
                 Csr::Misa(misa) => misa.write_value(value),
             }
             Ok(())
@@ -203,6 +216,7 @@ impl State {
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),
                 Csr::Mimpid(mimpid) => mimpid.reset(),
+                Csr::Mhartid(mhartid) => mhartid.reset(),
                 Csr::Misa(misa) => misa.reset(),
             }
         }
