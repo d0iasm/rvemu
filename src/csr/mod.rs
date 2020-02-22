@@ -1,5 +1,6 @@
 pub mod fcsr;
 pub mod marchid;
+pub mod mimpid;
 pub mod misa;
 pub mod mvendorid;
 
@@ -8,6 +9,7 @@ use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
 use crate::csr::marchid::Marchid;
+use crate::csr::mimpid::Mimpid;
 use crate::csr::misa::Misa;
 use crate::csr::mvendorid::Mvendorid;
 use crate::exception::Exception;
@@ -91,6 +93,7 @@ pub enum Csr {
     Fcsr(Fcsr),
     Mvendorid(Mvendorid),
     Marchid(Marchid),
+    Mimpid(Mimpid),
     Misa(Misa),
 }
 
@@ -106,6 +109,8 @@ impl State {
         // Machine-level CSRs.
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
         csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
+        csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
+
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
         /*
@@ -152,6 +157,7 @@ impl State {
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
+                Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
@@ -165,14 +171,19 @@ impl State {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
-                Csr::Mvendorid(_mvendorid) => {
+                Csr::Mvendorid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
                         "mvendorid is a read-only csr",
                     )))
                 }
-                Csr::Marchid(_marchid) => {
+                Csr::Marchid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
-                        "mvendorid is a read-only csr",
+                        "marchid is a read-only csr",
+                    )))
+                }
+                Csr::Mimpid(_) => {
+                    return Err(Exception::IllegalInstruction(String::from(
+                        "mimpid is a read-only csr",
                     )))
                 }
                 Csr::Misa(misa) => misa.write_value(value),
@@ -191,6 +202,7 @@ impl State {
                 Csr::Fcsr(fcsr) => fcsr.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),
+                Csr::Mimpid(mimpid) => mimpid.reset(),
                 Csr::Misa(misa) => misa.reset(),
             }
         }
