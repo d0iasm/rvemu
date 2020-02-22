@@ -1,6 +1,7 @@
 pub const REGISTERS_COUNT: usize = 32;
 
 use std::cmp;
+use std::cmp::PartialEq;
 use std::num::FpCategory;
 use std::process::exit;
 
@@ -11,11 +12,50 @@ use crate::csr::fcsr::RoundingMode;
 use crate::csr::Csr;
 use crate::*;
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Mode {
     User = 0b00,
     Supervisor = 0b01,
     Machine = 0b11,
     Debug,
+}
+
+impl Mode {
+    pub fn require(&self, require: Mode) -> Result<(), Exception> {
+        match require {
+            Mode::User => {
+                if self == &Mode::Machine || self == &Mode::Supervisor || self == &Mode::User {
+                    return Ok(());
+                }
+                Err(Exception::IllegalInstruction(String::from(format!(
+                    "this should be called in {:#?} mode but called in {:#?} mode",
+                    require, self
+                ))))
+            }
+            Mode::Supervisor => {
+                if self == &Mode::Machine || self == &Mode::Supervisor {
+                    return Ok(());
+                }
+                Err(Exception::IllegalInstruction(String::from(format!(
+                    "this should be called in {:#?} mode but called in {:#?} mode",
+                    require, self
+                ))))
+            }
+            Mode::Machine => {
+                if self == &Mode::Machine {
+                    return Ok(());
+                }
+                Err(Exception::IllegalInstruction(String::from(format!(
+                    "this should be called in {:#?} mode but called in {:#?} mode",
+                    require, self
+                ))))
+            }
+            _ => Err(Exception::IllegalInstruction(String::from(format!(
+                "this should be called in {:#?} mode but called in {:#?} mode",
+                require, self
+            )))),
+        }
+    }
 }
 
 pub struct Cpu {
@@ -870,13 +910,62 @@ impl Cpu {
                                 // ebreak
                                 return Err(Exception::Breakpoint);
                             }
-                            (0x2, 0x0) => {}  // uret
-                            (0x2, 0x8) => {}  // sret
-                            (0x2, 0x18) => {} // mret
-                            (0x5, 0x8) => {}  // wfi
-                            (_, 0x9) => {}    // sfence.vma
-                            (_, 0x11) => {}   // hfence.bvma
-                            (_, 0x51) => {}   // hfence.bvma
+                            (0x2, 0x0) => {} // uret
+                            (0x2, 0x8) => {
+                                // sret
+                                self.mode.require(Mode::Supervisor)?;
+                                match self.state.get(MSTATUS)? {
+                                    Csr::Mstatus(mstatus) => {
+                                        // TODO: Set SEPC
+                                        // TODO: Check TSR field
+
+                                        // - SIE is set to SPIE.
+                                        // - The privilege mode is changed to SPP.
+                                        // - SPIE is set to 1.
+                                        // - SPP is set to U mode (or M if user-mode is not
+                                        // supported).
+                                        let prev_mode = mstatus.read_spp();
+                                        mstatus.write_sie(mstatus.read_spie());
+                                        mstatus.write_spie(true);
+                                        mstatus.write_spp(Mode::User);
+                                        self.mode = prev_mode;
+                                    }
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction(String::from(
+                                            "failed to get a mstatus csr",
+                                        )))
+                                    }
+                                }
+                            }
+                            (0x2, 0x18) => {
+                                // mret
+                                self.mode.require(Mode::Machine)?;
+                                match self.state.get(MSTATUS)? {
+                                    Csr::Mstatus(mstatus) => {
+                                        // TODO: Set MEPC
+
+                                        // - MIE is set to MPIE.
+                                        // - The privilege mode is changed to MPP.
+                                        // - MPIE is set to 1.
+                                        // - MPP is set to U mode (or M if user-mode is not
+                                        // supported).
+                                        let prev_mode = mstatus.read_mpp();
+                                        mstatus.write_mie(mstatus.read_mpie());
+                                        mstatus.write_mpie(true);
+                                        mstatus.write_mpp(Mode::User);
+                                        self.mode = prev_mode;
+                                    }
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction(String::from(
+                                            "failed to get a mstatus csr",
+                                        )))
+                                    }
+                                }
+                            }
+                            (0x5, 0x8) => {} // wfi
+                            (_, 0x9) => {}   // sfence.vma
+                            (_, 0x11) => {}  // hfence.bvma
+                            (_, 0x51) => {}  // hfence.bvma
                             _ => {}
                         }
                     }

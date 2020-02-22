@@ -48,15 +48,24 @@ impl Mstatus {
         }
     }
 
-    /// Read a privious privilege mode for supervisor mode. It can only holds machine or supervisor mode.
-    pub fn read_spp(&self) -> bool {
-        self.read_bit(8)
+    /// Read a privious privilege mode for supervisor mode. It can only holds machine
+    /// or supervisor mode.
+    pub fn read_spp(&self) -> Mode {
+        let spp = self.read_bit(8);
+        match spp {
+            false => Mode::User,
+            true => Mode::Supervisor,
+        }
     }
 
-    /// Write a privious privilege mode for supervisor mode. It can only holds privilege mode up to
-    /// the supervisor mode.
-    pub fn write_spp(&mut self, value: bool) {
-        self.write_bit(8, value)
+    /// Write a privious privilege mode for supervisor mode. It can only holds machine or
+    /// supervisor mode.
+    pub fn write_spp(&mut self, mode: Mode) {
+        match mode {
+            Mode::User => self.write_bit(8, false),
+            Mode::Supervisor => self.write_bit(8, true),
+            _ => self.write_bit(8, false),
+        }
     }
 
     /// Read a privious interrupt-enable bit for machine mode.

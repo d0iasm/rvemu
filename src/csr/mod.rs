@@ -152,8 +152,8 @@ impl State {
         Self { csrs }
     }
 
-    pub fn get(&self, csr_address: CsrAddress) -> Result<&Csr, Exception> {
-        if let Some(csr) = self.csrs.get(&csr_address) {
+    pub fn get(&mut self, csr_address: CsrAddress) -> Result<&mut Csr, Exception> {
+        if let Some(csr) = self.csrs.get_mut(&csr_address) {
             Ok(csr)
         } else {
             Err(Exception::IllegalInstruction(String::from(
