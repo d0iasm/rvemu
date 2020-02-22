@@ -105,7 +105,7 @@ impl State {
 
         // Machine-level CSRs.
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
-        csrs.insert(MVENDORID, Csr::Marchid(Marchid::new(0)));
+        csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
         /*
