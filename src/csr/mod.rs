@@ -1,4 +1,5 @@
 pub mod fcsr;
+pub mod marchid;
 pub mod misa;
 pub mod mvendorid;
 
@@ -6,6 +7,7 @@ use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
+use crate::csr::marchid::Marchid;
 use crate::csr::misa::Misa;
 use crate::csr::mvendorid::Mvendorid;
 use crate::exception::Exception;
@@ -88,6 +90,7 @@ pub struct State {
 pub enum Csr {
     Fcsr(Fcsr),
     Mvendorid(Mvendorid),
+    Marchid(Marchid),
     Misa(Misa),
 }
 
@@ -102,6 +105,7 @@ impl State {
 
         // Machine-level CSRs.
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
+        csrs.insert(MVENDORID, Csr::Marchid(Marchid::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
         /*
@@ -147,6 +151,7 @@ impl State {
             match csr {
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
+                Csr::Marchid(marchid) => Ok(marchid.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
@@ -161,6 +166,11 @@ impl State {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
                 Csr::Mvendorid(_mvendorid) => {
+                    return Err(Exception::IllegalInstruction(String::from(
+                        "mvendorid is a read-only csr",
+                    )))
+                }
+                Csr::Marchid(_marchid) => {
                     return Err(Exception::IllegalInstruction(String::from(
                         "mvendorid is a read-only csr",
                     )))
@@ -180,6 +190,7 @@ impl State {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
+                Csr::Marchid(marchid) => marchid.reset(),
                 Csr::Misa(misa) => misa.reset(),
             }
         }
