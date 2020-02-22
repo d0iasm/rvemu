@@ -22,7 +22,7 @@ pub struct Fcsr {
 }
 
 impl CsrBase for Fcsr {
-    fn new(value: i64) -> Self {
+    fn new(value: MXLEN) -> Self {
         Self { value }
     }
 
@@ -30,11 +30,11 @@ impl CsrBase for Fcsr {
         self.value = 0;
     }
 
-    fn set_value(&mut self, value: i64) {
+    fn write_value(&mut self, value: MXLEN) {
         self.value = value;
     }
 
-    fn get_value(&self) -> i64 {
+    fn read_value(&self) -> MXLEN {
         self.value
     }
 }

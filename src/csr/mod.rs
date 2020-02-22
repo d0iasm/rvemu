@@ -112,29 +112,29 @@ impl State {
         }
     }
 
-    pub fn read(&self, csr_address: u32) -> Result<i64, Exception> {
+    pub fn read(&self, csr_address: u32) -> Result<MXLEN, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
-                Csr::Fcsr(fcsr) => Ok(fcsr.get_value()),
-                Csr::Misa(misa) => Ok(misa.get_value()),
+                Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
+                Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
-                "failed to read a csr.",
+                "failed to read a value from a csr.",
             )))
         }
     }
 
-    pub fn write(&mut self, csr_address: u32, value: i64) -> Result<(), Exception> {
+    pub fn write(&mut self, csr_address: u32, value: MXLEN) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
-                Csr::Fcsr(fcsr) => fcsr.set_value(value),
-                Csr::Misa(misa) => misa.set_value(value),
+                Csr::Fcsr(fcsr) => fcsr.write_value(value),
+                Csr::Misa(misa) => misa.write_value(value),
             }
             Ok(())
         } else {
             Err(Exception::IllegalInstruction(String::from(
-                "failed to write a csr.",
+                "failed to write a value to a csr.",
             )))
         }
     }
@@ -152,10 +152,10 @@ impl State {
 pub trait CsrBase {
     const BIT_LENGTH: usize = ::core::mem::size_of::<i64>() as usize * 8;
 
-    fn new(value: i64) -> Self;
+    fn new(value: MXLEN) -> Self;
     fn reset(&mut self);
-    fn set_value(&mut self, value: i64);
-    fn get_value(&self) -> i64;
+    fn write_value(&mut self, value: MXLEN);
+    fn read_value(&self) -> MXLEN;
 }
 
 pub trait Write: CsrBase {
@@ -165,13 +165,13 @@ pub trait Write: CsrBase {
         }
 
         if value {
-            self.set_value(self.get_value() | 1 << bit);
+            self.write_value(self.read_value() | 1 << bit);
         } else {
-            self.set_value(self.get_value() & !(1 << bit));
+            self.write_value(self.read_value() & !(1 << bit));
         }
     }
 
-    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: i64) {
+    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: MXLEN) {
         let range = to_range(&range, Self::BIT_LENGTH);
 
         if (range.start >= Self::BIT_LENGTH)
@@ -183,7 +183,7 @@ pub trait Write: CsrBase {
 
         let bitmask = (!0 << range.end) | !(!0 << range.start);
         // Set bits.
-        self.set_value((self.get_value() & bitmask) | (value << range.start))
+        self.write_value((self.read_value() & bitmask) | (value << range.start))
     }
 }
 
@@ -192,7 +192,7 @@ pub trait Read: CsrBase {
         if bit >= Self::BIT_LENGTH {
             // TODO: raise exception?
         }
-        (self.get_value() & (1 << bit)) != 0
+        (self.read_value() & (1 << bit)) != 0
     }
 
     fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
@@ -209,7 +209,7 @@ pub trait Read: CsrBase {
         let bitmask = !0 << range.end;
 
         // Shift away low bits.
-        (self.get_value() & !bitmask) >> range.start
+        (self.read_value() & !bitmask) >> range.start
     }
 }
 

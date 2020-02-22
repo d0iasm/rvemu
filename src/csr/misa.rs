@@ -70,27 +70,27 @@ pub struct Misa {
 }
 
 impl CsrBase for Misa {
-    fn new(value: i64) -> Self {
+    fn new(value: MXLEN) -> Self {
         Self { value }
     }
 
     fn reset(&mut self) {
-        self.value = 1 << Extensions::BitA as i64
-                //| 1 << Extensions::BitC as i64
-                | 1 << Extensions::BitD as i64
-                | 1 << Extensions::BitF as i64
-                | 1 << Extensions::BitI as i64
-                | 1 << Extensions::BitM as i64
-                //| 1 << Extensions::BitN as i64
-                | 1 << Extensions::BitS as i64
-                | 1 << Extensions::BitU as i64;
+        self.value = 1 << Extensions::BitA as MXLEN
+                //| 1 << Extensions::BitC as MXLEN
+                | 1 << Extensions::BitD as MXLEN
+                | 1 << Extensions::BitF as MXLEN
+                | 1 << Extensions::BitI as MXLEN
+                | 1 << Extensions::BitM as MXLEN
+                //| 1 << Extensions::BitN as MXLEN
+                | 1 << Extensions::BitS as MXLEN
+                | 1 << Extensions::BitU as MXLEN;
     }
 
-    fn set_value(&mut self, value: i64) {
+    fn write_value(&mut self, value: MXLEN) {
         self.value = value;
     }
 
-    fn get_value(&self) -> i64 {
+    fn read_value(&self) -> MXLEN {
         self.value
     }
 }
