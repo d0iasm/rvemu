@@ -7,8 +7,9 @@ use std::process::exit;
 use num_bigint::{BigInt, BigUint};
 use num_traits::cast::ToPrimitive;
 
+use crate::csr::fcsr::RoundingMode;
+use crate::csr::Csr;
 use crate::*;
-use fcsr::*;
 
 pub enum Mode {
     User,
@@ -542,12 +543,29 @@ impl Cpu {
                  *
                  */
 
+                match self.state.get(FCSR)? {
+                    Csr::Fcsr(fcsr) => {
+                        let frm = fcsr.read_frm();
+                        if frm == RoundingMode::Invalid {
+                            //return Err(Exception::IllegalInstruction(String::from(
+                            //"frm is set to an invalid value (101–110)",
+                            //)));
+                        }
+                    }
+                    _ => {
+                        //return Err(Exception::IllegalInstruction(String::from(
+                        //"failed to access fcsr"
+                        //)));
+                    }
+                }
+                /*
                 let fcsr = Fcsr::from(*self.state.get(FCSR)?);
                 if fcsr.read_frm() == RoundingMode::Invalid {
                     return Err(Exception::IllegalInstruction(String::from(
                         "frm is set to an invalid value (101–110)",
                     )));
                 }
+                */
 
                 match funct7 {
                     0x00 => fregs[rd] = (fregs[rs1] as f32 + fregs[rs2] as f32) as f64, // fadd.s

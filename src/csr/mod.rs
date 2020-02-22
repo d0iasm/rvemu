@@ -4,6 +4,7 @@ pub mod misa;
 use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
 
+use crate::csr::fcsr::Fcsr;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
@@ -49,17 +50,27 @@ pub const MCAUSE: CsrAddress = 0x342; // Machine trap cause.
 pub const MTVAL: CsrAddress = 0x343; // Machine bad address or instruction.
 pub const MIP: CsrAddress = 0x344; // Machine interrupt pending.
 
+pub type MXLEN = i64;
+
 pub struct State {
     csrs: HashMap<CsrAddress, Csr>,
+}
+
+pub enum Csr {
+    Fcsr(Fcsr),
+    //Misa(Misa2),
 }
 
 impl State {
     pub fn new() -> Self {
         let mut csrs = HashMap::new();
 
+        csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
+
         // csr[11:10]: Whether the register is read/write (00, 01, or 10) or read-only (11).
         // csr[9:8]: The lowest privilege level that can access the CSR. User (00), supervisor
         // (01), hypervisor (10), and machine (11).
+        /*
         csrs.insert(UEPC, Csr::RW(ReadWrite::new(0)));
         csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
         csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
@@ -82,6 +93,7 @@ impl State {
         csrs.insert(MCAUSE, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MIP, Csr::RW(ReadWrite::new(0)));
+        */
 
         Self { csrs }
     }
@@ -99,8 +111,7 @@ impl State {
     pub fn read(&self, csr_address: u32) -> Result<i64, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
-                Csr::RW(c) => Ok(c.read_bits(..)),
-                Csr::RO(c) => Ok(c.read_bits(..)),
+                Csr::Fcsr(fcsr) => Ok(fcsr.get_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
@@ -112,11 +123,9 @@ impl State {
     pub fn write(&mut self, csr_address: u32, value: i64) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
-                Csr::RW(c) => Ok(c.write_bits(.., value)),
-                Csr::RO(_c) => Err(Exception::IllegalInstruction(String::from(
-                    "failed to write a read-only csr.",
-                ))),
+                Csr::Fcsr(fcsr) => fcsr.set_value(value),
             }
+            Ok(())
         } else {
             Err(Exception::IllegalInstruction(String::from(
                 "failed to write a csr.",
@@ -126,52 +135,36 @@ impl State {
 
     pub fn clear(&mut self) {
         for csr in self.csrs.values_mut() {
-            // TODO: Use ReadOnly::new(0) depends on a csr.
-            *csr = Csr::RW(ReadWrite::new(0));
+            match csr {
+                Csr::Fcsr(fcsr) => fcsr.reset(),
+            }
         }
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum Csr {
-    RW(ReadWrite),
-    RO(ReadOnly),
-}
-
-#[derive(Default, Copy, Clone, Debug)]
-pub struct ReadWrite {
-    value: i64,
-}
-
-#[derive(Default, Copy, Clone, Debug)]
-pub struct ReadOnly {
-    value: i64,
-}
-
-impl ReadWrite {
+pub trait CsrBase {
     const BIT_LENGTH: usize = ::core::mem::size_of::<i64>() as usize * 8;
 
-    pub fn new(value: i64) -> Self {
-        Self { value }
-    }
+    fn new(value: i64) -> Self;
+    fn reset(&mut self);
+    fn set_value(&mut self, value: i64);
+    fn get_value(&self) -> i64;
+}
 
-    pub fn clear(&mut self) {
-        self.value = 0;
-    }
-
-    pub fn write_bit(&mut self, bit: usize, value: bool) {
+pub trait Write: CsrBase {
+    fn write_bit(&mut self, bit: usize, value: bool) {
         if bit >= Self::BIT_LENGTH {
             // TODO: raise exception?
         }
 
         if value {
-            self.value |= 1 << bit;
+            self.set_value(self.get_value() | 1 << bit);
         } else {
-            self.value &= !(1 << bit);
+            self.set_value(self.get_value() & !(1 << bit));
         }
     }
 
-    pub fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: i64) {
+    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: i64) {
         let range = to_range(&range, Self::BIT_LENGTH);
 
         if (range.start >= Self::BIT_LENGTH)
@@ -183,53 +176,19 @@ impl ReadWrite {
 
         let bitmask = (!0 << range.end) | !(!0 << range.start);
         // Set bits.
-        self.value = (self.value & bitmask) | (value << range.start);
-    }
-
-    pub fn read_bit(&self, bit: usize) -> bool {
-        if bit >= Self::BIT_LENGTH {
-            // TODO: raise exception?
-        }
-        (self.value & (1 << bit)) != 0
-    }
-
-    pub fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
-        let range = to_range(&range, Self::BIT_LENGTH);
-
-        if (range.start >= Self::BIT_LENGTH)
-            | (range.end > Self::BIT_LENGTH)
-            | (range.start >= range.end)
-        {
-            // TODO: ranse exception?
-        }
-
-        // Bitmask for high bits.
-        let bitmask = !0 << range.end;
-
-        // Shift away low bits.
-        (self.value & !bitmask) >> range.start
+        self.set_value((self.get_value() & bitmask) | (value << range.start))
     }
 }
 
-impl ReadOnly {
-    const BIT_LENGTH: usize = ::core::mem::size_of::<i64>() as usize * 8;
-
-    pub fn new(value: i64) -> Self {
-        Self { value }
-    }
-
-    pub fn clear(&mut self) {
-        self.value = 0;
-    }
-
-    pub fn read_bit(&self, bit: usize) -> bool {
+pub trait Read: CsrBase {
+    fn read_bit(&self, bit: usize) -> bool {
         if bit >= Self::BIT_LENGTH {
             // TODO: raise exception?
         }
-        (self.value & (1 << bit)) != 0
+        (self.get_value() & (1 << bit)) != 0
     }
 
-    pub fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
+    fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
         let range = to_range(&range, Self::BIT_LENGTH);
 
         if (range.start >= Self::BIT_LENGTH)
@@ -243,7 +202,7 @@ impl ReadOnly {
         let bitmask = !0 << range.end;
 
         // Shift away low bits.
-        (self.value & !bitmask) >> range.start
+        (self.get_value() & !bitmask) >> range.start
     }
 }
 

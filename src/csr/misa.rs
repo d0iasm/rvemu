@@ -1,6 +1,3 @@
-use std::convert::From;
-use std::unreachable;
-
 use crate::csr::*;
 
 /// Encoding of MXL field in `misa`.
@@ -69,43 +66,41 @@ pub enum Extensions {
 }
 
 pub struct Misa {
-    csr: ReadWrite,
+    value: MXLEN,
 }
 
-impl From<Csr> for Misa {
-    fn from(csr: Csr) -> Self {
-        match csr {
-            Csr::RW(csr) => Self { csr },
-            _ => unreachable!(),
-        }
+impl CsrBase for Misa {
+    fn new(value: i64) -> Self {
+        Self { value }
     }
-}
 
-impl Default for Misa {
-    fn default() -> Self {
-        Self {
-            csr: ReadWrite::new(
-                1 << Extensions::BitA as i64
-                //| 1 << Extensions::BitC
+    fn reset(&mut self) {
+        self.value = 1 << Extensions::BitA as i64
+                //| 1 << Extensions::BitC as i64
                 | 1 << Extensions::BitD as i64
                 | 1 << Extensions::BitF as i64
                 | 1 << Extensions::BitI as i64
                 | 1 << Extensions::BitM as i64
-                //| 1 << Extensions::BitN
+                //| 1 << Extensions::BitN as i64
                 | 1 << Extensions::BitS as i64
-                | 1 << Extensions::BitU as i64,
-            ),
-        }
+                | 1 << Extensions::BitU as i64;
+    }
+
+    fn set_value(&mut self, value: i64) {
+        self.value = value;
+    }
+
+    fn get_value(&self) -> i64 {
+        self.value
     }
 }
 
-impl Misa {
-    pub fn reset(&mut self) {
-        self.csr.clear()
-    }
+impl Write for Misa {}
+impl Read for Misa {}
 
+impl Misa {
     pub fn read_mxl(&self) -> Mxl {
-        let mxl = self.csr.read_bits(62..);
+        let mxl = self.read_bits(62..);
         match mxl {
             1 => Mxl::Xlen32,
             2 => Mxl::Xlen32,
@@ -115,14 +110,14 @@ impl Misa {
     }
 
     pub fn write_mxl(&mut self, value: i64) {
-        self.csr.write_bits(62.., value)
+        self.write_bits(62.., value)
     }
 
     pub fn read_extensions(&self) -> i64 {
-        self.csr.read_bits(..26)
+        self.read_bits(..26)
     }
 
     pub fn write_extensions(&mut self, value: i64) {
-        self.csr.write_bits(..26, value)
+        self.write_bits(..26, value)
     }
 }

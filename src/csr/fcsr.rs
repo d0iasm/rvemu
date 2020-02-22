@@ -1,6 +1,3 @@
-use std::convert::From;
-use std::unreachable;
-
 use crate::csr::*;
 
 #[derive(PartialEq, Eq)]
@@ -21,17 +18,29 @@ pub enum RoundingMode {
 }
 
 pub struct Fcsr {
-    csr: ReadWrite,
+    value: MXLEN,
 }
 
-impl From<Csr> for Fcsr {
-    fn from(csr: Csr) -> Self {
-        match csr {
-            Csr::RW(csr) => Self { csr },
-            _ => unreachable!(),
-        }
+impl CsrBase for Fcsr {
+    fn new(value: i64) -> Self {
+        Self { value }
+    }
+
+    fn reset(&mut self) {
+        self.value = 0;
+    }
+
+    fn set_value(&mut self, value: i64) {
+        self.value = value;
+    }
+
+    fn get_value(&self) -> i64 {
+        self.value
     }
 }
+
+impl Write for Fcsr {}
+impl Read for Fcsr {}
 
 impl Fcsr {
     /*
@@ -40,12 +49,8 @@ impl Fcsr {
      *                                  |   NV | DZ | OF | UF | NX   |
      *      24              3               1    1    1    1    1
      */
-    pub fn reset(&mut self) {
-        self.csr.clear();
-    }
-
     pub fn read_frm(&self) -> RoundingMode {
-        let frm = self.csr.read_bits(5..8);
+        let frm = self.read_bits(5..8);
         match frm {
             0b000 => RoundingMode::Rne,
             0b001 => RoundingMode::Rtz,
@@ -58,42 +63,42 @@ impl Fcsr {
     }
 
     pub fn read_nv(&self) -> bool {
-        self.csr.read_bit(4)
+        self.read_bit(4)
     }
 
     pub fn write_nv(&mut self, value: bool) {
-        self.csr.write_bit(4, value)
+        self.write_bit(4, value)
     }
 
     pub fn read_dz(&self) -> bool {
-        self.csr.read_bit(3)
+        self.read_bit(3)
     }
 
     pub fn write_dz(&mut self, value: bool) {
-        self.csr.write_bit(3, value)
+        self.write_bit(3, value)
     }
 
     pub fn read_of(&self) -> bool {
-        self.csr.read_bit(2)
+        self.read_bit(2)
     }
 
     pub fn write_of(&mut self, value: bool) {
-        self.csr.write_bit(2, value)
+        self.write_bit(2, value)
     }
 
     pub fn read_uf(&self) -> bool {
-        self.csr.read_bit(1)
+        self.read_bit(1)
     }
 
     pub fn write_uf(&mut self, value: bool) {
-        self.csr.write_bit(1, value)
+        self.write_bit(1, value)
     }
 
     pub fn read_nx(&self) -> bool {
-        self.csr.read_bit(0)
+        self.read_bit(0)
     }
 
     pub fn write_nx(&mut self, value: bool) {
-        self.csr.write_bit(0, value)
+        self.write_bit(0, value)
     }
 }
