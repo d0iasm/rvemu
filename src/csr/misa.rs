@@ -75,6 +75,7 @@ impl CsrBase for Misa {
     }
 
     fn reset(&mut self) {
+        // At reset, the Extensions field should contain the maximal set of supported extensions.
         self.value = 1 << Extensions::BitA as MXLEN
                 //| 1 << Extensions::BitC as MXLEN
                 | 1 << Extensions::BitD as MXLEN

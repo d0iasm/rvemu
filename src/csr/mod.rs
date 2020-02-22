@@ -1,11 +1,13 @@
 pub mod fcsr;
 pub mod misa;
+pub mod mvendorid;
 
 use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
 use crate::csr::misa::Misa;
+use crate::csr::mvendorid::Mvendorid;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
@@ -14,42 +16,68 @@ pub type CsrAddress = u32;
 // User-level CSR addresses //
 //////////////////////////////
 // User trap handling.
-pub const UEPC: CsrAddress = 0x041; // User exception program counter.
-pub const UCAUSE: CsrAddress = 0x042; // User trap cause.
+/// User exception program counter.
+pub const UEPC: CsrAddress = 0x041;
+/// User trap cause.
+pub const UCAUSE: CsrAddress = 0x042;
 
 // User floating-point CSRs.
-pub const FFLAGS: CsrAddress = 0x001; // Flating-point accrued exceptions.
-pub const FRB: CsrAddress = 0x002; // Floating-point dynamic rounding mode.
-pub const FCSR: CsrAddress = 0x003; // Floating-point control and status register (frm + fflags).
+/// Flating-point accrued exceptions.
+pub const FFLAGS: CsrAddress = 0x001;
+/// Floating-point dynamic rounding mode.
+pub const FRB: CsrAddress = 0x002;
+/// Floating-point control and status register (frm + fflags).
+pub const FCSR: CsrAddress = 0x003;
 
-////////////////////////////////////
+/////////////////////////////////////
 // Supervisor-level CSR addresses //
 ////////////////////////////////////
 // Supervisor trap handling.
-pub const SEPC: CsrAddress = 0x141; // Supervisor exception program counter.
-pub const SCAUSE: CsrAddress = 0x142; // Supervisor trap cause.
+/// Supervisor exception program counter.
+pub const SEPC: CsrAddress = 0x141;
+/// Supervisor trap cause.
+pub const SCAUSE: CsrAddress = 0x142;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
 /////////////////////////////////
 // Machine information registers.
-pub const MHARTID: CsrAddress = 0xf14; // Hardware thread ID.
+/// Vendor ID.
+pub const MVENDORID: CsrAddress = 0xf11;
+/// Architecture ID.
+pub const MARCHID: CsrAddress = 0xf12;
+/// Implementation ID.
+pub const MIMPID: CsrAddress = 0xf13;
+/// Hardware thread ID.
+pub const MHARTID: CsrAddress = 0xf14;
 
 // Machine trap setup.
-pub const MSTATUS: CsrAddress = 0x300; // Machine status register.
-pub const MISA: CsrAddress = 0x301; // ISA and extensions.
-pub const MEDELEG: CsrAddress = 0x302; // Machine exception delefation register.
-pub const MIDELEG: CsrAddress = 0x303; // Machine interrupt delefation register.
-pub const MIE: CsrAddress = 0x304; // Machine interrupt-enable register.
-pub const MTVEC: CsrAddress = 0x305; // Machine trap-handler base address.
-pub const MCOUNTEREN: CsrAddress = 0x306; // Machine counter enable.
+/// Machine status register.
+pub const MSTATUS: CsrAddress = 0x300;
+/// ISA and extensions.
+pub const MISA: CsrAddress = 0x301;
+/// Machine exception delefation register.
+pub const MEDELEG: CsrAddress = 0x302;
+/// Machine interrupt delefation register.
+pub const MIDELEG: CsrAddress = 0x303;
+/// Machine interrupt-enable register.
+pub const MIE: CsrAddress = 0x304;
+/// Machine trap-handler base address.
+pub const MTVEC: CsrAddress = 0x305;
+/// Machine counter enable.
+pub const MCOUNTEREN: CsrAddress = 0x306;
 
 // Machine trap handling.
-pub const MSCRATCH: CsrAddress = 0x340; // Scratch register for machine trap handlers.
-pub const MEPC: CsrAddress = 0x341; // Machine exception program counter.
-pub const MCAUSE: CsrAddress = 0x342; // Machine trap cause.
-pub const MTVAL: CsrAddress = 0x343; // Machine bad address or instruction.
-pub const MIP: CsrAddress = 0x344; // Machine interrupt pending.
+/// Scratch register for machine trap handlers.
+pub const MSCRATCH: CsrAddress = 0x340;
+/// Machine exception program counter.
+pub const MEPC: CsrAddress = 0x341;
+/// Machine trap cause.
+pub const MCAUSE: CsrAddress = 0x342;
+/// Machine bad address or instruction.
+pub const MTVAL: CsrAddress = 0x343;
+/// Machine interrupt pending.
+pub const MIP: CsrAddress = 0x344;
 
 pub type MXLEN = i64;
 
@@ -59,6 +87,7 @@ pub struct State {
 
 pub enum Csr {
     Fcsr(Fcsr),
+    Mvendorid(Mvendorid),
     Misa(Misa),
 }
 
@@ -72,6 +101,7 @@ impl State {
         // Supervisor-level CSRs.
 
         // Machine-level CSRs.
+        csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
 
         /*
@@ -107,7 +137,7 @@ impl State {
             Ok(csr)
         } else {
             Err(Exception::IllegalInstruction(String::from(
-                "failed to get a csr.",
+                "failed to get a csr",
             )))
         }
     }
@@ -116,11 +146,12 @@ impl State {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
+                Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
-                "failed to read a value from a csr.",
+                "failed to read a value from a csr",
             )))
         }
     }
@@ -129,12 +160,17 @@ impl State {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
+                Csr::Mvendorid(_mvendorid) => {
+                    return Err(Exception::IllegalInstruction(String::from(
+                        "mvendorid is a read-only csr",
+                    )))
+                }
                 Csr::Misa(misa) => misa.write_value(value),
             }
             Ok(())
         } else {
             Err(Exception::IllegalInstruction(String::from(
-                "failed to write a value to a csr.",
+                "failed to write a value to a csr",
             )))
         }
     }
@@ -143,6 +179,7 @@ impl State {
         for csr in self.csrs.values_mut() {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.reset(),
+                Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Misa(misa) => misa.reset(),
             }
         }
