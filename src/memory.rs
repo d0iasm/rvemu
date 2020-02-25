@@ -15,7 +15,7 @@ impl Memory {
     }
 
     pub fn set_binary(&mut self, binary: Vec<u8>) {
-        self.dram = binary;
+        self.dram.splice(..binary.len(), binary.iter().cloned());
     }
 
     pub fn write8(&mut self, index: usize, val: u8) {

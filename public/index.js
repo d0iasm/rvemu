@@ -61,8 +61,6 @@ async function initialize() {
       term.write(err.message);
       prompt();
       console.log(err);
-    } finally {
-      emu.free();
     }
   };
 
@@ -135,7 +133,6 @@ function command(input) {
         help();
         break;
       }
-      term.writeln("\r\nstart to execute " + com[1]);
       run(com[1]);
       break;
     default:

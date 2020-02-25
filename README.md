@@ -18,15 +18,15 @@ Supports the following RISC-V ISA features (RV64G):
 __NOTE: This project is currently under intensely development. The source code might be changed dramatically.__
 What to do next is:
 1. Rewrite tests in assembly
-  - rewrite existing tests
-  - exceptions
+  1. rewrite existing tests
+  2. exceptions
 2. devices interrupt (refers to
    [memlayout.h](https://github.com/mit-pdos/xv6-riscv/blob/37df68e5dedbf2a26c2bf0bdae090b206ce78b48/kernel/memlayout.h) in xv6)
-  - keyboards
-  - timer
-  - uart
-  - virtio
-  - block devices
+  1. keyboards
+  2. timer
+  3. uart
+  4. virtio
+  5. block devices
 3. virtual memory
 
 # Usage

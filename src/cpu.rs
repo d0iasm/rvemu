@@ -3,7 +3,6 @@ pub const REGISTERS_COUNT: usize = 32;
 use std::cmp;
 use std::cmp::PartialEq;
 use std::num::FpCategory;
-use std::process::exit;
 
 use num_bigint::{BigInt, BigUint};
 use num_traits::cast::ToPrimitive;
@@ -11,6 +10,8 @@ use num_traits::cast::ToPrimitive;
 use crate::csr::fcsr::RoundingMode;
 use crate::csr::Csr;
 use crate::*;
+
+const SP: usize = 2;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -68,8 +69,10 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new() -> Cpu {
+        let mut xregs = [0; REGISTERS_COUNT];
+        xregs[SP] = 1048 * 1000; // Default maximum mamory size.
         Cpu {
-            xregs: [0; REGISTERS_COUNT],
+            xregs,
             fregs: [0.0; REGISTERS_COUNT],
             pc: 0,
             state: State::new(),
@@ -100,9 +103,9 @@ impl Cpu {
             // TODO: Remove the following check.
             // This is for avoiding an infinite execution.
             i += 1;
-            if i > 1000 {
-                log(&format!("execute more than 1000"));
-                exit(1);
+            if (i > 1000) | (self.pc == 0) {
+                log(&format!("executed {}, size {}", i, size));
+                return;
             }
         }
         log(&format!("executed {}, size {}", i, size));
@@ -860,6 +863,7 @@ impl Cpu {
                         "must be aligned on a four-byte boundary",
                     )));
                 }
+
                 self.pc = target as usize;
             }
             0x6F => {
