@@ -4,6 +4,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+const DEFAULT_SP: i64 = 1048000;
+
 #[wasm_bindgen_test]
 pub fn mul_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
@@ -18,8 +20,8 @@ pub fn mul_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15,
-        -5, 3,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -15, -5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -48,7 +50,7 @@ pub fn mulh_rd_rs1_rs2() {
     let expected = [
         0,
         0,
-        0,
+        DEFAULT_SP,
         0,
         0,
         0,
@@ -106,7 +108,7 @@ pub fn mulhsu_rd_rs1_rs2() {
     let expected = [
         0,
         0,
-        0,
+        DEFAULT_SP,
         0,
         0,
         0,
@@ -162,7 +164,7 @@ pub fn mulhu_rd_rs1_rs2() {
     let expected = [
         0,
         0,
-        0,
+        DEFAULT_SP,
         0,
         0,
         0,
@@ -212,8 +214,8 @@ pub fn div_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1,
-        -5, 3,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -1, -5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -234,8 +236,8 @@ pub fn divu_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-        5, 3,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -256,8 +258,8 @@ pub fn rem_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2,
-        -5, 3,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -2, -5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -278,8 +280,8 @@ pub fn remu_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-        5, 3,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 2, 5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);

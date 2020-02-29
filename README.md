@@ -111,6 +111,7 @@ $ firebase deploy
 - firebase CLI
 
 ## Resources
+- [riscv/riscv-tests](https://github.com/riscv/riscv-tests)
 - [Rust and WebAssembly](https://rustwasm.github.io/docs/book/introduction.html)
 - [wat2wasm demo](https://webassembly.github.io/wabt/demo/wat2wasm/)
 - [RISC-V Software Ecosystem Overview](https://riscv.org/software-status/)

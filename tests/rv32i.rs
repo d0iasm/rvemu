@@ -4,6 +4,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+const DEFAULT_SP: i64 = 1048000;
+
 #[wasm_bindgen_test]
 pub fn lb_rd_offset_rs1() {
     let mut cpu = rvemu::cpu::Cpu::new();
@@ -18,8 +20,8 @@ pub fn lb_rd_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, -109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, -109, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -40,8 +42,8 @@ pub fn lh_rd_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -62,8 +64,8 @@ pub fn lw_rd_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 3147923, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 3147923, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -84,8 +86,8 @@ pub fn lbu_rd_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 147, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 147, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -106,8 +108,8 @@ pub fn lhu_rd_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -119,15 +121,15 @@ pub fn addi_rd_rs1_imm() {
     let mut cpu = rvemu::cpu::Cpu::new();
     let mut mem = rvemu::memory::Memory {
         dram: vec![
-            0x13, 0x01, 0x40, 0x00, // addi x2, x0, 4
+            0x93, 0x0F, 0x40, 0x00, // addi x31, x0, 4
         ],
     };
 
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -147,8 +149,8 @@ pub fn slli_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -168,8 +170,8 @@ pub fn slti_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -189,8 +191,8 @@ pub fn sltiu_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -210,8 +212,8 @@ pub fn xori_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -231,8 +233,8 @@ pub fn srai_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -8, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -8, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -252,8 +254,8 @@ pub fn srli_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -273,8 +275,8 @@ pub fn ori_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -294,8 +296,8 @@ pub fn andi_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -314,8 +316,8 @@ pub fn auipc_rd_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -337,8 +339,8 @@ pub fn sb_rs2_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 3, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 3, -5, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -360,8 +362,8 @@ pub fn sh_rs2_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1024, 3, -1024, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1024, 3, -1024, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -383,8 +385,8 @@ pub fn sw_rs2_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2048, 3, -2048, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2048, 3, -2048, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -449,8 +451,38 @@ pub fn sll_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        8,
+        2,
+        32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -471,8 +503,38 @@ pub fn slt_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -8, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -8,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -493,8 +555,38 @@ pub fn sltu_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        8,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -515,8 +607,38 @@ pub fn xor_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        6,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -537,8 +659,38 @@ pub fn srl_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        16,
+        2,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -559,8 +711,38 @@ pub fn sra_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -16, 2, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -16,
+        2,
+        -4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -581,8 +763,38 @@ pub fn or_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        5,
+        7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -603,8 +815,38 @@ pub fn and_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected: [i32; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0,
+        0,
+        DEFAULT_SP as i32,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        5,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i] as i32);
@@ -623,8 +865,8 @@ pub fn lui_rd_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -645,8 +887,8 @@ pub fn beq_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -668,8 +910,8 @@ pub fn bne_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -691,8 +933,8 @@ pub fn blt_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -714,8 +956,8 @@ pub fn bge_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, -3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, -3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -737,8 +979,8 @@ pub fn bltu_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -760,8 +1002,8 @@ pub fn bgeu_rs1_rs2_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -783,8 +1025,8 @@ pub fn jalr_rd_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -806,8 +1048,8 @@ pub fn jal_rd_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);

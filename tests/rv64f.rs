@@ -4,6 +4,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+const DEFAULT_SP: i64 = 1048000;
+
 #[wasm_bindgen_test]
 pub fn fcvtls_rd_rs1_rs2() {
     let mut cpu = rvemu::cpu::Cpu::new();
@@ -19,8 +21,8 @@ pub fn fcvtls_rd_rs1_rs2() {
 
     // x0-x31
     let expected_x = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, -4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, -4,
     ];
     // f0-f31
     let expected_f = [
@@ -50,8 +52,8 @@ pub fn fcvtlus_rd_rs1_rs2() {
 
     // x0-x31
     let expected_x = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 4,
     ];
     // f0-f31
     let expected_f = [
@@ -81,8 +83,8 @@ pub fn fcvtsl_rd_rs1_rs2() {
 
     // x0-x31
     let expected_x = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, -4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, -4,
     ];
     // f0-f31
     let expected_f = [
@@ -112,8 +114,8 @@ pub fn fcvtslu_rd_rs1_rs2() {
 
     // x0-x31
     let expected_x = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 4,
     ];
     // f0-f31
     let expected_f = [

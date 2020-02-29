@@ -4,6 +4,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+const DEFAULT_SP: i64 = 1048000;
+
 #[wasm_bindgen_test]
 pub fn ld_rd_offset_rs1() {
     let mut cpu = rvemu::cpu::Cpu::new();
@@ -26,7 +28,7 @@ pub fn ld_rd_offset_rs1() {
     let expected = [
         0,
         0,
-        0,
+        DEFAULT_SP,
         0,
         0,
         0,
@@ -82,8 +84,8 @@ pub fn lwu_rd_offset_rs1() {
     // 0x00000000   93  0f  b0  ff
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0xffb00f93, 3, -5,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0xffb00f93, 3, -5,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -103,8 +105,8 @@ pub fn addiw_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 5,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 5,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -124,8 +126,8 @@ pub fn slliw_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        32, 4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 32, 4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -145,8 +147,8 @@ pub fn srliw_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 2, 4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -166,8 +168,8 @@ pub fn sraiw_rd_rs1_imm() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        -2, -4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, -2, -4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -188,8 +190,8 @@ pub fn addw_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-        8, -4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 4, 8, -4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -210,8 +212,8 @@ pub fn subw_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12,
-        8, -4,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 12, 8, -4,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -232,8 +234,8 @@ pub fn sllw_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32,
-        8, 2,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 32, 8, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -254,8 +256,8 @@ pub fn srlw_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-        8, 2,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 2, 8, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -276,8 +278,8 @@ pub fn sraw_rd_rs1_rs2() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2,
-        -8, 2,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -2, -8, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
@@ -299,8 +301,8 @@ pub fn sd_rs2_offset_rs1() {
     cpu.start(&mut mem);
 
     let expected = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5,
-        3, -5,
+        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -5, 3, -5,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs[i]);
