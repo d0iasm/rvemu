@@ -72,12 +72,6 @@ You need to install a Firefox browser, a Chrome browser, or a Safari browser to 
 $ wasm-pack test --headless --firefox
 ```
 
-## Debug
-It's a tricky way to debug this project. These is no binary to execute in a console because wasm-bindgen usually needs a browser, so use a unit test instead to print messages to a console.
-```
-$ wasm-pack test --firefox --headless -- --test debug
-```
-
 ## Publish
 [The site](https://rvemu.app/) is hosted by a firebase for now. It might move in the future.
 ```
