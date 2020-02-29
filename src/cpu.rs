@@ -136,7 +136,7 @@ impl fmt::Display for FRegisters {
                 "{}\n{}",
                 output,
                 format!(
-                    "f{:02}={:>.6} f{:02}={:>.6} f{:02}={:>.6} f{:02}={:>.6}",
+                    "f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$}",
                     i,
                     self.read(i),
                     i + 1,
@@ -144,7 +144,9 @@ impl fmt::Display for FRegisters {
                     i + 2,
                     self.read(i + 2),
                     i + 3,
-                    self.read(i + 3)
+                    self.read(i + 3),
+                    width=8,
+                    prec=3,
                 )
             );
         }
