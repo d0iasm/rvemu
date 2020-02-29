@@ -15,7 +15,7 @@ pub fn fcvtld_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = -4.2;
+    cpu.fregs.write(31, -4.2);
 
     cpu.start(&mut mem);
 
@@ -30,10 +30,10 @@ pub fn fcvtld_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.2,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -46,7 +46,7 @@ pub fn fcvtlud_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = 4.2;
+    cpu.fregs.write(31, 4.2);
 
     cpu.start(&mut mem);
 
@@ -61,10 +61,10 @@ pub fn fcvtlud_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -77,7 +77,7 @@ pub fn fcvtdl_rd_rs1_rs2() {
         ],
     };
 
-    cpu.xregs[31] = -4;
+    cpu.xregs.write(31, -4);
 
     cpu.start(&mut mem);
 
@@ -92,10 +92,10 @@ pub fn fcvtdl_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -108,7 +108,7 @@ pub fn fcvtdlu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.xregs[31] = 4;
+    cpu.xregs.write(31, 4);
 
     cpu.start(&mut mem);
 
@@ -123,10 +123,10 @@ pub fn fcvtdlu_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -139,7 +139,7 @@ pub fn fmvxd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = 4.0;
+    cpu.fregs.write(31, 4.0);
 
     cpu.start(&mut mem);
 
@@ -154,10 +154,10 @@ pub fn fmvxd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -170,7 +170,7 @@ pub fn fmvdx_rd_rs1_rs2() {
         ],
     };
 
-    cpu.xregs[31] = 4;
+    cpu.xregs.write(31, 4);
 
     cpu.start(&mut mem);
 
@@ -185,9 +185,9 @@ pub fn fmvdx_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }

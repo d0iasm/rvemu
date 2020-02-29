@@ -92,14 +92,17 @@ impl Emulator {
         for i in 0..REGISTERS_COUNT {
             output(&format!(
                 "x{}: {:#x} ({}, {:#b})",
-                i, self.cpu.xregs[i], self.cpu.xregs[i], self.cpu.xregs[i]
+                i,
+                self.cpu.xregs.read(i),
+                self.cpu.xregs.read(i),
+                self.cpu.xregs.read(i)
             ));
         }
 
         output(&format!("---------------------"));
 
         for i in 0..REGISTERS_COUNT {
-            output(&format!("f{}: {:#?}", i, self.cpu.fregs[i]));
+            output(&format!("f{}: {:#?}", i, self.cpu.fregs.read(i)));
         }
 
         output(&format!("pc: {}", self.cpu.pc));

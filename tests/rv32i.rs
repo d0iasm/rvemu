@@ -24,7 +24,7 @@ pub fn lb_rd_offset_rs1() {
         0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -46,7 +46,7 @@ pub fn lh_rd_offset_rs1() {
         0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -68,7 +68,7 @@ pub fn lw_rd_offset_rs1() {
         0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -90,7 +90,7 @@ pub fn lbu_rd_offset_rs1() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -112,7 +112,7 @@ pub fn lhu_rd_offset_rs1() {
         0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -132,7 +132,7 @@ pub fn addi_rd_rs1_imm() {
         0, 0, 0, 0, 4,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -153,7 +153,7 @@ pub fn slli_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -174,7 +174,7 @@ pub fn slti_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -195,7 +195,7 @@ pub fn sltiu_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -216,7 +216,7 @@ pub fn xori_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -237,7 +237,7 @@ pub fn srai_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -258,7 +258,7 @@ pub fn srli_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -279,7 +279,7 @@ pub fn ori_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -300,7 +300,7 @@ pub fn andi_rd_rs1_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -320,7 +320,7 @@ pub fn auipc_rd_imm() {
         0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -343,7 +343,7 @@ pub fn sb_rs2_offset_rs1() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -366,7 +366,7 @@ pub fn sh_rs2_offset_rs1() {
         0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -389,7 +389,7 @@ pub fn sw_rs2_offset_rs1() {
         0, 0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -411,7 +411,7 @@ pub fn add_rd_rs1_rs2() {
         0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -433,7 +433,7 @@ pub fn sub_rd_rs1_rs2() {
         0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -485,7 +485,7 @@ pub fn sll_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -537,7 +537,7 @@ pub fn slt_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -589,7 +589,7 @@ pub fn sltu_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -641,7 +641,7 @@ pub fn xor_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -693,7 +693,7 @@ pub fn srl_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -745,7 +745,7 @@ pub fn sra_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -797,7 +797,7 @@ pub fn or_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -849,7 +849,7 @@ pub fn and_rd_rs1_rs2() {
         0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i] as i32);
+        assert_eq!(*e, cpu.xregs.read(i) as i32);
     }
 }
 
@@ -869,7 +869,7 @@ pub fn lui_rd_imm() {
         0, 0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -891,7 +891,7 @@ pub fn beq_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -914,7 +914,7 @@ pub fn bne_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -937,7 +937,7 @@ pub fn blt_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -960,7 +960,7 @@ pub fn bge_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -983,7 +983,7 @@ pub fn bltu_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -1006,7 +1006,7 @@ pub fn bgeu_rs1_rs2_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }
@@ -1029,7 +1029,7 @@ pub fn jalr_rd_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(44, cpu.pc);
 }
@@ -1052,7 +1052,7 @@ pub fn jal_rd_imm() {
         0, 0, 0, 0, 0,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     assert_eq!(20, cpu.pc);
 }

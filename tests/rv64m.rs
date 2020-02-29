@@ -24,7 +24,7 @@ pub fn mulw_rd_rs1_rs2() {
         0, 0, -4, -2, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -46,7 +46,7 @@ pub fn divw_rd_rs1_rs2() {
         0, 0, -1, -2, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -68,7 +68,7 @@ pub fn divuw_rd_rs1_rs2() {
         0, 0, 4, 8, 2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -90,7 +90,7 @@ pub fn remw_rd_rs1_rs2() {
         0, 0, -2, -5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }
 
@@ -112,6 +112,6 @@ pub fn remuw_rd_rs1_rs2() {
         0, 0, 2, 5, 3,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
 }

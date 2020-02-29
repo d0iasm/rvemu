@@ -30,13 +30,13 @@ pub fn fld_rd_offset_rs1() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
     // f31
-    assert_eq!(0xbf8700400f130020, cpu.fregs[31].to_bits());
+    assert_eq!(0xbf8700400f130020, cpu.fregs.read(31).to_bits());
 }
 
 #[wasm_bindgen_test]
@@ -64,10 +64,10 @@ pub fn fsd_rs2_offset_rs1() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -80,9 +80,9 @@ pub fn fmaddd_rd_rs1_rs2_rs3() {
         ],
     };
 
-    cpu.fregs[28] = -0.5;
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 1.2;
+    cpu.fregs.write(28, -0.5);
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 1.2);
 
     cpu.start(&mut mem);
 
@@ -92,7 +92,7 @@ pub fn fmaddd_rd_rs1_rs2_rs3() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, 4.54,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -105,9 +105,9 @@ pub fn fmsubd_rd_rs1_rs2_rs3() {
         ],
     };
 
-    cpu.fregs[28] = -0.5;
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 1.2;
+    cpu.fregs.write(28, -0.5);
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 1.2);
 
     cpu.start(&mut mem);
 
@@ -117,7 +117,7 @@ pub fn fmsubd_rd_rs1_rs2_rs3() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, 5.54,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -130,9 +130,9 @@ pub fn fnmaddd_rd_rs1_rs2_rs3() {
         ],
     };
 
-    cpu.fregs[28] = -0.5;
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 1.2;
+    cpu.fregs.write(28, -0.5);
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 1.2);
 
     cpu.start(&mut mem);
 
@@ -142,7 +142,7 @@ pub fn fnmaddd_rd_rs1_rs2_rs3() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, -5.54,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -155,9 +155,9 @@ pub fn fnmsubd_rd_rs1_rs2_rs3() {
         ],
     };
 
-    cpu.fregs[28] = -0.5;
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 1.2;
+    cpu.fregs.write(28, -0.5);
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 1.2);
 
     cpu.start(&mut mem);
 
@@ -167,7 +167,7 @@ pub fn fnmsubd_rd_rs1_rs2_rs3() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 4.2, 1.2, -4.54,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -180,8 +180,8 @@ pub fn faddd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 2.5;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 2.5);
 
     cpu.start(&mut mem);
 
@@ -191,7 +191,7 @@ pub fn faddd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 2.5, 6.7,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -204,8 +204,8 @@ pub fn fsubd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 2.8;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 2.8);
 
     cpu.start(&mut mem);
 
@@ -216,7 +216,7 @@ pub fn fsubd_rd_rs1_rs2() {
     ];
     for (i, e) in expected.iter().enumerate() {
         // TODO: workaround for floating point precision problem
-        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+        assert_eq!(*e, (cpu.fregs.read(i) * 10.0).round() / 10.0);
     }
 }
 
@@ -229,8 +229,8 @@ pub fn fmuld_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -240,7 +240,7 @@ pub fn fmuld_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, -5.04,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -253,8 +253,8 @@ pub fn fdivd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = -1.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, -1.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -265,7 +265,7 @@ pub fn fdivd_rd_rs1_rs2() {
     ];
     for (i, e) in expected.iter().enumerate() {
         // TODO: workaround for floating point precision problem
-        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+        assert_eq!(*e, (cpu.fregs.read(i) * 10.0).round() / 10.0);
     }
 }
 
@@ -278,8 +278,8 @@ pub fn fsgnjd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = -1.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, -1.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -289,7 +289,7 @@ pub fn fsgnjd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, -4.2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -302,8 +302,8 @@ pub fn fsgnjnd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = -1.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, -1.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -313,7 +313,7 @@ pub fn fsgnjnd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, 4.2, 4.2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -326,8 +326,8 @@ pub fn fsgnjxd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = -1.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, -1.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -338,7 +338,7 @@ pub fn fsgnjxd_rd_rs1_rs2() {
     ];
     for (i, e) in expected.iter().enumerate() {
         // TODO: workaround for floating point precision problem
-        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+        assert_eq!(*e, (cpu.fregs.read(i) * 10.0).round() / 10.0);
     }
 }
 
@@ -351,8 +351,8 @@ pub fn fmind_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -362,7 +362,7 @@ pub fn fmind_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, -1.2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -375,8 +375,8 @@ pub fn fmaxd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -386,7 +386,7 @@ pub fn fmaxd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, 4.2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -399,7 +399,7 @@ pub fn fcvtsd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -409,7 +409,7 @@ pub fn fcvtsd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.2, -1.2,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -422,7 +422,7 @@ pub fn fcvtds_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -433,7 +433,7 @@ pub fn fcvtds_rd_rs1_rs2() {
     ];
     for (i, e) in expected.iter().enumerate() {
         // TODO: workaround for floating point precision problem
-        assert_eq!(*e, (cpu.fregs[i] * 10.0).round() / 10.0);
+        assert_eq!(*e, (cpu.fregs.read(i) * 10.0).round() / 10.0);
     }
 }
 
@@ -446,7 +446,7 @@ pub fn fsqrtd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -486,7 +486,7 @@ pub fn fsqrtd_rd_rs1_rs2() {
         2.04939015319192,
     ];
     for (i, e) in expected.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -499,8 +499,8 @@ pub fn fled_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -515,10 +515,10 @@ pub fn fled_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 4.2, 0.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -531,8 +531,8 @@ pub fn fltd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = -1.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, -1.2);
 
     cpu.start(&mut mem);
 
@@ -547,10 +547,10 @@ pub fn fltd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, -1.2, 0.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -563,8 +563,8 @@ pub fn feqd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[29] = 4.2;
-    cpu.fregs[30] = 4.2;
+    cpu.fregs.write(29, 4.2);
+    cpu.fregs.write(30, 4.2);
 
     cpu.start(&mut mem);
 
@@ -579,10 +579,10 @@ pub fn feqd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2, 4.2, 0.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -595,7 +595,7 @@ pub fn fcvtwd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = -4.2;
+    cpu.fregs.write(31, -4.2);
 
     cpu.start(&mut mem);
 
@@ -610,10 +610,10 @@ pub fn fcvtwd_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.2,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -626,7 +626,7 @@ pub fn fcvtwud_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = 4.2;
+    cpu.fregs.write(31, 4.2);
 
     cpu.start(&mut mem);
 
@@ -641,10 +641,10 @@ pub fn fcvtwud_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.2,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -657,7 +657,7 @@ pub fn fcvtdw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.xregs[31] = -4;
+    cpu.xregs.write(31, -4);
 
     cpu.start(&mut mem);
 
@@ -672,10 +672,10 @@ pub fn fcvtdw_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -688,7 +688,7 @@ pub fn fcvtdwu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.xregs[31] = 4;
+    cpu.xregs.write(31, 4);
 
     cpu.start(&mut mem);
 
@@ -703,10 +703,10 @@ pub fn fcvtdwu_rd_rs1_rs2() {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
 
@@ -719,7 +719,7 @@ pub fn fclassd_rd_rs1_rs2() {
         ],
     };
 
-    cpu.fregs[31] = std::f64::INFINITY;
+    cpu.fregs.write(31, std::f64::INFINITY);
 
     cpu.start(&mut mem);
 
@@ -764,9 +764,9 @@ pub fn fclassd_rd_rs1_rs2() {
         std::f64::INFINITY,
     ];
     for (i, e) in expected_x.iter().enumerate() {
-        assert_eq!(*e, cpu.xregs[i]);
+        assert_eq!(*e, cpu.xregs.read(i));
     }
     for (i, e) in expected_f.iter().enumerate() {
-        assert_eq!(*e, cpu.fregs[i]);
+        assert_eq!(*e, cpu.fregs.read(i));
     }
 }
