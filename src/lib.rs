@@ -84,27 +84,18 @@ impl Emulator {
     /// Start executing.
     pub fn execute(&mut self) {
         self.cpu.start(&mut self.mem);
-        self.dump_registers();
     }
 
     /// Output current registers.
     pub fn dump_registers(&self) {
-        for i in 0..REGISTERS_COUNT {
-            output(&format!(
-                "x{}: {:#x} ({}, {:#b})",
-                i,
-                self.cpu.xregs.read(i),
-                self.cpu.xregs.read(i),
-                self.cpu.xregs.read(i)
-            ));
-        }
-
-        output(&format!("---------------------"));
-
-        for i in 0..REGISTERS_COUNT {
-            output(&format!("f{}: {:#?}", i, self.cpu.fregs.read(i)));
-        }
-
+        output(&format!("{}", self.cpu.xregs));
+        output(&format!(
+            "---------------------------------------------------"
+        ));
+        output(&format!("{}", self.cpu.fregs));
+        output(&format!(
+            "---------------------------------------------------"
+        ));
         output(&format!("pc: {}", self.cpu.pc));
     }
 }

@@ -46,7 +46,10 @@ async function initialize() {
     }
     const firstChild = e.target.childNodes[0];
     term.write(deleteLine);
-    term.writeln(firstChild.innerText);
+    const texts = firstChild.innerText.split("\n");
+    for (let i=0; i<texts.length; i++) {
+      term.writeln(texts[i]);
+    }
     e.target.removeChild(firstChild);
   });
 
@@ -61,6 +64,8 @@ async function initialize() {
       term.write(err.message);
       prompt();
       console.log(err);
+    } finally {
+      emu.dump_registers();
     }
   };
 
@@ -147,7 +152,6 @@ function loadApps() {
     .then(blob => {
       const sampleFile = new File([blob], "fib");
       files.push(sampleFile);
-      console.log("Loaded apps:", files);
     });
 }
 

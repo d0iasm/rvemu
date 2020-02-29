@@ -2,6 +2,7 @@ pub const REGISTERS_COUNT: usize = 32;
 
 use std::cmp;
 use std::cmp::PartialEq;
+use std::fmt;
 use std::num::FpCategory;
 
 use num_bigint::{BigInt, BigUint};
@@ -81,6 +82,32 @@ impl XRegisters {
     }
 }
 
+impl fmt::Display for XRegisters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut output = String::from("");
+        for i in (0..REGISTERS_COUNT).step_by(4) {
+            output = format!(
+                "{}\n{}",
+                output,
+                format!(
+                    "x{:02}={:>8x} x{:02}={:>8x} x{:02}={:>8x} x{:02}={:>8x}",
+                    i,
+                    self.read(i),
+                    i + 1,
+                    self.read(i + 1),
+                    i + 2,
+                    self.read(i + 2),
+                    i + 3,
+                    self.read(i + 3)
+                )
+            );
+        }
+        // Remove the first new line.
+        output.remove(0);
+        write!(f, "{}", output)
+    }
+}
+
 pub struct FRegisters {
     fregs: [f64; REGISTERS_COUNT],
 }
@@ -98,6 +125,32 @@ impl FRegisters {
 
     pub fn write(&mut self, index: usize, value: f64) {
         self.fregs[index] = value;
+    }
+}
+
+impl fmt::Display for FRegisters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut output = String::from("");
+        for i in (0..REGISTERS_COUNT).step_by(4) {
+            output = format!(
+                "{}\n{}",
+                output,
+                format!(
+                    "f{:02}={:>.6} f{:02}={:>.6} f{:02}={:>.6} f{:02}={:>.6}",
+                    i,
+                    self.read(i),
+                    i + 1,
+                    self.read(i + 1),
+                    i + 2,
+                    self.read(i + 2),
+                    i + 3,
+                    self.read(i + 3)
+                )
+            );
+        }
+        // Remove the first new line.
+        output.remove(0);
+        write!(f, "{}", output)
     }
 }
 
