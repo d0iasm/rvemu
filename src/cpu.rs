@@ -198,7 +198,7 @@ impl Cpu {
             // TODO: Remove the following check.
             // This is for avoiding an infinite execution.
             i += 1;
-            if (i > 1000) | (self.pc == 0) {
+            if (i > 10000) | (self.pc == 0) {
                 log(&format!("executed {}, size {}", i, size));
                 return;
             }
