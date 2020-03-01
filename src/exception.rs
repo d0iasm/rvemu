@@ -69,15 +69,15 @@ impl Exception {
         match cpu.mode {
             Mode::Machine => {
                 cpu.state.write(MCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(MEPC, cpu.pc as i64)?;
+                cpu.state.write(MEPC, (cpu.pc as i64) - 4)?;
             }
             Mode::Supervisor => {
                 cpu.state.write(SCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(SEPC, cpu.pc as i64)?;
+                cpu.state.write(SEPC, (cpu.pc as i64) - 4)?;
             }
             Mode::User => {
                 cpu.state.write(UCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(UEPC, cpu.pc as i64)?;
+                cpu.state.write(UEPC, (cpu.pc as i64) - 4)?;
             }
             _ => {}
         }
