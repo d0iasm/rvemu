@@ -9,6 +9,7 @@ pub mod mstatus;
 pub mod mtvec;
 pub mod mvendorid;
 pub mod sepc;
+pub mod uepc;
 
 use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
@@ -24,6 +25,7 @@ use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
 use crate::csr::sepc::Sepc;
+use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
@@ -107,6 +109,7 @@ pub struct State {
 
 pub enum Csr {
     // User-level CSRs.
+    Uepc(Uepc),
     Fcsr(Fcsr),
     // Supervisor-level CSRs.
     Sepc(Sepc),
@@ -127,6 +130,8 @@ impl State {
         let mut csrs = HashMap::new();
 
         // User-level CSRs.
+        csrs.insert(UEPC, Csr::Uepc(Uepc::new(0)));
+
         csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
 
         // Supervisor-level CSRs.
@@ -186,6 +191,7 @@ impl State {
     pub fn read(&self, csr_address: u32) -> Result<MXLEN, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
+                Csr::Uepc(uepc) => Ok(uepc.read_value()),
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
                 Csr::Sepc(sepc) => Ok(sepc.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
@@ -208,6 +214,7 @@ impl State {
     pub fn write(&mut self, csr_address: u32, value: MXLEN) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
+                Csr::Uepc(uepc) => uepc.write_value(value),
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
                 Csr::Mvendorid(_) => {
@@ -247,6 +254,7 @@ impl State {
     pub fn reset(&mut self) {
         for csr in self.csrs.values_mut() {
             match csr {
+                Csr::Uepc(uepc) => uepc.reset(),
                 Csr::Fcsr(fcsr) => fcsr.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),

@@ -1184,7 +1184,7 @@ impl Cpu {
                                 }
                                 match self.state.get(SEPC)? {
                                     Csr::Sepc(sepc) => {
-                                        self.pc = sepc.read_value();
+                                        self.pc = sepc.read_value() as usize;
                                     }
                                     _ => {
                                         return Err(Exception::IllegalInstruction(String::from(
@@ -1215,7 +1215,7 @@ impl Cpu {
                                 }
                                 match self.state.get(MEPC)? {
                                     Csr::Mepc(mepc) => {
-                                        self.pc = mepc.read_value();
+                                        self.pc = mepc.read_value() as usize;
                                     }
                                     _ => {
                                         return Err(Exception::IllegalInstruction(String::from(
