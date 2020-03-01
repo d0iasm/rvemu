@@ -189,21 +189,16 @@ impl Cpu {
     /// Start executing the CPU.
     pub fn start(&mut self, mem: &mut Memory) {
         let size = mem.len();
-        let mut i = 0;
         while self.pc < size {
             let binary = self.fetch(mem);
             let _ = self.execute(binary, mem).map_err(|e| e.take_trap(self));
             self.pc += 4;
 
-            // TODO: Remove the following check.
-            // This is for avoiding an infinite execution.
-            i += 1;
-            if (i > 10000) | (self.pc == 0) {
-                log(&format!("executed {}, size {}", i, size));
+            // Finish the execution when opcode is 0 or the program counter is 0.
+            if (binary == 0) | (self.pc == 0) {
                 return;
             }
         }
-        log(&format!("executed {}, size {}", i, size));
     }
 
     /// Fetch the next instruction from a memory at the current program counter.
