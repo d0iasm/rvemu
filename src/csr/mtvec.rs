@@ -55,7 +55,7 @@ impl Mtvec {
     pub fn write_mode(&mut self, mode: Mode) {
         match mode {
             Mode::Direct => self.write_bits(..2, 0),
-            Mode::Vectored=> self.write_bits(..2, 1),
+            Mode::Vectored => self.write_bits(..2, 1),
             _ => {}
         }
     }
