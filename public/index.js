@@ -122,7 +122,7 @@ function ls() {
 }
 
 function command(input) {
-  const com = input.split(" ");
+  const com = input.split(" ").filter(element => element.length != 0);
   switch (com[0]) {
     case "":
       break;
@@ -181,12 +181,12 @@ function runTerminal() {
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
-    if (e.domEvent.keyCode === 13) { // Enter key
+    if (e.domEvent.code == 'Enter') {
       command(input);
       input = "";
       cursor = 0;
       prompt();
-    } else if (e.domEvent.keyCode === 8) { // Backspace key
+    } else if (e.domEvent.code == 'Backspace') {
       // Do not delete the prompt
       if (term._core.buffer.x > 2) {
         input = input.substr(0, cursor-1) + input.substr(cursor);
@@ -197,12 +197,12 @@ function runTerminal() {
         term.write("$ ");
         term.write(input);
       }
-    } else if (e.domEvent.keyCode === 37) { // Arrow left
+    } else if (e.domEvent.code == 'ArrowLeft') {
       if (cursor > 0) {
         cursor--;
       }
       term.write(e.key);
-    } else if (e.domEvent.keyCode === 39) { // Arrow right
+    } else if (e.domEvent.code == 'ArrowRight') {
       if (cursor < input.length) {
         cursor++;
       }
