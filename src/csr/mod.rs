@@ -1,9 +1,12 @@
 pub mod fcsr;
 pub mod marchid;
+pub mod medeleg;
+pub mod mepc;
 pub mod mhartid;
 pub mod mimpid;
 pub mod misa;
 pub mod mstatus;
+pub mod mtvec;
 pub mod mvendorid;
 
 use std::collections::HashMap;
@@ -11,10 +14,13 @@ use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
 use crate::csr::marchid::Marchid;
+use crate::csr::medeleg::Medeleg;
+use crate::csr::mepc::Mepc;
 use crate::csr::mhartid::Mhartid;
 use crate::csr::mimpid::Mimpid;
 use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
+use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
 use crate::exception::Exception;
 
@@ -45,6 +51,10 @@ pub const FCSR: CsrAddress = 0x003;
 pub const SEPC: CsrAddress = 0x141;
 /// Supervisor trap cause.
 pub const SCAUSE: CsrAddress = 0x142;
+
+// Supervisor protection and translation.
+/// Supervisor address translation and protection.
+pub const SATP: CsrAddress = 0x180;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
@@ -104,6 +114,9 @@ pub enum Csr {
     Mhartid(Mhartid),
     Mstatus(Mstatus),
     Misa(Misa),
+    Medeleg(Medeleg),
+    Mtvec(Mtvec),
+    Mepc(Mepc),
 }
 
 impl State {
@@ -123,6 +136,10 @@ impl State {
 
         csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
+        csrs.insert(MEDELEG, Csr::Medeleg(Medeleg::new(0)));
+        csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
+
+        csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
 
         /*
         csrs.insert(UEPC, Csr::RW(ReadWrite::new(0)));
@@ -172,6 +189,9 @@ impl State {
                 Csr::Mhartid(mhartid) => Ok(mhartid.read_value()),
                 Csr::Mstatus(mstatus) => Ok(mstatus.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
+                Csr::Medeleg(medeleg) => Ok(medeleg.read_value()),
+                Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
+                Csr::Mepc(mepc) => Ok(mepc.read_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
@@ -206,6 +226,9 @@ impl State {
                 }
                 Csr::Mstatus(mstatus) => mstatus.write_value(value),
                 Csr::Misa(misa) => misa.write_value(value),
+                Csr::Medeleg(medeleg) => medeleg.write_value(value),
+                Csr::Mtvec(mtvec) => mtvec.write_value(value),
+                Csr::Mepc(mepc) => mepc.write_value(value),
             }
             Ok(())
         } else {
@@ -225,6 +248,9 @@ impl State {
                 Csr::Mhartid(mhartid) => mhartid.reset(),
                 Csr::Mstatus(mstatus) => mstatus.reset(),
                 Csr::Misa(misa) => misa.reset(),
+                Csr::Medeleg(medeleg) => medeleg.reset(),
+                Csr::Mtvec(mtvec) => mtvec.reset(),
+                Csr::Mepc(mepc) => mepc.reset(),
             }
         }
     }

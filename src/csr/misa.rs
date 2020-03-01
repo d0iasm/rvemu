@@ -101,8 +101,7 @@ impl Read for Misa {}
 
 impl Misa {
     pub fn read_mxl(&self) -> Mxl {
-        let mxl = self.read_bits(62..);
-        match mxl {
+        match self.read_bits(62..) {
             1 => Mxl::Xlen32,
             2 => Mxl::Xlen32,
             3 => Mxl::Xlen32,
