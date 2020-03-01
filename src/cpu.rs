@@ -190,9 +190,13 @@ impl Cpu {
     pub fn start(&mut self, mem: &mut Memory) {
         let size = mem.len();
         while self.pc < size {
+            // 1. Fetch.
             let binary = self.fetch(mem);
-            let _ = self.execute(binary, mem).map_err(|e| e.take_trap(self));
+            // 2. Add 4 to the program counter.
             self.pc += 4;
+            // 3. Decode.
+            // 4. Execution.
+            let _ = self.execute(binary, mem).map_err(|e| e.take_trap(self));
 
             // Finish the execution when opcode is 0 or the program counter is 0.
             if (binary == 0) | (self.pc == 0) {
@@ -301,7 +305,7 @@ impl Cpu {
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
                 let imm = ((binary & 0xfffff000) as i32) as i64;
-                xregs.write(rd, (self.pc as i64) + imm); // auipc
+                xregs.write(rd, (self.pc as i64) + imm - 4); // auipc
             }
             0x1B => {
                 // I-type (RV64I only)
@@ -1097,10 +1101,10 @@ impl Cpu {
             0x67 => {
                 // I-type
                 // jalr
-                xregs.write(rd, (self.pc as i64) + 4);
+                xregs.write(rd, self.pc as i64);
 
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let target = (xregs.read(rs1) + imm - 4) & !1;
+                let target = (xregs.read(rs1) + imm) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
                         "must be aligned on a four-byte boundary",
@@ -1112,7 +1116,7 @@ impl Cpu {
             0x6F => {
                 // J-type
                 // jal
-                xregs.write(rd, (self.pc as i64) + 4);
+                xregs.write(rd, self.pc as i64);
 
                 let imm20 = (((binary & 0x80000000) as i32) as i64) >> 31;
                 let imm10_1 = ((binary & 0x7fe00000) >> 21) as u64;
