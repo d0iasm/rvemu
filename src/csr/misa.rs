@@ -66,32 +66,32 @@ pub enum Extensions {
 }
 
 pub struct Misa {
-    value: MXLEN,
+    value: Mxlen,
 }
 
 impl CsrBase for Misa {
-    fn new(value: MXLEN) -> Self {
+    fn new(value: Mxlen) -> Self {
         Self { value }
     }
 
     fn reset(&mut self) {
         // At reset, the Extensions field should contain the maximal set of supported extensions.
-        self.value = 1 << Extensions::BitA as MXLEN
-                //| 1 << Extensions::BitC as MXLEN
-                | 1 << Extensions::BitD as MXLEN
-                | 1 << Extensions::BitF as MXLEN
-                | 1 << Extensions::BitI as MXLEN
-                | 1 << Extensions::BitM as MXLEN
-                //| 1 << Extensions::BitN as MXLEN
-                | 1 << Extensions::BitS as MXLEN
-                | 1 << Extensions::BitU as MXLEN;
+        self.value = 1 << Extensions::BitA as Mxlen
+                //| 1 << Extensions::BitC as Mxlen
+                | 1 << Extensions::BitD as Mxlen
+                | 1 << Extensions::BitF as Mxlen
+                | 1 << Extensions::BitI as Mxlen
+                | 1 << Extensions::BitM as Mxlen
+                //| 1 << Extensions::BitN as Mxlen
+                | 1 << Extensions::BitS as Mxlen
+                | 1 << Extensions::BitU as Mxlen;
     }
 
-    fn write_value(&mut self, value: MXLEN) {
+    fn write_value(&mut self, value: Mxlen) {
         self.value = value;
     }
 
-    fn read_value(&self) -> MXLEN {
+    fn read_value(&self) -> Mxlen {
         self.value
     }
 }

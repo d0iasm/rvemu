@@ -2,11 +2,11 @@ use crate::csr::*;
 
 pub struct Mvendorid {
     // TODO: The length should be fixed at 32 bits.
-    value: MXLEN,
+    value: Mxlen,
 }
 
 impl CsrBase for Mvendorid {
-    fn new(value: MXLEN) -> Self {
+    fn new(value: Mxlen) -> Self {
         Self { value }
     }
 
@@ -14,11 +14,11 @@ impl CsrBase for Mvendorid {
         self.value = 0;
     }
 
-    fn write_value(&mut self, value: MXLEN) {
+    fn write_value(&mut self, value: Mxlen) {
         self.value = value;
     }
 
-    fn read_value(&self) -> MXLEN {
+    fn read_value(&self) -> Mxlen {
         self.value
     }
 }

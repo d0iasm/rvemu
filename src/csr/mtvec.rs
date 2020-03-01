@@ -10,11 +10,11 @@ pub enum Mode {
 }
 
 pub struct Mtvec {
-    value: MXLEN,
+    value: Mxlen,
 }
 
 impl CsrBase for Mtvec {
-    fn new(value: MXLEN) -> Self {
+    fn new(value: Mxlen) -> Self {
         Self { value }
     }
 
@@ -22,11 +22,11 @@ impl CsrBase for Mtvec {
         self.value = 0;
     }
 
-    fn write_value(&mut self, value: MXLEN) {
+    fn write_value(&mut self, value: Mxlen) {
         self.value = value;
     }
 
-    fn read_value(&self) -> MXLEN {
+    fn read_value(&self) -> Mxlen {
         self.value
     }
 }
@@ -35,11 +35,11 @@ impl Write for Mtvec {}
 impl Read for Mtvec {}
 
 impl Mtvec {
-    pub fn read_base(&self) -> MXLEN {
+    pub fn read_base(&self) -> Mxlen {
         self.read_bits(2..)
     }
 
-    pub fn write_base(&mut self, base: MXLEN) {
+    pub fn write_base(&mut self, base: Mxlen) {
         // The BASE field must always be aaligned on a 4-byte boundary.
         self.write_bits(2.., base)
     }

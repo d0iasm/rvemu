@@ -18,11 +18,11 @@ pub enum RoundingMode {
 }
 
 pub struct Fcsr {
-    value: MXLEN,
+    value: Mxlen,
 }
 
 impl CsrBase for Fcsr {
-    fn new(value: MXLEN) -> Self {
+    fn new(value: Mxlen) -> Self {
         Self { value }
     }
 
@@ -30,11 +30,11 @@ impl CsrBase for Fcsr {
         self.value = 0;
     }
 
-    fn write_value(&mut self, value: MXLEN) {
+    fn write_value(&mut self, value: Mxlen) {
         self.value = value;
     }
 
-    fn read_value(&self) -> MXLEN {
+    fn read_value(&self) -> Mxlen {
         self.value
     }
 }

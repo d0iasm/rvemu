@@ -1,5 +1,6 @@
 pub mod fcsr;
 pub mod marchid;
+pub mod mcause;
 pub mod medeleg;
 pub mod mepc;
 pub mod mhartid;
@@ -16,6 +17,7 @@ use std::ops::{Bound, Range, RangeBounds};
 
 use crate::csr::fcsr::Fcsr;
 use crate::csr::marchid::Marchid;
+use crate::csr::mcause::Mcause;
 use crate::csr::medeleg::Medeleg;
 use crate::csr::mepc::Mepc;
 use crate::csr::mhartid::Mhartid;
@@ -29,6 +31,9 @@ use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
+pub type Mxlen = i64;
+
+pub const MXLEN: usize = 64;
 
 //////////////////////////////
 // User-level CSR addresses //
@@ -101,8 +106,6 @@ pub const MTVAL: CsrAddress = 0x343;
 /// Machine interrupt pending.
 pub const MIP: CsrAddress = 0x344;
 
-pub type MXLEN = i64;
-
 pub struct State {
     csrs: HashMap<CsrAddress, Csr>,
 }
@@ -123,6 +126,7 @@ pub enum Csr {
     Medeleg(Medeleg),
     Mtvec(Mtvec),
     Mepc(Mepc),
+    Mcause(Mcause),
 }
 
 impl State {
@@ -149,6 +153,7 @@ impl State {
         csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
 
         csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
+        csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
 
         /*
         csrs.insert(UEPC, Csr::RW(ReadWrite::new(0)));
@@ -188,7 +193,7 @@ impl State {
         }
     }
 
-    pub fn read(&self, csr_address: u32) -> Result<MXLEN, Exception> {
+    pub fn read(&self, csr_address: u32) -> Result<Mxlen, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
                 Csr::Uepc(uepc) => Ok(uepc.read_value()),
@@ -203,6 +208,7 @@ impl State {
                 Csr::Medeleg(medeleg) => Ok(medeleg.read_value()),
                 Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
                 Csr::Mepc(mepc) => Ok(mepc.read_value()),
+                Csr::Mcause(mcause) => Ok(mcause.read_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
@@ -211,7 +217,7 @@ impl State {
         }
     }
 
-    pub fn write(&mut self, csr_address: u32, value: MXLEN) -> Result<(), Exception> {
+    pub fn write(&mut self, csr_address: u32, value: Mxlen) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Uepc(uepc) => uepc.write_value(value),
@@ -242,6 +248,7 @@ impl State {
                 Csr::Medeleg(medeleg) => medeleg.write_value(value),
                 Csr::Mtvec(mtvec) => mtvec.write_value(value),
                 Csr::Mepc(mepc) => mepc.write_value(value),
+                Csr::Mcause(mcause) => mcause.write_value(value),
             }
             Ok(())
         } else {
@@ -266,6 +273,7 @@ impl State {
                 Csr::Medeleg(medeleg) => medeleg.reset(),
                 Csr::Mtvec(mtvec) => mtvec.reset(),
                 Csr::Mepc(mepc) => mepc.reset(),
+                Csr::Mcause(mcause) => mcause.reset(),
             }
         }
     }
@@ -274,10 +282,10 @@ impl State {
 pub trait CsrBase {
     const BIT_LENGTH: usize = ::core::mem::size_of::<i64>() as usize * 8;
 
-    fn new(value: MXLEN) -> Self;
+    fn new(value: Mxlen) -> Self;
     fn reset(&mut self);
-    fn write_value(&mut self, value: MXLEN);
-    fn read_value(&self) -> MXLEN;
+    fn write_value(&mut self, value: Mxlen);
+    fn read_value(&self) -> Mxlen;
 }
 
 pub trait Write: CsrBase {
@@ -293,7 +301,7 @@ pub trait Write: CsrBase {
         }
     }
 
-    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: MXLEN) {
+    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: Mxlen) {
         let range = to_range(&range, Self::BIT_LENGTH);
 
         if (range.start >= Self::BIT_LENGTH)
