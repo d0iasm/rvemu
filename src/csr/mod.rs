@@ -8,6 +8,7 @@ pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
 pub mod mvendorid;
+pub mod sepc;
 
 use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
@@ -22,6 +23,7 @@ use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
+use crate::csr::sepc::Sepc;
 use crate::exception::Exception;
 
 pub type CsrAddress = u32;
@@ -107,6 +109,7 @@ pub enum Csr {
     // User-level CSRs.
     Fcsr(Fcsr),
     // Supervisor-level CSRs.
+    Sepc(Sepc),
     // Machine-level CSRs.
     Mvendorid(Mvendorid),
     Marchid(Marchid),
@@ -127,6 +130,7 @@ impl State {
         csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
 
         // Supervisor-level CSRs.
+        csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
 
         // Machine-level CSRs.
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
@@ -183,6 +187,7 @@ impl State {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
+                Csr::Sepc(sepc) => Ok(sepc.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
                 Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
@@ -204,6 +209,7 @@ impl State {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
+                Csr::Sepc(sepc) => sepc.write_value(value),
                 Csr::Mvendorid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
                         "mvendorid is a read-only csr",
@@ -242,6 +248,7 @@ impl State {
         for csr in self.csrs.values_mut() {
             match csr {
                 Csr::Fcsr(fcsr) => fcsr.reset(),
+                Csr::Sepc(sepc) => sepc.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),
                 Csr::Mimpid(mimpid) => mimpid.reset(),

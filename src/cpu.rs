@@ -1135,13 +1135,10 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {
-                            // TODO: implement ecall and ebreak
-                            // ecall makes a request of the execution environment by raising an
-                            // environment call exception.
-                            // ebreak makes a request of the debugger by raising a breakpoint
-                            // exception.
                             (0x0, 0x0) => {
                                 // ecall
+                                // Makes a request of the execution environment by raising an
+                                // Environment Call exception.
                                 match self.mode {
                                     Mode::User => return Err(Exception::EnvironmentCallFromUMode),
                                     Mode::Supervisor => {
@@ -1155,27 +1152,29 @@ impl Cpu {
                             }
                             (0x1, 0x0) => {
                                 // ebreak
+                                // Makes a request of the debugger bu raising a Breakpoint
+                                // exception.
                                 return Err(Exception::Breakpoint);
                             }
                             (0x2, 0x0) => {} // uret
                             (0x2, 0x8) => {
                                 // sret
+                                // TODO: Which is correct, mstatus or sstatus?
+                                // "The RISC-V Reader" book says:
+                                // "Returns from a supervisor-mode exception handler. Sets the pc to
+                                // CSRs[scpc], the privilege mode to CSRs[sstatus].SPP,
+                                // CSRs[sstatus].SIE to CSRs[sstatus].SPIE, CSRs[sstatus].SPIE to
+                                // 1, and CSRs[sstatus].SPP to 0.", but
+                                // the implementation in QEMU and Spike use `mstatus` instead of
+                                // `sstatus`.
                                 self.mode.require(Mode::Supervisor)?;
                                 match self.state.get(MSTATUS)? {
                                     Csr::Mstatus(mstatus) => {
-                                        // TODO: Set SEPC
                                         // TODO: Check TSR field
-
-                                        // - SIE is set to SPIE.
-                                        // - The privilege mode is changed to SPP.
-                                        // - SPIE is set to 1.
-                                        // - SPP is set to U mode (or M if user-mode is not
-                                        // supported).
-                                        let prev_mode = mstatus.read_spp();
+                                        self.mode = mstatus.read_spp();
                                         mstatus.write_sie(mstatus.read_spie());
                                         mstatus.write_spie(true);
                                         mstatus.write_spp(Mode::User);
-                                        self.mode = prev_mode;
                                     }
                                     _ => {
                                         return Err(Exception::IllegalInstruction(String::from(
@@ -1183,28 +1182,44 @@ impl Cpu {
                                         )))
                                     }
                                 }
+                                match self.state.get(SEPC)? {
+                                    Csr::Sepc(sepc) => {
+                                        self.pc = sepc.read_value();
+                                    }
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction(String::from(
+                                            "failed to get a sepc csr",
+                                        )))
+                                    }
+                                }
                             }
                             (0x2, 0x18) => {
                                 // mret
+                                // Returns from a machine-mode exception handler. Sets the pc to CSRs[mepc], the privilege mode to
+                                // CSRs[mstatus].MPP, CSRs[mstatus].MIE to CSRs[mstatus].MPIE, and
+                                // CSRs[mstatus].MPIE to 1; and, if user mode is supported, sets
+                                // CSRs[mstatus].MPP to 0.
                                 self.mode.require(Mode::Machine)?;
                                 match self.state.get(MSTATUS)? {
                                     Csr::Mstatus(mstatus) => {
-                                        // TODO: Set MEPC
-
-                                        // - MIE is set to MPIE.
-                                        // - The privilege mode is changed to MPP.
-                                        // - MPIE is set to 1.
-                                        // - MPP is set to U mode (or M if user-mode is not
-                                        // supported).
-                                        let prev_mode = mstatus.read_mpp();
+                                        self.mode = mstatus.read_mpp();
                                         mstatus.write_mie(mstatus.read_mpie());
                                         mstatus.write_mpie(true);
                                         mstatus.write_mpp(Mode::User);
-                                        self.mode = prev_mode;
                                     }
                                     _ => {
                                         return Err(Exception::IllegalInstruction(String::from(
                                             "failed to get a mstatus csr",
+                                        )))
+                                    }
+                                }
+                                match self.state.get(MEPC)? {
+                                    Csr::Mepc(mepc) => {
+                                        self.pc = mepc.read_value();
+                                    }
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction(String::from(
+                                            "failed to get a mepc csr",
                                         )))
                                     }
                                 }
