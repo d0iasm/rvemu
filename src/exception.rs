@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use crate::*;
 
 #[derive(Debug)]
@@ -83,9 +81,6 @@ impl Exception {
             }
             _ => {}
         }
-
-        output(&format!("exception: {:#?}", self));
-        output(&format!("mcause: {:#?}", cpu.state.read(MCAUSE)));
-        exit(1);
+        Ok(())
     }
 }
