@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Memory {
     pub dram: Vec<u8>,
 }
