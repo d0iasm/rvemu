@@ -13,7 +13,7 @@
 
 */
 
-import init, { Emulator } from "./pkg/rvemu.js";
+import init, { Emulator } from "./pkg/rvemu_wasm.js";
 
 const fileIn = document.getElementById("file");
 const buffer = document.getElementById("buffer");
