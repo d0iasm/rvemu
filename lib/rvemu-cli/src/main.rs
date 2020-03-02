@@ -6,6 +6,7 @@ use std::io::prelude::*;
 use rvemu_core::cpu::*;
 use rvemu_core::memory::*;
 
+/// Output current registers to the console.
 fn dump_registers(cpu: &Cpu) {
     println!("{}", cpu.xregs);
     println!("---------------------------------------------------");
@@ -14,6 +15,7 @@ fn dump_registers(cpu: &Cpu) {
     println!("pc: {}", cpu.pc);
 }
 
+/// Main function of RISC-V emulator for the CLI version.
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -25,7 +27,10 @@ fn main() -> io::Result<()> {
     file.read_to_end(&mut dram)?;
 
     let mut cpu = Cpu::new();
-    let mut mem = Memory { dram };
+    let mut mem = Memory::new();
+    for i in 0..dram.len() {
+        mem.dram[i] = dram[i];
+    }
 
     cpu.start(&mut mem);
 
