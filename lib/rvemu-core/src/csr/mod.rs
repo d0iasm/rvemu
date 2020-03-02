@@ -30,7 +30,7 @@ use crate::csr::sepc::Sepc;
 use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
 
-pub type CsrAddress = u32;
+pub type CsrAddress = u16;
 pub type Mxlen = i64;
 
 pub const MXLEN: usize = 64;
@@ -193,7 +193,7 @@ impl State {
         }
     }
 
-    pub fn read(&self, csr_address: u32) -> Result<Mxlen, Exception> {
+    pub fn read(&self, csr_address: CsrAddress) -> Result<Mxlen, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
                 Csr::Uepc(uepc) => Ok(uepc.read_value()),
@@ -217,7 +217,7 @@ impl State {
         }
     }
 
-    pub fn write(&mut self, csr_address: u32, value: Mxlen) -> Result<(), Exception> {
+    pub fn write(&mut self, csr_address: CsrAddress, value: Mxlen) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
                 Csr::Uepc(uepc) => uepc.write_value(value),

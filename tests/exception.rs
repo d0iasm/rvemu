@@ -8,8 +8,8 @@ const DEFAULT_SP: i64 = 1048000;
 
 #[wasm_bindgen_test]
 pub fn illegal_isa() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x50, 0x00, // addi x31, x0, 5
             0xaa, 0xaa, 0xaa, 0xaa, // Invalid ISA
@@ -22,14 +22,14 @@ pub fn illegal_isa() {
     assert_eq!(
         2,
         cpu.state
-            .read(rvemu::csr::MCAUSE)
+            .read(rvemu_core::csr::MCAUSE)
             .expect("failed to get mcause")
     );
 
     assert_eq!(
         4,
         cpu.state
-            .read(rvemu::csr::MEPC)
+            .read(rvemu_core::csr::MEPC)
             .expect("failed to get mepc")
     );
 

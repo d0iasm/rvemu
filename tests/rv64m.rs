@@ -8,8 +8,8 @@ const DEFAULT_SP: i64 = 1048000;
 
 #[wasm_bindgen_test]
 pub fn mulw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
             0x13, 0x0f, 0xe0, 0xff, // addi x30, x0, -2
@@ -30,8 +30,8 @@ pub fn mulw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn divw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
             0x13, 0x0f, 0xe0, 0xff, // addi x30, x0, -2
@@ -52,8 +52,8 @@ pub fn divw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn divuw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
             0x13, 0x0f, 0x80, 0x00, // addi x30, x0, 8
@@ -74,8 +74,8 @@ pub fn divuw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn remw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x30, 0x00, // addi x31, x0, 3
             0x13, 0x0f, 0xb0, 0xff, // addi x30, x0, -5
@@ -96,8 +96,8 @@ pub fn remw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn remuw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x30, 0x00, // addi x31, x0, 3
             0x13, 0x0f, 0x50, 0x00, // addi x30, x0, 5

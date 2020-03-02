@@ -14,9 +14,8 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-num-bigint = "0.2.6"
-num-traits = "0.2.11"
 wasm-bindgen = "0.2.58"
+rvemu-core = { path = "lib/rvemu-core" }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -35,6 +34,12 @@ features = [
   'HtmlElement',
   'Node',
   'Window',
+]
+
+[workspace]
+members = [
+  "lib/rvemu-core",
+  "lib/rvemu-cli"
 ]
 
 [profile.release]

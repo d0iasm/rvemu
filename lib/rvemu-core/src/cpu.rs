@@ -8,9 +8,7 @@ use std::num::FpCategory;
 use num_bigint::{BigInt, BigUint};
 use num_traits::cast::ToPrimitive;
 
-use crate::csr::fcsr::RoundingMode;
-use crate::csr::Csr;
-use crate::*;
+use crate::{csr::*, exception::Exception, memory::Memory};
 
 const SP: usize = 2;
 
@@ -222,11 +220,6 @@ impl Cpu {
 
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
-
-        log(&format!(
-            "execute pc: {} ({:#x}), opcode: {} ({:#x}, {:#b}), binary: {:#x}",
-            self.pc, self.pc, opcode, opcode, opcode, binary
-        ));
 
         match opcode {
             0x03 => {
@@ -778,7 +771,7 @@ impl Cpu {
                 match self.state.get(FCSR)? {
                     Csr::Fcsr(fcsr) => {
                         let frm = fcsr.read_frm();
-                        if frm == RoundingMode::Invalid {
+                        if frm == fcsr::RoundingMode::Invalid {
                             return Err(Exception::IllegalInstruction(String::from(
                                 "frm is set to an invalid value (101–110)",
                             )));
@@ -1135,7 +1128,7 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let csr_address = (binary & 0xfff00000) >> 20;
+                let csr_address = ((binary & 0xfff00000) >> 20) as u16;
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {

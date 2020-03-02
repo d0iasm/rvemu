@@ -8,8 +8,8 @@ const DEFAULT_SP: i64 = 1048000;
 
 #[wasm_bindgen_test]
 pub fn fld_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
             0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
@@ -41,8 +41,8 @@ pub fn fld_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn fsd_rs2_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
             0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
@@ -73,8 +73,8 @@ pub fn fsd_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn fmaddd_rd_rs1_rs2_rs3() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xc3, 0x0f, 0xdf, 0xe3, // fmadd.d f31, f30, f29, f28
         ],
@@ -98,8 +98,8 @@ pub fn fmaddd_rd_rs1_rs2_rs3() {
 
 #[wasm_bindgen_test]
 pub fn fmsubd_rd_rs1_rs2_rs3() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xc7, 0x0f, 0xdf, 0xe3, // fmsub.d f31, f30, f29, f28
         ],
@@ -123,8 +123,8 @@ pub fn fmsubd_rd_rs1_rs2_rs3() {
 
 #[wasm_bindgen_test]
 pub fn fnmaddd_rd_rs1_rs2_rs3() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xcb, 0x0f, 0xdf, 0xe3, // fnmadd.d f31, f30, f29, f28
         ],
@@ -148,8 +148,8 @@ pub fn fnmaddd_rd_rs1_rs2_rs3() {
 
 #[wasm_bindgen_test]
 pub fn fnmsubd_rd_rs1_rs2_rs3() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xcf, 0x0f, 0xdf, 0xe3, // fnmsub.d f31, f30, f29, f28
         ],
@@ -173,8 +173,8 @@ pub fn fnmsubd_rd_rs1_rs2_rs3() {
 
 #[wasm_bindgen_test]
 pub fn faddd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x03, // fadd.d f31, f30, f29
         ],
@@ -197,8 +197,8 @@ pub fn faddd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fsubd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x0b, // fsub.d f31, f30, f29
         ],
@@ -222,8 +222,8 @@ pub fn fsubd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fmuld_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x13, // fmul.d f31, f30, f29
         ],
@@ -246,8 +246,8 @@ pub fn fmuld_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fdivd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x1b, // fdiv.d f31, f30, f29
         ],
@@ -271,8 +271,8 @@ pub fn fdivd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fsgnjd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x23, // fsgnj.d f31, f30, f29
         ],
@@ -295,8 +295,8 @@ pub fn fsgnjd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fsgnjnd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x1f, 0xdf, 0x23, // fsgnjn.d f31, f30, f29
         ],
@@ -319,8 +319,8 @@ pub fn fsgnjnd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fsgnjxd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x2f, 0xdf, 0x23, // fsgnjx.d f31, f30, f29
         ],
@@ -344,8 +344,8 @@ pub fn fsgnjxd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fmind_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0x2b, // fmin.d f31, f30, f29
         ],
@@ -368,8 +368,8 @@ pub fn fmind_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fmaxd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x1f, 0xdf, 0x2b, // fmax.d f31, f30, f29
         ],
@@ -392,8 +392,8 @@ pub fn fmaxd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtsd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0x1f, 0x40, // fcvt.s.d f31, f30
         ],
@@ -415,8 +415,8 @@ pub fn fcvtsd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtds_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0x0f, 0x42, // fcvt.d.s f31, f30
         ],
@@ -439,8 +439,8 @@ pub fn fcvtds_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fsqrtd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0x0f, 0x5a, // fmax.d f31, f30
         ],
@@ -492,8 +492,8 @@ pub fn fsqrtd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fled_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x0f, 0xdf, 0xa3, // fle.d f31, f30, f29
         ],
@@ -524,8 +524,8 @@ pub fn fled_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fltd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x1f, 0xdf, 0xa3, // flt.d f31, f30, f29
         ],
@@ -556,8 +556,8 @@ pub fn fltd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn feqd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x2f, 0xdf, 0xa3, // feq.d f31, f30, f29
         ],
@@ -588,8 +588,8 @@ pub fn feqd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtwd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x8f, 0x0f, 0xc2, // fcvt.w.d x31, f31 (rm: 000)
         ],
@@ -619,8 +619,8 @@ pub fn fcvtwd_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtwud_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x8f, 0x1f, 0xc2, // fcvt.wu.d x31, f31 (rm: 000)
         ],
@@ -650,8 +650,8 @@ pub fn fcvtwud_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtdw_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x8f, 0x0f, 0xd2, // fcvt.d.w x31, f31 (rm: 000)
         ],
@@ -681,8 +681,8 @@ pub fn fcvtdw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fcvtdwu_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x8f, 0x1f, 0xd2, // fcvt.d.wu x31, f31 (rm: 000)
         ],
@@ -712,8 +712,8 @@ pub fn fcvtdwu_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn fclassd_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0xd3, 0x9f, 0x0f, 0xe2, // fclass.d x31, f31
         ],

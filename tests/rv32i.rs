@@ -8,8 +8,8 @@ const DEFAULT_SP: i64 = 1048000;
 
 #[wasm_bindgen_test]
 pub fn lb_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -30,8 +30,8 @@ pub fn lb_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lh_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -52,8 +52,8 @@ pub fn lh_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lw_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -74,8 +74,8 @@ pub fn lw_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lbu_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -96,8 +96,8 @@ pub fn lbu_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn lhu_rd_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -118,8 +118,8 @@ pub fn lhu_rd_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn addi_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x0F, 0x40, 0x00, // addi x31, x0, 4
         ],
@@ -138,8 +138,8 @@ pub fn addi_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn slli_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x20, 0x00, // addi x16 x0, 2
             0x93, 0x18, 0x38, 0x00, // slli x17, x16, 3
@@ -159,8 +159,8 @@ pub fn slli_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn slti_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0xb0, 0xff, // addi x16 x0, -5
             0x93, 0x28, 0xe8, 0xff, // slti x17, x16, -2
@@ -180,8 +180,8 @@ pub fn slti_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn sltiu_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x20, 0x00, // addi x16, x0, 2
             0x93, 0x38, 0x58, 0x00, // sltiu, x17, x16, 5
@@ -201,8 +201,8 @@ pub fn sltiu_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn xori_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x48, 0x68, 0x00, // xori, x17, x16, 6
@@ -222,8 +222,8 @@ pub fn xori_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn srai_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x80, 0xff, // addi x16, x0, -8
             0x93, 0x58, 0x28, 0x40, // srai x17, x16, 2
@@ -243,8 +243,8 @@ pub fn srai_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn srli_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
             0x93, 0x58, 0x28, 0x00, // srli x17, x16, 2
@@ -264,8 +264,8 @@ pub fn srli_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn ori_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x68, 0x68, 0x00, // ori, x17, x16, 6
@@ -285,8 +285,8 @@ pub fn ori_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn andi_rd_rs1_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x40, 0x00, // addi x16, x0, 4
             0x93, 0x78, 0x78, 0x00, // andi, x17, x16, 7
@@ -306,8 +306,8 @@ pub fn andi_rd_rs1_imm() {
 
 #[wasm_bindgen_test]
 pub fn auipc_rd_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x17, 0x28, 0x00, 0x00, // auipc x16, 2
         ],
@@ -326,8 +326,8 @@ pub fn auipc_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn sb_rs2_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0xb0, 0xff, // addi x16, x0, -5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -349,8 +349,8 @@ pub fn sb_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn sh_rs2_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x00, 0xc0, // addi x16, x0, -1024
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -372,8 +372,8 @@ pub fn sh_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn sw_rs2_offset_rs1() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x00, 0x80, // addi x16, x0, -2048
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -395,8 +395,8 @@ pub fn sw_rs2_offset_rs1() {
 
 #[wasm_bindgen_test]
 pub fn add_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x01, 0x50, 0x00, // addi x3, x0, 5
             0x13, 0x02, 0x60, 0x00, // addi x4, x0, 6
@@ -417,8 +417,8 @@ pub fn add_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sub_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x93, 0x01, 0x50, 0x00, // addi x3, x0, 5
             0x13, 0x02, 0x60, 0x00, // addi x4, x0, 6
@@ -439,8 +439,8 @@ pub fn sub_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sll_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
             0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -491,8 +491,8 @@ pub fn sll_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn slt_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x80, 0xff, // addi x16, x0, -8
             0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -543,8 +543,8 @@ pub fn slt_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sltu_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
             0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -595,8 +595,8 @@ pub fn sltu_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn xor_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x60, 0x00, // addi x17, x0, 6
@@ -647,8 +647,8 @@ pub fn xor_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn srl_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x00, 0x01, // addi x16, x0, 16
             0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -699,8 +699,8 @@ pub fn srl_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn sra_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x00, 0xff, // addi x16, x0, -16
             0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -751,8 +751,8 @@ pub fn sra_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn or_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -803,8 +803,8 @@ pub fn or_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn and_rd_rs1_rs2() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -855,8 +855,8 @@ pub fn and_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn lui_rd_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x37, 0x28, 0x00, 0x00, // lui x16, 2
         ],
@@ -875,8 +875,8 @@ pub fn lui_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn beq_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -898,8 +898,8 @@ pub fn beq_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bne_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -921,8 +921,8 @@ pub fn bne_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn blt_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0xd0, 0xff, // addi x16, x0, -3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -944,8 +944,8 @@ pub fn blt_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bge_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0xd0, 0xff, // addi x16, x0, -3
             0x93, 0x08, 0xd0, 0xff, // addi x17, x0, -3
@@ -967,8 +967,8 @@ pub fn bge_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bltu_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -990,8 +990,8 @@ pub fn bltu_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn bgeu_rs1_rs2_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
             0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -1013,8 +1013,8 @@ pub fn bgeu_rs1_rs2_imm() {
 
 #[wasm_bindgen_test]
 pub fn jalr_rd_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -1036,8 +1036,8 @@ pub fn jalr_rd_imm() {
 
 #[wasm_bindgen_test]
 pub fn jal_rd_imm() {
-    let mut cpu = rvemu::cpu::Cpu::new();
-    let mut mem = rvemu::memory::Memory {
+    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut mem = rvemu_core::memory::Memory {
         dram: vec![
             0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
             0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5

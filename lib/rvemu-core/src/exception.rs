@@ -1,4 +1,7 @@
-use crate::*;
+use crate::{
+    cpu::{Cpu, Mode},
+    csr::*,
+};
 
 #[derive(Debug)]
 pub enum Exception {
