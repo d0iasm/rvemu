@@ -21,5 +21,4 @@ members = [
 ]
 
 [profile.release]
-# Tell `rustc` to optimize for binary size.
-opt-level = "s"
+opt-level = 3

@@ -156,26 +156,16 @@ impl State {
         csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
 
         /*
-        csrs.insert(UEPC, Csr::RW(ReadWrite::new(0)));
         csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
         csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
         csrs.insert(FRB, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(FCSR, Csr::RW(ReadWrite::new(0)));
 
-        csrs.insert(SEPC, Csr::RW(ReadWrite::new(0)));
         csrs.insert(SCAUSE, Csr::RW(ReadWrite::new(0)));
 
-        csrs.insert(MHARTID, Csr::RO(ReadOnly::new(0)));
-        csrs.insert(MSTATUS, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MISA, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MEDELEG, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MIDELEG, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MIE, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MTVEC, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MSCRATCH, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MEPC, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MCAUSE, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MIP, Csr::RW(ReadWrite::new(0)));
         */

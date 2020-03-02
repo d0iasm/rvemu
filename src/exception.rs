@@ -24,6 +24,8 @@ pub enum Exception {
 impl Exception {
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
         let exception_code;
+        let exception_pc = (cpu.pc as i64) - 4;
+
         match self {
             Exception::InstructionAddressMisaligned(_s) => {
                 exception_code = 0;
@@ -51,12 +53,72 @@ impl Exception {
             }
             Exception::EnvironmentCallFromUMode => {
                 exception_code = 8;
+                match cpu.state.get(MTVEC)? {
+                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
+                        mtvec::Mode::Direct => {
+                            cpu.pc = mtvec.read_base() as usize;
+                        }
+                        mtvec::Mode::Vectored => {
+                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
+                        }
+                        _ => {
+                            return Err(Exception::IllegalInstruction(String::from(
+                                "illegal mode in mtvec",
+                            )))
+                        }
+                    },
+                    _ => {
+                        return Err(Exception::IllegalInstruction(String::from(
+                            "failed to get a mtvec csr",
+                        )))
+                    }
+                }
             }
             Exception::EnvironmentCallFromSMode => {
                 exception_code = 9;
+                match cpu.state.get(MTVEC)? {
+                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
+                        mtvec::Mode::Direct => {
+                            cpu.pc = mtvec.read_base() as usize;
+                        }
+                        mtvec::Mode::Vectored => {
+                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
+                        }
+                        _ => {
+                            return Err(Exception::IllegalInstruction(String::from(
+                                "illegal mode in mtvec",
+                            )))
+                        }
+                    },
+                    _ => {
+                        return Err(Exception::IllegalInstruction(String::from(
+                            "failed to get a mtvec csr",
+                        )))
+                    }
+                }
             }
             Exception::EnvironmentCallFromMMode => {
                 exception_code = 11;
+                match cpu.state.get(MTVEC)? {
+                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
+                        mtvec::Mode::Direct => {
+                            cpu.pc = mtvec.read_base() as usize;
+                        }
+                        mtvec::Mode::Vectored => {
+                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
+                        }
+                        _ => {
+                            return Err(Exception::IllegalInstruction(String::from(
+                                "illegal mode in mtvec",
+                            )))
+                        }
+                    },
+                    _ => {
+                        return Err(Exception::IllegalInstruction(String::from(
+                            "failed to get a mtvec csr",
+                        )))
+                    }
+                }
             }
             Exception::InstructionPageFault => {
                 exception_code = 12;
@@ -72,15 +134,15 @@ impl Exception {
         match cpu.mode {
             Mode::Machine => {
                 cpu.state.write(MCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(MEPC, (cpu.pc as i64) - 4)?;
+                cpu.state.write(MEPC, exception_pc)?;
             }
             Mode::Supervisor => {
                 cpu.state.write(SCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(SEPC, (cpu.pc as i64) - 4)?;
+                cpu.state.write(SEPC, exception_pc)?;
             }
             Mode::User => {
                 cpu.state.write(UCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(UEPC, (cpu.pc as i64) - 4)?;
+                cpu.state.write(UEPC, exception_pc)?;
             }
             _ => {}
         }
