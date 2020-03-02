@@ -1,0 +1,17 @@
+name: Build and Test
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: [ubuntu-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - name: Build
+      run: make rvemu
+    - name: Run tests
+      run: make test
