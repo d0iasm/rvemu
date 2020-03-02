@@ -6,6 +6,6 @@ rust:
 before-install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 install:
-  - wasm-pack build --target web
+  - make rvemu
 script:
-  - wasm-pack test --firefox --headless
+  - make test
