@@ -90,7 +90,7 @@ function prompt() {
 
 function help() {
   term.writeln("Supports the following commands:");
-  term.writeln("  upload      open local files for an execution on the emulator");
+  term.writeln("  upload      open local files for the execution on the emulator");
   term.writeln("  ls          list files you uploaded");
   term.writeln("  run [file]  execute a file");
   term.write("  help        print all commands you can use");
@@ -168,7 +168,7 @@ function runTerminal() {
 
   term.writeln("Welcome to RISC-V emulator!");
   term.writeln("This is a work-in-progress project. You can see the progress at https://github.com/d0iasm/rvemu");
-  term.writeln("Bug reports or feature requests are always welcome: https://github.com/d0iasm/rvemu/issues");
+  term.writeln("Bug reports and feature requests are always welcome: https://github.com/d0iasm/rvemu/issues");
   term.writeln("");
   help();
   term.writeln("");
