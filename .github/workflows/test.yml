@@ -3,12 +3,12 @@ name: Build and Test
 on: [push]
 
 jobs:
-  name: Test
-
   test:
+    name: Test
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+      fail-fast: true
 
     runs-on: ${{ matrix.os }}
 
