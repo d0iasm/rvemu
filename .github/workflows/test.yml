@@ -3,15 +3,24 @@ name: Build and Test
 on: [push]
 
 jobs:
-  build:
+  name: Test
 
-    runs-on: [ubuntu-latest, macos-latest]
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Check out code
+      uses: actions/checkout@v2
+
     - name: Install dependencies
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
     - name: Build
       run: make rvemu
+
     - name: Run tests
       run: make test
