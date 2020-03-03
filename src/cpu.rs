@@ -224,8 +224,8 @@ impl Cpu {
         match opcode {
             0x03 => {
                 // I-type
-                let offset = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let addr = (xregs.read(rs1) + offset) as usize;
+                let offset = ((binary & 0xfff00000) as u64) >> 20;
+                let addr = (xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
                     0x0 => xregs.write(rd, (mem.read8(addr) as i8) as i64), // lb
                     0x1 => xregs.write(rd, (mem.read16(addr) as i16) as i64), // lh
@@ -239,8 +239,8 @@ impl Cpu {
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                let offset = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let addr = (xregs.read(rs1) + offset) as usize;
+                let offset = ((binary & 0xfff00000) as u64) >> 20;
+                let addr = (xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
                     0x2 => fregs.write(rd, f64::from_bits(mem.read32(addr) as u64)), // flw
                     0x3 => fregs.write(rd, f64::from_bits(mem.read64(addr))),        // fld
@@ -313,9 +313,10 @@ impl Cpu {
                         );
                     }
                     0x1 => xregs.write(
+                        // slliw
                         rd,
                         (((xregs.read(rs1) << shamt) & 0xffffffff) as i32) as i64,
-                    ), // slliw
+                    ),
                     0x5 => {
                         match funct7 {
                             0x00 => xregs.write(rd, ((xregs.read(rs1) as u32) >> shamt) as i64), // srliw
@@ -328,9 +329,9 @@ impl Cpu {
             }
             0x23 => {
                 // S-type
-                let imm11_5 = (((binary & 0xfe000000) as i32) as i64) >> 25;
+                let imm11_5 = ((binary & 0xfe000000) >> 25) as u64;
                 let imm4_0 = ((binary & 0x00000f80) >> 7) as u64;
-                let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
+                let offset = ((imm11_5 << 5) | imm4_0) as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
                     0x0 => mem.write8(addr, xregs.read(rs2) as u8), // sb
@@ -541,13 +542,14 @@ impl Cpu {
                         xregs.write(rd, ((n1 * n2) >> 64).to_i64().unwrap());
                     }
                     (0x2, 0x00) => xregs.write(
+                        // slt
                         rd,
                         if xregs.read(rs1) < xregs.read(rs2) {
                             1
                         } else {
                             0
                         },
-                    ), // slt
+                    ),
                     (0x2, 0x01) => {
                         // mulhsu
                         // get the most significant bit
@@ -1096,8 +1098,8 @@ impl Cpu {
                 // jalr
                 xregs.write(rd, self.pc as i64);
 
-                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let target = (xregs.read(rs1) + imm) & !1;
+                let imm = ((binary & 0xfff00000) as u64) >> 20;
+                let target = (xregs.read(rs1) + imm as i64) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
                         "must be aligned on a four-byte boundary",

@@ -326,7 +326,10 @@ pub trait Read: CsrBase {
         }
 
         // Bitmask for high bits.
-        let bitmask = !0 << range.end;
+        let mut bitmask = 0;
+        if range.end != 64 {
+            bitmask = !0 << range.end;
+        }
 
         // Shift away low bits.
         (self.read_value() & !bitmask) >> range.start
