@@ -8,10 +8,13 @@ rvemu-wasm:
 rvemu-cli:
 	cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml
 
-test: test-wasm
+test: test-wasm test-isa
 
 test-wasm:
 	wasm-pack test lib/rvemu-wasm --headless --firefox
+
+test-isa:
+	cargo test
 
 clean:
 	cargo clean
