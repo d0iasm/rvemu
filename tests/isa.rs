@@ -9,6 +9,7 @@ use rvemu::{cpu::Cpu, memory::Memory};
 
 const BASE_ADDRESS: usize = 0x80000000;
 
+#[macro_export]
 macro_rules! add_test {
     ($name: ident) => {
         #[test]
@@ -39,6 +40,7 @@ macro_rules! add_test {
     };
 }
 
+// rv64ui-p-*
 add_test!(rv64ui_p_add);
 add_test!(rv64ui_p_addi);
 add_test!(rv64ui_p_addiw);
@@ -90,3 +92,66 @@ add_test!(rv64ui_p_subw);
 add_test!(rv64ui_p_sw);
 add_test!(rv64ui_p_xor);
 add_test!(rv64ui_p_xori);
+
+// rv64ua-p-*
+add_test!(rv64ua_p_amoadd_d);
+add_test!(rv64ua_p_amoadd_w);
+add_test!(rv64ua_p_amoand_d);
+add_test!(rv64ua_p_amoand_w);
+add_test!(rv64ua_p_amomax_d);
+add_test!(rv64ua_p_amomax_w);
+add_test!(rv64ua_p_amomaxu_d);
+add_test!(rv64ua_p_amomaxu_w);
+add_test!(rv64ua_p_amomin_d);
+add_test!(rv64ua_p_amomin_w);
+add_test!(rv64ua_p_amominu_d);
+add_test!(rv64ua_p_amominu_w);
+add_test!(rv64ua_p_amoor_d);
+add_test!(rv64ua_p_amoor_w);
+add_test!(rv64ua_p_amoswap_d);
+add_test!(rv64ua_p_amoswap_w);
+add_test!(rv64ua_p_amoxor_d);
+add_test!(rv64ua_p_amoxor_w);
+add_test!(rv64ua_p_lrsc);
+
+// rv64ud-p-*
+add_test!(rv64ud_p_fadd);
+add_test!(rv64ud_p_fclass);
+add_test!(rv64ud_p_fcmp);
+add_test!(rv64ud_p_fcvt);
+add_test!(rv64ud_p_fcvt_w);
+add_test!(rv64ud_p_fdiv);
+add_test!(rv64ud_p_fmadd);
+add_test!(rv64ud_p_fmin);
+add_test!(rv64ud_p_ldst);
+add_test!(rv64ud_p_move);
+add_test!(rv64ud_p_recoding);
+add_test!(rv64ud_p_structural);
+
+// rv64uf-p-*
+add_test!(rv64uf_p_fadd);
+add_test!(rv64uf_p_fclass);
+add_test!(rv64uf_p_fcmp);
+add_test!(rv64uf_p_fcvt);
+add_test!(rv64uf_p_fcvt_w);
+add_test!(rv64uf_p_fdiv);
+add_test!(rv64uf_p_fmadd);
+add_test!(rv64uf_p_fmin);
+add_test!(rv64uf_p_ldst);
+add_test!(rv64uf_p_move);
+add_test!(rv64uf_p_recoding);
+
+// rv64um-p-*
+add_test!(rv64um_p_div);
+add_test!(rv64um_p_divu);
+add_test!(rv64um_p_divuw);
+add_test!(rv64um_p_divw);
+add_test!(rv64um_p_mul);
+add_test!(rv64um_p_mulh);
+add_test!(rv64um_p_mulhsu);
+add_test!(rv64um_p_mulhu);
+add_test!(rv64um_p_mulw);
+add_test!(rv64um_p_rem);
+add_test!(rv64um_p_remu);
+add_test!(rv64um_p_remuw);
+add_test!(rv64um_p_remw);
