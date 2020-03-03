@@ -28,9 +28,7 @@ fn main() -> io::Result<()> {
 
     let mut cpu = Cpu::new();
     let mut mem = Memory::new();
-    for i in 0..dram.len() {
-        mem.dram[i] = dram[i];
-    }
+    mem.dram.splice(..dram.len(), dram.iter().cloned());
 
     cpu.start(&mut mem);
 
