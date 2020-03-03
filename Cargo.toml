@@ -4,8 +4,17 @@ description = "RISC-V emulator core implementation."
 version = "0.0.1"
 authors = ["Asami Doi <d0iasm.pub@gmail.com>"]
 edition = "2018"
+homepage = "https://github.com/d0iasm/rvemu"
 repository = "https://github.com/d0iasm/rvemu"
 license = "MIT"
+include = [
+  "Cargo.toml",
+  "Cargo.lock",
+  "src/**/*",
+  "LICENSE",
+  "Makefile",
+  "README.md",
+]
 
 [dependencies]
 num-bigint = "0.2.6"
