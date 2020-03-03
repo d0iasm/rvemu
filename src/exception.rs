@@ -1,8 +1,11 @@
+//! The exception module contains all the exception kinds and the function to handle exceptions.
+
 use crate::{
     cpu::{Cpu, Mode},
     csr::*,
 };
 
+/// All the exception kinds.
 #[derive(Debug)]
 pub enum Exception {
     InstructionAddressMisaligned(String),
@@ -22,6 +25,7 @@ pub enum Exception {
 }
 
 impl Exception {
+    /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
         let exception_code;
         let exception_pc = (cpu.pc as i64) - 4;

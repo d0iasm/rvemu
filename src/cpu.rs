@@ -1,3 +1,5 @@
+//! The cpu module contains the privileged mode, registers, and CPU.
+
 pub const REGISTERS_COUNT: usize = 32;
 
 use std::cmp;
@@ -12,6 +14,7 @@ use crate::{csr::*, exception::Exception, memory::Memory};
 
 const SP: usize = 2;
 
+/// The privileged mode.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Mode {
     User = 0b00,
@@ -21,6 +24,7 @@ pub enum Mode {
 }
 
 impl Mode {
+    /// Check that the current privileged meets the required mode.
     pub fn require(&self, require: Mode) -> Result<(), Exception> {
         match require {
             Mode::User => {
@@ -58,21 +62,25 @@ impl Mode {
     }
 }
 
+/// The integer eregisters.
 pub struct XRegisters {
     xregs: [i64; REGISTERS_COUNT],
 }
 
 impl XRegisters {
+    /// Create a new `XRegisters` object.
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
         xregs[SP] = 1048 * 1000; // Default maximum mamory size.
         Self { xregs }
     }
 
+    /// Read the value from a register.
     pub fn read(&self, index: usize) -> i64 {
         self.xregs[index]
     }
 
+    /// Write the value to a register.
     pub fn write(&mut self, index: usize, value: i64) {
         if index != 0 {
             self.xregs[index] = value;
@@ -106,21 +114,25 @@ impl fmt::Display for XRegisters {
     }
 }
 
+/// The floating-point registers.
 pub struct FRegisters {
     fregs: [f64; REGISTERS_COUNT],
 }
 
 impl FRegisters {
+    /// Create a new `FRegisters` object.
     pub fn new() -> Self {
         Self {
             fregs: [0.0; REGISTERS_COUNT],
         }
     }
 
+    /// Read the value from a regsiter.
     pub fn read(&self, index: usize) -> f64 {
         self.fregs[index]
     }
 
+    /// Write the value to a regsiter.
     pub fn write(&mut self, index: usize, value: f64) {
         self.fregs[index] = value;
     }
@@ -154,6 +166,7 @@ impl fmt::Display for FRegisters {
     }
 }
 
+/// The CPU to contains registers, a program coutner, status, and a privileged mode.
 pub struct Cpu {
     pub xregs: XRegisters,
     pub fregs: FRegisters,
@@ -163,6 +176,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    /// Create a new `Cpu` object.
     pub fn new() -> Cpu {
         Cpu {
             xregs: XRegisters::new(),
@@ -208,8 +222,8 @@ impl Cpu {
         mem.read32(self.pc)
     }
 
-    /// Execute an instruction.
-    // This function is public because it's called from a unit test.
+    /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
+    /// nothings.
     pub fn execute(&mut self, binary: u32, mem: &mut Memory) -> Result<(), Exception> {
         let opcode = binary & 0x0000007f;
         let rd = ((binary & 0x00000f80) >> 7) as usize;

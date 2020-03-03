@@ -1,3 +1,5 @@
+//! The csr module contains all the control and status registers.
+
 pub mod fcsr;
 pub mod marchid;
 pub mod mcause;
@@ -106,10 +108,12 @@ pub const MTVAL: CsrAddress = 0x343;
 /// Machine interrupt pending.
 pub const MIP: CsrAddress = 0x344;
 
+/// The state to contains all the CSRs.
 pub struct State {
     csrs: HashMap<CsrAddress, Csr>,
 }
 
+/// All kinds of CSRs.
 pub enum Csr {
     // User-level CSRs.
     Uepc(Uepc),
@@ -130,6 +134,7 @@ pub enum Csr {
 }
 
 impl State {
+    /// Create a new `state` object.
     pub fn new() -> Self {
         let mut csrs = HashMap::new();
 
@@ -173,6 +178,7 @@ impl State {
         Self { csrs }
     }
 
+    /// Get the CSR.
     pub fn get(&mut self, csr_address: CsrAddress) -> Result<&mut Csr, Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             Ok(csr)
@@ -183,6 +189,7 @@ impl State {
         }
     }
 
+    /// Read the value from the CSR.
     pub fn read(&self, csr_address: CsrAddress) -> Result<Mxlen, Exception> {
         if let Some(csr) = self.csrs.get(&csr_address) {
             match csr {
@@ -207,6 +214,7 @@ impl State {
         }
     }
 
+    /// Write the value to the CSR.
     pub fn write(&mut self, csr_address: CsrAddress, value: Mxlen) -> Result<(), Exception> {
         if let Some(csr) = self.csrs.get_mut(&csr_address) {
             match csr {
@@ -248,6 +256,7 @@ impl State {
         }
     }
 
+    /// Reset all the CSRs.
     pub fn reset(&mut self) {
         for csr in self.csrs.values_mut() {
             match csr {
@@ -278,7 +287,9 @@ pub trait CsrBase {
     fn read_value(&self) -> Mxlen;
 }
 
+/// The trait of writing the value which all CSRs should implement.
 pub trait Write: CsrBase {
+    /// Write a bit to the CSR.
     fn write_bit(&mut self, bit: usize, value: bool) {
         if bit >= Self::BIT_LENGTH {
             // TODO: raise exception?
@@ -291,6 +302,7 @@ pub trait Write: CsrBase {
         }
     }
 
+    /// Write a arbitrary length of bits to the CSR.
     fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: Mxlen) {
         let range = to_range(&range, Self::BIT_LENGTH);
 
@@ -307,7 +319,9 @@ pub trait Write: CsrBase {
     }
 }
 
+/// The trait of reading the value which all CSRs should implement.
 pub trait Read: CsrBase {
+    /// Read a bit from the CSR.
     fn read_bit(&self, bit: usize) -> bool {
         if bit >= Self::BIT_LENGTH {
             // TODO: raise exception?
@@ -315,6 +329,7 @@ pub trait Read: CsrBase {
         (self.read_value() & (1 << bit)) != 0
     }
 
+    /// Read a arbitrary length of bits from the CSR.
     fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
         let range = to_range(&range, Self::BIT_LENGTH);
 
@@ -336,6 +351,7 @@ pub trait Read: CsrBase {
     }
 }
 
+/// Convert the value implement `RangeBounds` to the `Range` struct.
 fn to_range<T: RangeBounds<usize>>(generic_range: &T, bit_length: usize) -> Range<usize> {
     let start = match generic_range.start_bound() {
         Bound::Excluded(&value) => value + 1,
