@@ -6,6 +6,8 @@ pub mod mcause;
 pub mod medeleg;
 pub mod mepc;
 pub mod mhartid;
+pub mod mideleg;
+pub mod mie;
 pub mod mimpid;
 pub mod misa;
 pub mod mstatus;
@@ -15,6 +17,7 @@ pub mod pmpaddr0;
 pub mod pmpcfg0;
 pub mod satp;
 pub mod sepc;
+pub mod stvec;
 pub mod uepc;
 
 use std::collections::HashMap;
@@ -26,6 +29,8 @@ use crate::csr::mcause::Mcause;
 use crate::csr::medeleg::Medeleg;
 use crate::csr::mepc::Mepc;
 use crate::csr::mhartid::Mhartid;
+use crate::csr::mideleg::Mideleg;
+use crate::csr::mie::Mie;
 use crate::csr::mimpid::Mimpid;
 use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
@@ -35,6 +40,7 @@ use crate::csr::pmpaddr0::Pmpaddr0;
 use crate::csr::pmpcfg0::Pmpcfg0;
 use crate::csr::satp::Satp;
 use crate::csr::sepc::Sepc;
+use crate::csr::stvec::Stvec;
 use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
 
@@ -63,6 +69,10 @@ pub const FCSR: CsrAddress = 0x003;
 /////////////////////////////////////
 // Supervisor-level CSR addresses //
 ////////////////////////////////////
+// Supervisor trap setup.
+/// Supervisor trap handler base address.
+pub const STVEC: CsrAddress = 0x105;
+
 // Supervisor trap handling.
 /// Supervisor exception program counter.
 pub const SEPC: CsrAddress = 0x141;
@@ -131,6 +141,7 @@ pub enum Csr {
     Uepc(Uepc),
     Fcsr(Fcsr),
     // Supervisor-level CSRs.
+    Stvec(Stvec),
     Sepc(Sepc),
     Satp(Satp),
     // Machine-level CSRs.
@@ -141,6 +152,8 @@ pub enum Csr {
     Mstatus(Mstatus),
     Misa(Misa),
     Medeleg(Medeleg),
+    Mideleg(Mideleg),
+    Mie(Mie),
     Mtvec(Mtvec),
     Mepc(Mepc),
     Mcause(Mcause),
@@ -159,6 +172,7 @@ impl State {
         csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
 
         // Supervisor-level CSRs.
+        csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
         csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
 
         csrs.insert(SATP, Csr::Satp(Satp::new(0)));
@@ -172,6 +186,8 @@ impl State {
         csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
         csrs.insert(MISA, Csr::Misa(Misa::new(0)));
         csrs.insert(MEDELEG, Csr::Medeleg(Medeleg::new(0)));
+        csrs.insert(MIDELEG, Csr::Mideleg(Mideleg::new(0)));
+        csrs.insert(MIE, Csr::Mie(Mie::new(0)));
         csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
 
         csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
@@ -187,8 +203,6 @@ impl State {
 
         csrs.insert(SCAUSE, Csr::RW(ReadWrite::new(0)));
 
-        csrs.insert(MIDELEG, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MIE, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MSCRATCH, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
@@ -215,6 +229,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => Ok(uepc.read_value()),
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
+                Csr::Stvec(stvec) => Ok(stvec.read_value()),
                 Csr::Sepc(sepc) => Ok(sepc.read_value()),
                 Csr::Satp(satp) => Ok(satp.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
@@ -224,6 +239,8 @@ impl State {
                 Csr::Mstatus(mstatus) => Ok(mstatus.read_value()),
                 Csr::Misa(misa) => Ok(misa.read_value()),
                 Csr::Medeleg(medeleg) => Ok(medeleg.read_value()),
+                Csr::Mideleg(mideleg) => Ok(mideleg.read_value()),
+                Csr::Mie(mie) => Ok(mie.read_value()),
                 Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
                 Csr::Mepc(mepc) => Ok(mepc.read_value()),
                 Csr::Mcause(mcause) => Ok(mcause.read_value()),
@@ -243,6 +260,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => uepc.write_value(value),
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
+                Csr::Stvec(stvec) => stvec.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
                 Csr::Satp(satp) => satp.write_value(value),
                 Csr::Mvendorid(_) => {
@@ -261,8 +279,9 @@ impl State {
                     )))
                 }
                 Csr::Mhartid(mhartid) => {
+                    // TODO: `mhartid` should be a read-only csr, but riscv/riscv-tests writes a
+                    // value to the `mhartid`.
                     mhartid.write_value(value);
-                    dbg!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11");
                     /*
                     return Err(Exception::IllegalInstruction(String::from(
                         "mhartid is a read-only csr",
@@ -272,6 +291,8 @@ impl State {
                 Csr::Mstatus(mstatus) => mstatus.write_value(value),
                 Csr::Misa(misa) => misa.write_value(value),
                 Csr::Medeleg(medeleg) => medeleg.write_value(value),
+                Csr::Mideleg(mideleg) => mideleg.write_value(value),
+                Csr::Mie(mie) => mie.write_value(value),
                 Csr::Mtvec(mtvec) => mtvec.write_value(value),
                 Csr::Mepc(mepc) => mepc.write_value(value),
                 Csr::Mcause(mcause) => mcause.write_value(value),
@@ -292,6 +313,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => uepc.reset(),
                 Csr::Fcsr(fcsr) => fcsr.reset(),
+                Csr::Stvec(stvec) => stvec.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
                 Csr::Satp(satp) => satp.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
@@ -301,6 +323,8 @@ impl State {
                 Csr::Mstatus(mstatus) => mstatus.reset(),
                 Csr::Misa(misa) => misa.reset(),
                 Csr::Medeleg(medeleg) => medeleg.reset(),
+                Csr::Mideleg(mideleg) => mideleg.reset(),
+                Csr::Mie(mie) => mie.reset(),
                 Csr::Mtvec(mtvec) => mtvec.reset(),
                 Csr::Mepc(mepc) => mepc.reset(),
                 Csr::Mcause(mcause) => mcause.reset(),

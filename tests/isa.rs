@@ -43,7 +43,6 @@ macro_rules! add_test {
 
 // rv64ui-p-*
 add_test!(rv64ui_p_add);
-/*
 add_test!(rv64ui_p_addi);
 add_test!(rv64ui_p_addiw);
 add_test!(rv64ui_p_addw);
@@ -56,7 +55,8 @@ add_test!(rv64ui_p_bgeu);
 add_test!(rv64ui_p_blt);
 add_test!(rv64ui_p_bltu);
 add_test!(rv64ui_p_bne);
-add_test!(rv64ui_p_fence_i);
+/*
+//add_test!(rv64ui_p_fence_i);
 add_test!(rv64ui_p_jal);
 add_test!(rv64ui_p_jalr);
 add_test!(rv64ui_p_lb);

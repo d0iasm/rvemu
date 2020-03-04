@@ -30,7 +30,6 @@ impl Exception {
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
         let exception_code;
         let exception_pc = (cpu.pc as i64) - 4;
-        dbg!("take_trap {}", self);
 
         match self {
             Exception::InstructionAddressMisaligned(_s) => {
