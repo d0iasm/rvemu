@@ -11,6 +11,8 @@ pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
 pub mod mvendorid;
+pub mod pmpaddr0;
+pub mod pmpcfg0;
 pub mod satp;
 pub mod sepc;
 pub mod uepc;
@@ -29,6 +31,8 @@ use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
+use crate::csr::pmpaddr0::Pmpaddr0;
+use crate::csr::pmpcfg0::Pmpcfg0;
 use crate::csr::satp::Satp;
 use crate::csr::sepc::Sepc;
 use crate::csr::uepc::Uepc;
@@ -110,6 +114,12 @@ pub const MTVAL: CsrAddress = 0x343;
 /// Machine interrupt pending.
 pub const MIP: CsrAddress = 0x344;
 
+// Machine memory protection.
+/// Physical memory protection configuration.
+pub const PMPCFG0: CsrAddress = 0x3a0;
+/// Physical memory protection address register.
+pub const PMPADDR0: CsrAddress = 0x3b0;
+
 /// The state to contains all the CSRs.
 pub struct State {
     csrs: HashMap<CsrAddress, Csr>,
@@ -134,6 +144,8 @@ pub enum Csr {
     Mtvec(Mtvec),
     Mepc(Mepc),
     Mcause(Mcause),
+    Pmpcfg0(Pmpcfg0),
+    Pmpaddr0(Pmpaddr0),
 }
 
 impl State {
@@ -164,6 +176,9 @@ impl State {
 
         csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
         csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
+
+        csrs.insert(PMPCFG0, Csr::Pmpcfg0(Pmpcfg0::new(0)));
+        csrs.insert(PMPADDR0, Csr::Pmpaddr0(Pmpaddr0::new(0)));
 
         /*
         csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
@@ -212,6 +227,8 @@ impl State {
                 Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
                 Csr::Mepc(mepc) => Ok(mepc.read_value()),
                 Csr::Mcause(mcause) => Ok(mcause.read_value()),
+                Csr::Pmpcfg0(pmpcfg0) => Ok(pmpcfg0.read_value()),
+                Csr::Pmpaddr0(pmpaddr0) => Ok(pmpaddr0.read_value()),
             }
         } else {
             Err(Exception::IllegalInstruction(String::from(
@@ -258,6 +275,8 @@ impl State {
                 Csr::Mtvec(mtvec) => mtvec.write_value(value),
                 Csr::Mepc(mepc) => mepc.write_value(value),
                 Csr::Mcause(mcause) => mcause.write_value(value),
+                Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.write_value(value),
+                Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.write_value(value),
             }
             Ok(())
         } else {
@@ -285,6 +304,8 @@ impl State {
                 Csr::Mtvec(mtvec) => mtvec.reset(),
                 Csr::Mepc(mepc) => mepc.reset(),
                 Csr::Mcause(mcause) => mcause.reset(),
+                Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.reset(),
+                Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.reset(),
             }
         }
     }
