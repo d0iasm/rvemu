@@ -1,4 +1,4 @@
-//! rvemu: RISC-V Emulator Core Implementation.
+//! RISC-V emulator core implementation.
 
 pub mod cpu;
 pub mod csr;

@@ -208,10 +208,15 @@ impl Cpu {
             self.pc += 4;
             // 3. Decode.
             // 4. Execution.
-            let _ = self.execute(binary, mem).map_err(|e| e.take_trap(self));
+            // `result` becomes an error only if the error kind is unimplemented.
+            //let result = self.execute(binary, mem).map_err(|e| e.take_trap(self));
+            let result = match self.execute(binary, mem) {
+                Ok(_) => Ok(()),
+                Err(error) => error.take_trap(self),
+            };
 
             // Finish the execution when opcode is 0 or the program counter is 0.
-            if (binary == 0) | (self.pc == 0) {
+            if result.is_err() | (binary == 0) | (self.pc == 0) {
                 return;
             }
         }
@@ -312,7 +317,8 @@ impl Cpu {
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
                 let imm = ((binary & 0xfffff000) as i32) as i64;
-                xregs.write(rd, (self.pc as i64) + imm - 4); // auipc
+                // auipc
+                xregs.write(rd, (self.pc as i64) + imm - 4);
             }
             0x1B => {
                 // I-type (RV64I only)
@@ -543,7 +549,10 @@ impl Cpu {
             }
             0x33 => {
                 // R-type (RV32I and RV32M)
-                let shamt = xregs.read(rs2) as u64;
+                // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic right
+                // shifts on the value in register rs1 by the shift amount held in the lower 5
+                // bits of register rs2."
+                let shamt = (xregs.read(rs2) & 0x1f) as u64;
                 match (funct3, funct7) {
                     (0x0, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_add(xregs.read(rs2))), // add
                     (0x0, 0x01) => xregs.write(rd, xregs.read(rs1).wrapping_mul(xregs.read(rs2))), // mul
@@ -1283,10 +1292,7 @@ impl Cpu {
                 }
             }
             _ => {
-                return Err(Exception::IllegalInstruction(String::from(format!(
-                    "not implemented opcode {:#x}",
-                    opcode
-                ))));
+                return Err(Exception::Unimplemented);
             }
         }
         Ok(())

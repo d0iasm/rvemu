@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use rvemu::{cpu::Cpu, memory::Memory};
 
-const BASE_ADDRESS: usize = 0x80000000;
+//const BASE_ADDRESS: usize = 0x80000000;
 
 #[macro_export]
 macro_rules! add_test {
@@ -23,7 +23,7 @@ macro_rules! add_test {
             file.read_to_end(&mut dram)?;
 
             let mut cpu = Cpu::new();
-            cpu.pc = BASE_ADDRESS;
+            //cpu.pc = BASE_ADDRESS;
 
             let mut mem = Memory::new();
             mem.dram.splice(..dram.len(), dram.iter().cloned());
@@ -91,6 +91,7 @@ add_test!(rv64ui_p_sw);
 add_test!(rv64ui_p_xor);
 add_test!(rv64ui_p_xori);
 
+/*
 // rv64ua-p-*
 add_test!(rv64ua_p_amoadd_d);
 add_test!(rv64ua_p_amoadd_w);
@@ -153,3 +154,4 @@ add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
 add_test!(rv64um_p_remuw);
 add_test!(rv64um_p_remw);
+*/

@@ -16,5 +16,8 @@ test-wasm:
 test-isa:
 	cargo test
 
+test-isa-debug:
+	cargo test -- --nocapture
+
 clean:
 	cargo clean

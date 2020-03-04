@@ -22,6 +22,7 @@ pub enum Exception {
     InstructionPageFault,
     LoadPageFault,
     StoreAMOPageFault,
+    Unimplemented,
 }
 
 impl Exception {
@@ -132,6 +133,9 @@ impl Exception {
             }
             Exception::StoreAMOPageFault => {
                 exception_code = 15;
+            }
+            Exception::Unimplemented => {
+                return Err(Exception::Unimplemented);
             }
         }
 
