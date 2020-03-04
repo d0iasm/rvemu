@@ -11,6 +11,7 @@ pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
 pub mod mvendorid;
+pub mod satp;
 pub mod sepc;
 pub mod uepc;
 
@@ -28,6 +29,7 @@ use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
+use crate::csr::satp::Satp;
 use crate::csr::sepc::Sepc;
 use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
@@ -120,6 +122,7 @@ pub enum Csr {
     Fcsr(Fcsr),
     // Supervisor-level CSRs.
     Sepc(Sepc),
+    Satp(Satp),
     // Machine-level CSRs.
     Mvendorid(Mvendorid),
     Marchid(Marchid),
@@ -145,6 +148,8 @@ impl State {
 
         // Supervisor-level CSRs.
         csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
+
+        csrs.insert(SATP, Csr::Satp(Satp::new(0)));
 
         // Machine-level CSRs.
         csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
@@ -196,6 +201,7 @@ impl State {
                 Csr::Uepc(uepc) => Ok(uepc.read_value()),
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
                 Csr::Sepc(sepc) => Ok(sepc.read_value()),
+                Csr::Satp(satp) => Ok(satp.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
                 Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
@@ -221,6 +227,7 @@ impl State {
                 Csr::Uepc(uepc) => uepc.write_value(value),
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
+                Csr::Satp(satp) => satp.write_value(value),
                 Csr::Mvendorid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
                         "mvendorid is a read-only csr",
@@ -236,10 +243,14 @@ impl State {
                         "mimpid is a read-only csr",
                     )))
                 }
-                Csr::Mhartid(_) => {
+                Csr::Mhartid(mhartid) => {
+                    mhartid.write_value(value);
+                    dbg!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11");
+                    /*
                     return Err(Exception::IllegalInstruction(String::from(
                         "mhartid is a read-only csr",
                     )))
+                    */
                 }
                 Csr::Mstatus(mstatus) => mstatus.write_value(value),
                 Csr::Misa(misa) => misa.write_value(value),
@@ -263,6 +274,7 @@ impl State {
                 Csr::Uepc(uepc) => uepc.reset(),
                 Csr::Fcsr(fcsr) => fcsr.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
+                Csr::Satp(satp) => satp.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),
                 Csr::Mimpid(mimpid) => mimpid.reset(),

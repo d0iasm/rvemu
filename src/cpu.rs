@@ -201,6 +201,7 @@ impl Cpu {
     /// Start executing the CPU.
     pub fn start(&mut self, mem: &mut Memory) {
         let size = mem.len();
+        let mut count = 0;
         while self.pc < size {
             // 1. Fetch.
             let binary = self.fetch(mem);
@@ -215,8 +216,17 @@ impl Cpu {
                 Err(error) => error.take_trap(self),
             };
 
+            count += 1;
+
             // Finish the execution when opcode is 0 or the program counter is 0.
             if result.is_err() | (binary == 0) | (self.pc == 0) {
+                dbg!(
+                    "count: {}, binaray: {}, result err {}, pc: {}",
+                    count,
+                    binary,
+                    result.is_err(),
+                    self.pc
+                );
                 return;
             }
         }

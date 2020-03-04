@@ -30,6 +30,7 @@ impl Exception {
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
         let exception_code;
         let exception_pc = (cpu.pc as i64) - 4;
+        dbg!("take_trap {}", self);
 
         match self {
             Exception::InstructionAddressMisaligned(_s) => {
@@ -43,6 +44,11 @@ impl Exception {
             }
             Exception::Breakpoint => {
                 exception_code = 3;
+                cpu.mode = Mode::Debug;
+                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
+                // the address of the ECALL or EBREAK instruction itself, not the address of the
+                // following instruction."
+                cpu.state.write(MEPC, exception_pc)?;
             }
             Exception::LoadAddressMisaligned => {
                 exception_code = 4;
@@ -58,6 +64,14 @@ impl Exception {
             }
             Exception::EnvironmentCallFromUMode => {
                 exception_code = 8;
+
+                // Move to the more privileged mode.
+                cpu.mode = Mode::Machine;
+                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
+                // the address of the ECALL or EBREAK instruction itself, not the address of the
+                // following instruction."
+                cpu.state.write(MEPC, exception_pc)?;
+
                 match cpu.state.get(MTVEC)? {
                     Csr::Mtvec(mtvec) => match mtvec.read_mode() {
                         mtvec::Mode::Direct => {
@@ -81,6 +95,14 @@ impl Exception {
             }
             Exception::EnvironmentCallFromSMode => {
                 exception_code = 9;
+
+                // Move to the more privileged mode.
+                cpu.mode = Mode::Machine;
+                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
+                // the address of the ECALL or EBREAK instruction itself, not the address of the
+                // following instruction."
+                cpu.state.write(MEPC, exception_pc)?;
+
                 match cpu.state.get(MTVEC)? {
                     Csr::Mtvec(mtvec) => match mtvec.read_mode() {
                         mtvec::Mode::Direct => {
@@ -135,7 +157,8 @@ impl Exception {
                 exception_code = 15;
             }
             Exception::Unimplemented => {
-                return Err(Exception::Unimplemented);
+                // TODO: Unimplemented operation is same with illegal instruction for now.
+                exception_code = 2;
             }
         }
 
@@ -154,6 +177,13 @@ impl Exception {
             }
             _ => {}
         }
-        Ok(())
+
+        match self {
+            // TODO: Stop executing only if the operation is unimplemented.
+            Exception::Unimplemented => {
+                return Err(Exception::Unimplemented);
+            }
+            _ => Ok(()),
+        }
     }
 }
