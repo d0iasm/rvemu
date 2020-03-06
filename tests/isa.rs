@@ -55,7 +55,6 @@ add_test!(rv64ui_p_bgeu);
 add_test!(rv64ui_p_blt);
 add_test!(rv64ui_p_bltu);
 add_test!(rv64ui_p_bne);
-/*
 //add_test!(rv64ui_p_fence_i);
 add_test!(rv64ui_p_jal);
 add_test!(rv64ui_p_jalr);
@@ -95,6 +94,7 @@ add_test!(rv64ui_p_sw);
 add_test!(rv64ui_p_xor);
 add_test!(rv64ui_p_xori);
 
+/*
 // rv64ua-p-*
 add_test!(rv64ua_p_amoadd_d);
 add_test!(rv64ua_p_amoadd_w);
