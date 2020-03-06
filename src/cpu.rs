@@ -205,6 +205,7 @@ impl Cpu {
         while self.pc < size {
             // 1. Fetch.
             let binary = self.fetch(mem);
+            dbg!(format!("pc: {}, binary: {:#x}", self.pc, binary));
             // 2. Add 4 to the program counter.
             self.pc += 4;
             // 3. Decode.
@@ -254,7 +255,7 @@ impl Cpu {
             0x03 => {
                 // I-type
                 let offset = ((binary & 0xfff00000) as u64) >> 20;
-                let addr = (xregs.read(rs1) + offset as i64) as usize;
+                let addr = xregs.read(rs1).wrapping_add(offset as i64) as usize;
                 match funct3 {
                     0x0 => xregs.write(rd, (mem.read8(addr) as i8) as i64), // lb
                     0x1 => xregs.write(rd, (mem.read16(addr) as i16) as i64), // lh
@@ -558,16 +559,16 @@ impl Cpu {
                 }
             }
             0x33 => {
-                // R-type (RV32I and RV32M)
+                // R-type (RV64I and RV64M)
                 // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic right
-                // shifts on the value in register rs1 by the shift amount held in the lower 5
-                // bits of register rs2."
-                let shamt = (xregs.read(rs2) & 0x1f) as u64;
+                // shifts on the value in register rs1 by the shift amount held in register rs2.
+                // In RV64I, only the low 6 bits of rs2 are considered for the shift amount."
+                let shamt = ((xregs.read(rs2) & 0x3f) as u64) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_add(xregs.read(rs2))), // add
                     (0x0, 0x01) => xregs.write(rd, xregs.read(rs1).wrapping_mul(xregs.read(rs2))), // mul
                     (0x0, 0x20) => xregs.write(rd, xregs.read(rs1).wrapping_sub(xregs.read(rs2))), // sub
-                    (0x1, 0x00) => xregs.write(rd, ((xregs.read(rs1) as u64) << shamt) as i64), // sll
+                    (0x1, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_shl(shamt)), // sll
                     (0x1, 0x01) => {
                         // mulh
                         let n1 = BigInt::from(xregs.read(rs1));
@@ -1131,8 +1132,12 @@ impl Cpu {
                 // jalr
                 xregs.write(rd, self.pc as i64);
 
-                let imm = ((binary & 0xfff00000) as u64) >> 20;
+                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
                 let target = (xregs.read(rs1) + imm as i64) & !1;
+                dbg!(format!(
+                    "jalr rd {} imm {} {} target {}",
+                    rd, imm, imm as i64, target
+                ));
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
                         "must be aligned on a four-byte boundary",
