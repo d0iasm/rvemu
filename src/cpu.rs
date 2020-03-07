@@ -7,9 +7,6 @@ use std::cmp::PartialEq;
 use std::fmt;
 use std::num::FpCategory;
 
-use num_bigint::{BigInt, BigUint};
-use num_traits::cast::ToPrimitive;
-
 use crate::{csr::*, exception::Exception, memory::Memory};
 
 const SP: usize = 2;
@@ -587,9 +584,11 @@ impl Cpu {
                     (0x1, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_shl(shamt)), // sll
                     (0x1, 0x01) => {
                         // mulh
-                        let n1 = BigInt::from(xregs.read(rs1));
-                        let n2 = BigInt::from(xregs.read(rs2));
-                        xregs.write(rd, ((n1 * n2) >> 64).to_i64().unwrap());
+                        xregs.write(
+                            rd,
+                            ((xregs.read(rs1) as i128).wrapping_mul(xregs.read(rs2) as i128) >> 64)
+                                as i64,
+                        );
                     }
                     (0x2, 0x00) => xregs.write(
                         // slt
@@ -602,12 +601,12 @@ impl Cpu {
                     ),
                     (0x2, 0x01) => {
                         // mulhsu
-                        // get the most significant bit
-                        let sign = ((xregs.read(rs1) as u64) & 0x80000000_00000000) as i64;
-                        // xregs[rs1] is signed and xregs[rs2] is unsigned
-                        let n1 = BigUint::from((xregs.read(rs1) as u64) & 0xefffffff_ffffffff);
-                        let n2 = BigUint::from(xregs.read(rs2) as u64);
-                        xregs.write(rd, sign | ((n1 * n2) >> 64).to_i64().unwrap());
+                        xregs.write(
+                            rd,
+                            ((xregs.read(rs1) as u128)
+                                .wrapping_mul((xregs.read(rs2) as u64) as u128)
+                                >> 64) as i64,
+                        );
                     }
                     (0x3, 0x00) => {
                         // sltu
@@ -622,9 +621,12 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
-                        let n1 = BigUint::from(xregs.read(rs1) as u64);
-                        let n2 = BigUint::from(xregs.read(rs2) as u64);
-                        xregs.write(rd, ((n1 * n2) >> 64).to_i64().unwrap());
+                        xregs.write(
+                            rd,
+                            (((xregs.read(rs1) as u64) as u128)
+                                .wrapping_mul((xregs.read(rs2) as u64) as u128)
+                                >> 64) as i128 as i64,
+                        );
                     }
                     (0x4, 0x00) => xregs.write(rd, xregs.read(rs1) ^ xregs.read(rs2)), // xor
                     (0x4, 0x01) => {
@@ -632,7 +634,20 @@ impl Cpu {
                         xregs.write(
                             rd,
                             match xregs.read(rs2) {
-                                0 => -1,
+                                0 => {
+                                    match self.state.get(FCSR)? {
+                                        Csr::Fcsr(fcsr) => {
+                                            // Set DZ (Divide by Zero) flag to 1.
+                                            fcsr.write_dz(true);
+                                        }
+                                        _ => {
+                                            return Err(Exception::IllegalInstruction(
+                                                String::from("failed to get a fcsr"),
+                                            ))
+                                        }
+                                    }
+                                    -1
+                                }
                                 _ => xregs.read(rs1).wrapping_div(xregs.read(rs2)),
                             },
                         );
@@ -640,9 +655,30 @@ impl Cpu {
                     (0x5, 0x00) => xregs.write(rd, ((xregs.read(rs1) as u64) >> shamt) as i64), // srl
                     (0x5, 0x01) => {
                         // divu
-                        let dividend = xregs.read(rs1) as u64;
-                        let divisor = xregs.read(rs2) as u64;
-                        xregs.write(rd, dividend.wrapping_div(divisor) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => {
+                                    match self.state.get(FCSR)? {
+                                        Csr::Fcsr(fcsr) => {
+                                            // Set DZ (Divide by Zero) flag to 1.
+                                            fcsr.write_dz(true);
+                                        }
+                                        _ => {
+                                            return Err(Exception::IllegalInstruction(
+                                                String::from("failed to get a fcsr"),
+                                            ))
+                                        }
+                                    }
+                                    -1
+                                }
+                                _ => {
+                                    let dividend = xregs.read(rs1) as u64;
+                                    let divisor = xregs.read(rs2) as u64;
+                                    dividend.wrapping_div(divisor) as i64
+                                }
+                            },
+                        );
                     }
                     (0x5, 0x20) => xregs.write(rd, xregs.read(rs1) >> shamt), // sra
                     (0x6, 0x00) => xregs.write(rd, xregs.read(rs1) | xregs.read(rs2)), // or
@@ -694,18 +730,60 @@ impl Cpu {
                     } // sllw
                     (0x4, 0x01) => {
                         // divw
-                        let dividend = xregs.read(rs1) as i32;
-                        let divisor = xregs.read(rs2) as i32;
-                        xregs.write(rd, dividend.wrapping_div(divisor) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => {
+                                    match self.state.get(FCSR)? {
+                                        Csr::Fcsr(fcsr) => {
+                                            // Set DZ (Divide by Zero) flag to 1.
+                                            fcsr.write_dz(true);
+                                        }
+                                        _ => {
+                                            return Err(Exception::IllegalInstruction(
+                                                String::from("failed to get a fcsr"),
+                                            ))
+                                        }
+                                    }
+                                    -1
+                                }
+                                _ => {
+                                    let dividend = xregs.read(rs1) as i32;
+                                    let divisor = xregs.read(rs2) as i32;
+                                    dividend.wrapping_div(divisor) as i64
+                                }
+                            },
+                        );
                     }
                     (0x5, 0x00) => {
                         xregs.write(rd, (((xregs.read(rs1) as u32) >> shamt) as i32) as i64)
                     } // srlw
                     (0x5, 0x01) => {
                         // divuw
-                        let dividend = xregs.read(rs1) as u32;
-                        let divisor = xregs.read(rs2) as u32;
-                        xregs.write(rd, (dividend.wrapping_div(divisor) as i32) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => {
+                                    match self.state.get(FCSR)? {
+                                        Csr::Fcsr(fcsr) => {
+                                            // Set DZ (Divide by Zero) flag to 1.
+                                            fcsr.write_dz(true);
+                                        }
+                                        _ => {
+                                            return Err(Exception::IllegalInstruction(
+                                                String::from("failed to get a fcsr"),
+                                            ))
+                                        }
+                                    }
+                                    -1
+                                }
+                                _ => {
+                                    let dividend = xregs.read(rs1) as u32;
+                                    let divisor = xregs.read(rs2) as u32;
+                                    (dividend.wrapping_div(divisor) as i32) as i64
+                                }
+                            },
+                        );
                     }
                     (0x5, 0x20) => {
                         xregs.write(rd, ((xregs.read(rs1) as i32) >> (shamt as i32)) as i64)

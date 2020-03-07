@@ -18,10 +18,6 @@ include = [
   "README.md",
 ]
 
-[dependencies]
-num-bigint = "0.2.6"
-num-traits = "0.2.11"
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 

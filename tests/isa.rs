@@ -148,7 +148,6 @@ add_test!(rv64uf_p_recoding);
 
 // rv64um-p-*
 add_test!(rv64um_p_div);
-/*
 add_test!(rv64um_p_divu);
 add_test!(rv64um_p_divuw);
 add_test!(rv64um_p_divw);
@@ -157,6 +156,7 @@ add_test!(rv64um_p_mulh);
 add_test!(rv64um_p_mulhsu);
 add_test!(rv64um_p_mulhu);
 add_test!(rv64um_p_mulw);
+/*
 add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
 add_test!(rv64um_p_remuw);
