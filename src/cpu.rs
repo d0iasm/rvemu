@@ -334,7 +334,8 @@ impl Cpu {
             0x1B => {
                 // I-type (RV64I only)
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let shamt = (binary & 0x01f00000) >> 20;
+                // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
+                let shamt = imm & 0x1f;
                 match funct3 {
                     0x0 => {
                         // addiw
@@ -350,7 +351,10 @@ impl Cpu {
                     ),
                     0x5 => {
                         match funct7 {
-                            0x00 => xregs.write(rd, ((xregs.read(rs1) as u32) >> shamt) as i64), // srliw
+                            0x00 => {
+                                // srliw
+                                xregs.write(rd, (((xregs.read(rs1) as u32) >> shamt) as i32) as i64)
+                            }
                             0x20 => xregs.write(rd, ((xregs.read(rs1) as i32) >> shamt) as i64), // sraiw
                             _ => {}
                         }
