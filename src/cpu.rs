@@ -254,8 +254,12 @@ impl Cpu {
         match opcode {
             0x03 => {
                 // I-type
-                let offset = ((binary & 0xfff00000) as u64) >> 20;
-                let addr = xregs.read(rs1).wrapping_add(offset as i64) as usize;
+                let offset = (match binary & 0x80000000 {
+                    // Extend the most significant bit.
+                    0x80000000 => 0xfffff800, // offset[:11] = binary[31]
+                    _ => 0,
+                } | ((binary >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = binary[30:20]
+                let addr = xregs.read(rs1).wrapping_add(offset) as usize;
                 match funct3 {
                     0x0 => xregs.write(rd, (mem.read8(addr) as i8) as i64), // lb
                     0x1 => xregs.write(rd, (mem.read16(addr) as i16) as i64), // lh
@@ -364,9 +368,17 @@ impl Cpu {
             }
             0x23 => {
                 // S-type
-                let imm11_5 = ((binary & 0xfe000000) >> 25) as u64;
-                let imm4_0 = ((binary & 0x00000f80) >> 7) as u64;
-                let offset = ((imm11_5 << 5) | imm4_0) as i64;
+                let offset = (
+                    match binary & 0x80000000 {
+                        // Extend the most significant bit.
+                        // offset[:12] = binary[31]
+                        0x80000000 => 0xfffff800,
+                        _ => 0
+                    } |
+                    ((binary & 0xfe000000) >> 20) | // offset[10:5] = binary[30:25],
+                    ((binary & 0x00000f80) >> 7)
+                    // offset[4:0]= binary[11:7]
+                ) as i32 as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
                     0x0 => mem.write8(addr, xregs.read(rs2) as u8), // sb
@@ -615,7 +627,16 @@ impl Cpu {
                         xregs.write(rd, ((n1 * n2) >> 64).to_i64().unwrap());
                     }
                     (0x4, 0x00) => xregs.write(rd, xregs.read(rs1) ^ xregs.read(rs2)), // xor
-                    (0x4, 0x01) => xregs.write(rd, xregs.read(rs1).wrapping_div(xregs.read(rs2))), // div
+                    (0x4, 0x01) => {
+                        // div
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => -1,
+                                _ => xregs.read(rs1).wrapping_div(xregs.read(rs2)),
+                            },
+                        );
+                    }
                     (0x5, 0x00) => xregs.write(rd, ((xregs.read(rs1) as u64) >> shamt) as i64), // srl
                     (0x5, 0x01) => {
                         // divu
@@ -826,20 +847,24 @@ impl Cpu {
 
                 match funct7 {
                     0x00 => {
+                        // fadd.s
                         fregs.write(rd, (fregs.read(rs1) as f32 + fregs.read(rs2) as f32) as f64)
-                    } // fadd.s
+                    }
                     0x01 => fregs.write(rd, fregs.read(rs1) + fregs.read(rs2)), // fadd.d
                     0x04 => {
+                        // fsub.s
                         fregs.write(rd, (fregs.read(rs1) as f32 - fregs.read(rs2) as f32) as f64)
-                    } // fsub.s
+                    }
                     0x05 => fregs.write(rd, fregs.read(rs1) - fregs.read(rs2)), // fsub.d
                     0x08 => {
+                        // fmul.s
                         fregs.write(rd, (fregs.read(rs1) as f32 * fregs.read(rs2) as f32) as f64)
-                    } // fmul.s
+                    }
                     0x09 => fregs.write(rd, fregs.read(rs1) * fregs.read(rs2)), // fmul.d
                     0x0c => {
+                        // fdiv.s
                         fregs.write(rd, (fregs.read(rs1) as f32 / fregs.read(rs2) as f32) as f64)
-                    } // fdiv.s
+                    }
                     0x0d => fregs.write(rd, fregs.read(rs1) / fregs.read(rs2)), // fdiv.d
                     0x10 => {
                         match funct3 {

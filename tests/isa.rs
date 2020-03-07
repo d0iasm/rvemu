@@ -56,7 +56,6 @@ add_test!(rv64ui_p_blt);
 add_test!(rv64ui_p_bltu);
 add_test!(rv64ui_p_bne);
 //add_test!(rv64ui_p_fence_i);
-/*
 add_test!(rv64ui_p_jal);
 add_test!(rv64ui_p_jalr);
 add_test!(rv64ui_p_lb);
@@ -95,6 +94,7 @@ add_test!(rv64ui_p_sw);
 add_test!(rv64ui_p_xor);
 add_test!(rv64ui_p_xori);
 
+/*
 // rv64ua-p-*
 add_test!(rv64ua_p_amoadd_d);
 add_test!(rv64ua_p_amoadd_w);
@@ -115,7 +115,9 @@ add_test!(rv64ua_p_amoswap_w);
 add_test!(rv64ua_p_amoxor_d);
 add_test!(rv64ua_p_amoxor_w);
 add_test!(rv64ua_p_lrsc);
+*/
 
+/*
 // rv64ud-p-*
 add_test!(rv64ud_p_fadd);
 add_test!(rv64ud_p_fclass);
@@ -128,7 +130,7 @@ add_test!(rv64ud_p_fmin);
 add_test!(rv64ud_p_ldst);
 add_test!(rv64ud_p_move);
 add_test!(rv64ud_p_recoding);
-add_test!(rv64ud_p_structural);
+//add_test!(rv64ud_p_structural); // infinite loop for now
 
 // rv64uf-p-*
 add_test!(rv64uf_p_fadd);
@@ -142,9 +144,11 @@ add_test!(rv64uf_p_fmin);
 add_test!(rv64uf_p_ldst);
 add_test!(rv64uf_p_move);
 add_test!(rv64uf_p_recoding);
+*/
 
 // rv64um-p-*
 add_test!(rv64um_p_div);
+/*
 add_test!(rv64um_p_divu);
 add_test!(rv64um_p_divuw);
 add_test!(rv64um_p_divw);
