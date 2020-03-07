@@ -156,9 +156,7 @@ add_test!(rv64um_p_mulh);
 add_test!(rv64um_p_mulhsu);
 add_test!(rv64um_p_mulhu);
 add_test!(rv64um_p_mulw);
-/*
 add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
 add_test!(rv64um_p_remuw);
 add_test!(rv64um_p_remw);
-*/

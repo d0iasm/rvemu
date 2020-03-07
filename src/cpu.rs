@@ -682,13 +682,28 @@ impl Cpu {
                     }
                     (0x5, 0x20) => xregs.write(rd, xregs.read(rs1) >> shamt), // sra
                     (0x6, 0x00) => xregs.write(rd, xregs.read(rs1) | xregs.read(rs2)), // or
-                    (0x6, 0x01) => xregs.write(rd, xregs.read(rs1) % xregs.read(rs2)), // rem
+                    (0x6, 0x01) => xregs.write(
+                        // rem
+                        rd,
+                        match xregs.read(rs2) {
+                            0 => xregs.read(rs1),
+                            _ => xregs.read(rs1).wrapping_rem(xregs.read(rs2)),
+                        },
+                    ),
                     (0x7, 0x00) => xregs.write(rd, xregs.read(rs1) & xregs.read(rs2)), // and
                     (0x7, 0x01) => {
                         // remu
-                        let dividend = xregs.read(rs1) as u64;
-                        let divisor = xregs.read(rs2) as u64;
-                        xregs.write(rd, (dividend % divisor) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => xregs.read(rs1),
+                                _ => {
+                                    let dividend = xregs.read(rs1) as u64;
+                                    let divisor = xregs.read(rs2) as u64;
+                                    dividend.wrapping_rem(divisor) as i64
+                                }
+                            },
+                        );
                     }
                     _ => {}
                 };
@@ -790,15 +805,31 @@ impl Cpu {
                     } // sraw
                     (0x6, 0x01) => {
                         // remw
-                        let dividend = xregs.read(rs1) as i32;
-                        let divisor = xregs.read(rs2) as i32;
-                        xregs.write(rd, dividend.wrapping_rem(divisor) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => xregs.read(rs1),
+                                _ => {
+                                    let dividend = xregs.read(rs1) as i32;
+                                    let divisor = xregs.read(rs2) as i32;
+                                    dividend.wrapping_rem(divisor) as i64
+                                }
+                            },
+                        );
                     }
                     (0x7, 0x01) => {
                         // remuw
-                        let dividend = xregs.read(rs1) as u32;
-                        let divisor = xregs.read(rs2) as u32;
-                        xregs.write(rd, (dividend.wrapping_rem(divisor) as i32) as i64);
+                        xregs.write(
+                            rd,
+                            match xregs.read(rs2) {
+                                0 => xregs.read(rs1),
+                                _ => {
+                                    let dividend = xregs.read(rs1) as u64 as u32;
+                                    let divisor = xregs.read(rs2) as u64 as u32;
+                                    dividend.wrapping_rem(divisor) as i32 as i64
+                                }
+                            },
+                        );
                     }
                     _ => {}
                 }
