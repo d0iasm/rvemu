@@ -1268,14 +1268,10 @@ impl Cpu {
             0x67 => {
                 // I-type
                 // jalr
-                xregs.write(rd, self.pc as i64);
+                let t = self.pc as i64;
 
                 let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
-                let target = (xregs.read(rs1) + imm as i64) & !1;
-                dbg!(format!(
-                    "jalr rd {} imm {} {} target {}",
-                    rd, imm, imm as i64, target
-                ));
+                let target = (xregs.read(rs1).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
                         "must be aligned on a four-byte boundary",
@@ -1283,6 +1279,7 @@ impl Cpu {
                 }
 
                 self.pc = target as usize;
+                xregs.write(rd, t);
             }
             0x6F => {
                 // J-type
