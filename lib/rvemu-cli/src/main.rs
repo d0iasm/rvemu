@@ -2,6 +2,8 @@ pub mod stdio;
 
 use std::env;
 use std::fs::File;
+use std::io;
+use std::io::prelude::*;
 
 use rvemu_core::cpu::*;
 use rvemu_core::memory::*;
@@ -32,7 +34,7 @@ fn main() -> io::Result<()> {
     let mut mem = Memory::new();
     mem.dram.splice(..dram.len(), dram.iter().cloned());
 
-    cpu.start(&mut mem, stdin_check);
+    cpu.start(&mut mem, stdin);
 
     dump_registers(&cpu);
 

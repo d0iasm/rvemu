@@ -1,6 +1,3 @@
-use std::io;
-use std::io::prelude::*;
-
 use console::Term;
 
 /// Input a message from the console in a host computer.
