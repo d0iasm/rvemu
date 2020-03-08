@@ -69,12 +69,12 @@ $ ./target/release/rvemu-cli <binary-file-name>
 ```
 
 ## Build RISC-V binary
-This emulator starts to execute at the address 0, so you need to extract .text section to execute your binary file on the emulator.
+This emulator starts to execute at the address 0x8000_0000, the start address of DRAM, so you need to extract .text section to execute your binary file on the emulator.
 ```
 // Make an assembly file from a C file.
 $ riscv64-unknown-elf-gcc -S -nostdlib hoge.c
 // Make a binary file from an assembly file with start position 0.
-$ riscv64-unknown-elf-gcc -Wl,-Ttext=0 -nostdlib -o hoge hoge.s
+$ riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o hoge hoge.s
 // Extract a text section from a binary file.
 $ riscv64-unknown-elf-objcopy -O binary --only-section=.text hoge hoge.text
 ```

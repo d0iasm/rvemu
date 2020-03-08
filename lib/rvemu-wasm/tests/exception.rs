@@ -39,7 +39,7 @@ pub fn illegal_isa() {
     );
 
     let expected = [
-        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, DEFAULT_SP + DRAM_BASE as i64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 5,
     ];
     for (i, e) in expected.iter().enumerate() {

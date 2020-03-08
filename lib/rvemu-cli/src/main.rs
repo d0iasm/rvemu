@@ -31,6 +31,7 @@ fn main() -> io::Result<()> {
     file.read_to_end(&mut dram)?;
 
     let mut cpu = Cpu::new();
+    cpu.pc = DRAM_BASE;
     let mut bus = Bus::new();
     bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
 

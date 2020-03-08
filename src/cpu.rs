@@ -72,7 +72,8 @@ impl XRegisters {
     /// Create a new `XRegisters` object.
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
-        xregs[SP] = 1048 * 1000; // Default maximum mamory size.
+        // Default maximum mamory size + the start address of dram.
+        xregs[SP] = 1048 * 1000 + DRAM_BASE as i64;
         Self { xregs }
     }
 
@@ -230,7 +231,7 @@ impl Cpu {
                 Err(error) => error.take_trap(self),
             };
 
-            // Take interrupts.
+            // TODO: Take interrupts.
 
             // TODO: Delete this count because it's for debug.
             count += 1;
