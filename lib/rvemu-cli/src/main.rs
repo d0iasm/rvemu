@@ -1,10 +1,12 @@
+pub mod stdio;
+
 use std::env;
 use std::fs::File;
-use std::io;
-use std::io::prelude::*;
 
 use rvemu_core::cpu::*;
 use rvemu_core::memory::*;
+
+use stdio::*;
 
 /// Output current registers to the console.
 fn dump_registers(cpu: &Cpu) {
@@ -30,7 +32,7 @@ fn main() -> io::Result<()> {
     let mut mem = Memory::new();
     mem.dram.splice(..dram.len(), dram.iter().cloned());
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, stdin_check);
 
     dump_registers(&cpu);
 

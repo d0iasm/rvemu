@@ -1,3 +1,4 @@
+pub mod stdio;
 mod utils;
 
 use rvemu_core::cpu::*;
@@ -5,35 +6,7 @@ use rvemu_core::memory::*;
 
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
-/// Output a message to an emulator console.
-fn render(message: &str) {
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
-    let buffer = document
-        .get_element_by_id("buffer")
-        .expect("should have a element with a `buffer` id");
-
-    let span = document
-        .create_element("span")
-        .expect("span element should be created successfully");
-    span.set_inner_html(message);
-    let result = buffer.append_child(&span);
-    if result.is_err() {
-        panic!("can't append a span node to a buffer node")
-    }
-}
-
-/// Output a message to both a browser console and an emulator console.
-pub fn output(message: &str) {
-    log(message);
-    render(message);
-}
+use stdio::*;
 
 /// An emulator struct to holds a CPU and a memory.
 #[wasm_bindgen]
@@ -60,34 +33,34 @@ impl Emulator {
         self.cpu.reset()
     }
 
-    /// Set a binary from the emulator console of a browser.
-    pub fn set_binary(&mut self, bin: Vec<u8>) {
+    /// Set a binary to the beginning of the DRAM from the emulator console of a browser.
+    pub fn set_dram(&mut self, binary: Vec<u8>) {
         //let header = Elf64Ehdr::new(&bin);
         //if !header.verify() {
-        //output(&format!("unexpected ELF format"))
+        //stdout_log(&format!("unexpected ELF format"))
         //}
         //log(&format!("{:#?}", header));
         // Set an entry point. Divide 8 because `e_entry` is the number of bits.
         //self.cpu.pc = header.e_entry as usize;
 
-        self.mem.set_binary(bin);
+        self.mem.set_dram(binary);
     }
 
     /// Start executing.
-    pub fn execute(&mut self) {
-        self.cpu.start(&mut self.mem);
+    pub fn start(&mut self) {
+        self.cpu.start(&mut self.mem, stdin);
     }
 
     /// Output current registers.
     pub fn dump_registers(&self) {
-        output(&format!("{}", self.cpu.xregs));
-        output(&format!(
+        stdout_log(&format!("{}", self.cpu.xregs));
+        stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        output(&format!("{}", self.cpu.fregs));
-        output(&format!(
+        stdout_log(&format!("{}", self.cpu.fregs));
+        stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        output(&format!("pc: {}", self.cpu.pc));
+        stdout_log(&format!("pc: {}", self.cpu.pc));
     }
 }

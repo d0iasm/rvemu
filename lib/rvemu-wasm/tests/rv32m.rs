@@ -17,7 +17,7 @@ pub fn mul_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -42,7 +42,7 @@ pub fn mulh_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // TODO: use negative values in x30 and x31
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
@@ -100,7 +100,7 @@ pub fn mulhsu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // TODO: use a negative value for x30
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
@@ -157,7 +157,7 @@ pub fn mulhu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
 
@@ -211,7 +211,7 @@ pub fn div_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -233,7 +233,7 @@ pub fn divu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -255,7 +255,7 @@ pub fn rem_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -277,7 +277,7 @@ pub fn remu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

@@ -196,10 +196,26 @@ impl Cpu {
     }
 
     /// Start executing the CPU.
-    pub fn start(&mut self, mem: &mut Memory) {
+    pub fn start(&mut self, mem: &mut Memory, stdin: fn() -> ()) {
         let size = mem.len();
+        // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
-        while self.pc < size {
+        loop {
+            // The external standard input stores a byte to the uart if an input exists.
+            // Otherwise, do nothing.
+            stdin();
+
+            /*
+            let mut input = String::new();
+            match io::stdin().read_line(&mut input) {
+                Ok(n) => {
+                    println!("{} bytes read", n);
+                    println!("{}", input);
+                }
+                Err(error) => println!("error: {}", error),
+            }
+            */
+
             // 1. Fetch.
             let binary = self.fetch(mem);
             dbg!(format!("pc: {}, binary: {:#x}", self.pc, binary));
@@ -216,8 +232,9 @@ impl Cpu {
 
             count += 1;
 
-            // Finish the execution when opcode is 0 or the program counter is 0.
-            if result.is_err() | (binary == 0) | (self.pc == 0) {
+            // TODO: reconsider it: Finish the execution when opcode is 0 or the program counter is 0.
+            if result.is_err() | (binary == 0) | (self.pc >= size) {
+            //if result.is_err() | (binary == 0) | (self.pc == 0) | (self.pc >= size) {
                 dbg!(
                     "count: {}, binaray: {}, result err {}, pc: {}",
                     count,

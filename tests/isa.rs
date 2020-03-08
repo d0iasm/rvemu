@@ -28,7 +28,7 @@ macro_rules! add_test {
             let mut mem = Memory::new();
             mem.dram.splice(..dram.len(), dram.iter().cloned());
 
-            cpu.start(&mut mem);
+            cpu.start(&mut mem, || ());
 
             // Test result is stored at a0 (x10), a function argument and a return value.
             // The riscv-tests set a0 to 0 when all tests pass.

@@ -17,7 +17,7 @@ pub fn illegal_isa() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     assert_eq!(
         2,

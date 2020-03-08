@@ -21,7 +21,7 @@ impl Memory {
     }
 
     /// Set the binary in the memory.
-    pub fn set_binary(&mut self, binary: Vec<u8>) {
+    pub fn set_dram(&mut self, binary: Vec<u8>) {
         self.dram.splice(..binary.len(), binary.iter().cloned());
     }
 

@@ -17,7 +17,7 @@ pub fn fcvtls_rd_rs1_rs2() {
 
     cpu.fregs.write(31, -4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -48,7 +48,7 @@ pub fn fcvtlus_rd_rs1_rs2() {
 
     cpu.fregs.write(31, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -79,7 +79,7 @@ pub fn fcvtsl_rd_rs1_rs2() {
 
     cpu.xregs.write(31, -4);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -110,7 +110,7 @@ pub fn fcvtslu_rd_rs1_rs2() {
 
     cpu.xregs.write(31, 4);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [

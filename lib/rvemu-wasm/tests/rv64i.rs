@@ -17,7 +17,7 @@ pub fn ld_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // memory layout
     // 0x0000000c   ...
@@ -75,7 +75,7 @@ pub fn lwu_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // memory layout
     // 0x0000000c   ...
@@ -102,7 +102,7 @@ pub fn addiw_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -123,7 +123,7 @@ pub fn slliw_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -144,7 +144,7 @@ pub fn srliw_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -165,7 +165,7 @@ pub fn sraiw_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -187,7 +187,7 @@ pub fn addw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -209,7 +209,7 @@ pub fn subw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -231,7 +231,7 @@ pub fn sllw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -253,7 +253,7 @@ pub fn srlw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -275,7 +275,7 @@ pub fn sraw_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -298,7 +298,7 @@ pub fn sd_rs2_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

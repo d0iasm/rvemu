@@ -17,7 +17,7 @@ pub fn lb_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, -109, 0, 0, 0, 0, 0, 0, 0,
@@ -39,7 +39,7 @@ pub fn lh_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0,
@@ -61,7 +61,7 @@ pub fn lw_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 3147923, 0, 0, 0, 0, 0, 0,
@@ -83,7 +83,7 @@ pub fn lbu_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 147, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -105,7 +105,7 @@ pub fn lhu_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2195, 0, 0, 0, 0, 0, 0, 0,
@@ -125,7 +125,7 @@ pub fn addi_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -146,7 +146,7 @@ pub fn slli_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -167,7 +167,7 @@ pub fn slti_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -188,7 +188,7 @@ pub fn sltiu_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -209,7 +209,7 @@ pub fn xori_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -230,7 +230,7 @@ pub fn srai_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -8, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -251,7 +251,7 @@ pub fn srli_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -272,7 +272,7 @@ pub fn ori_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -293,7 +293,7 @@ pub fn andi_rd_rs1_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -313,7 +313,7 @@ pub fn auipc_rd_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -336,7 +336,7 @@ pub fn sb_rs2_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 3, -5, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -359,7 +359,7 @@ pub fn sh_rs2_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1024, 3, -1024, 0, 0, 0, 0, 0, 0,
@@ -382,7 +382,7 @@ pub fn sw_rs2_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2048, 3, -2048, 0, 0, 0, 0, 0, 0,
@@ -404,7 +404,7 @@ pub fn add_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, 11, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -426,7 +426,7 @@ pub fn sub_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0, 0, -1, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -448,7 +448,7 @@ pub fn sll_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -500,7 +500,7 @@ pub fn slt_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -552,7 +552,7 @@ pub fn sltu_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -604,7 +604,7 @@ pub fn xor_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -656,7 +656,7 @@ pub fn srl_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -708,7 +708,7 @@ pub fn sra_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -760,7 +760,7 @@ pub fn or_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -812,7 +812,7 @@ pub fn and_rd_rs1_rs2() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected: [i32; 32] = [
         0,
@@ -862,7 +862,7 @@ pub fn lui_rd_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -884,7 +884,7 @@ pub fn beq_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -907,7 +907,7 @@ pub fn bne_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -930,7 +930,7 @@ pub fn blt_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -953,7 +953,7 @@ pub fn bge_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, -3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -976,7 +976,7 @@ pub fn bltu_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -999,7 +999,7 @@ pub fn bgeu_rs1_rs2_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1022,7 +1022,7 @@ pub fn jalr_rd_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1045,7 +1045,7 @@ pub fn jal_rd_imm() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0,

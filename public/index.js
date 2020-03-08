@@ -25,9 +25,10 @@ const fitAddon = new FitAddon.FitAddon();
 const newLine = "\r\n$ ";
 const deleteLine = "\x1b[2K\r";
 
+let emu = null;
+
 const fileReader = new FileReader();
 let files = [];
-let execute_once = false;
 
 async function initialize() {
   // Load the wasm file.
@@ -54,11 +55,11 @@ async function initialize() {
   });
 
   fileReader.onloadend = e => {
-    const emu = Emulator.new();
+    emu = Emulator.new();
     const bin = new Uint8Array(fileReader.result);
-    emu.set_binary(bin);
+    emu.set_dram(bin);
     try {
-      emu.execute();
+      emu.start();
     } catch(err) {
       term.write(deleteLine);
       term.write(err.message);
@@ -66,6 +67,7 @@ async function initialize() {
       console.log(err);
     } finally {
       emu.dump_registers();
+      emu = null;
     }
   };
 

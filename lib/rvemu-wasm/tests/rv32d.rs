@@ -17,7 +17,7 @@ pub fn fld_rd_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -51,7 +51,7 @@ pub fn fsd_rs2_offset_rs1() {
         ],
     };
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -84,7 +84,7 @@ pub fn fmaddd_rd_rs1_rs2_rs3() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -109,7 +109,7 @@ pub fn fmsubd_rd_rs1_rs2_rs3() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -134,7 +134,7 @@ pub fn fnmaddd_rd_rs1_rs2_rs3() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -159,7 +159,7 @@ pub fn fnmsubd_rd_rs1_rs2_rs3() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -183,7 +183,7 @@ pub fn faddd_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 2.5);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -207,7 +207,7 @@ pub fn fsubd_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 2.8);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -232,7 +232,7 @@ pub fn fmuld_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -256,7 +256,7 @@ pub fn fdivd_rd_rs1_rs2() {
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -281,7 +281,7 @@ pub fn fsgnjd_rd_rs1_rs2() {
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -305,7 +305,7 @@ pub fn fsgnjnd_rd_rs1_rs2() {
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -329,7 +329,7 @@ pub fn fsgnjxd_rd_rs1_rs2() {
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -354,7 +354,7 @@ pub fn fmind_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -378,7 +378,7 @@ pub fn fmaxd_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -401,7 +401,7 @@ pub fn fcvtsd_rd_rs1_rs2() {
 
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -424,7 +424,7 @@ pub fn fcvtds_rd_rs1_rs2() {
 
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -448,7 +448,7 @@ pub fn fsqrtd_rd_rs1_rs2() {
 
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // f0-f31
     let expected = [
@@ -502,7 +502,7 @@ pub fn fled_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -534,7 +534,7 @@ pub fn fltd_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -566,7 +566,7 @@ pub fn feqd_rd_rs1_rs2() {
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -597,7 +597,7 @@ pub fn fcvtwd_rd_rs1_rs2() {
 
     cpu.fregs.write(31, -4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -628,7 +628,7 @@ pub fn fcvtwud_rd_rs1_rs2() {
 
     cpu.fregs.write(31, 4.2);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -659,7 +659,7 @@ pub fn fcvtdw_rd_rs1_rs2() {
 
     cpu.xregs.write(31, -4);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -690,7 +690,7 @@ pub fn fcvtdwu_rd_rs1_rs2() {
 
     cpu.xregs.write(31, 4);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
@@ -721,7 +721,7 @@ pub fn fclassd_rd_rs1_rs2() {
 
     cpu.fregs.write(31, std::f64::INFINITY);
 
-    cpu.start(&mut mem);
+    cpu.start(&mut mem, || ());
 
     // x0-x31
     let expected_x = [
