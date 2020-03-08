@@ -1,18 +1,18 @@
 pub mod stdio;
 mod utils;
 
+use rvemu_core::bus::*;
 use rvemu_core::cpu::*;
-use rvemu_core::memory::*;
 
 use wasm_bindgen::prelude::*;
 
 use stdio::*;
 
-/// An emulator struct to holds a CPU and a memory.
+/// An emulator struct to holds a CPU and a bus.
 #[wasm_bindgen]
 pub struct Emulator {
     cpu: Cpu,
-    mem: Memory,
+    bus: Bus,
 }
 
 #[wasm_bindgen]
@@ -24,7 +24,7 @@ impl Emulator {
 
         Emulator {
             cpu: Cpu::new(),
-            mem: Memory::new(),
+            bus: Bus::new(),
         }
     }
 
@@ -43,12 +43,12 @@ impl Emulator {
         // Set an entry point. Divide 8 because `e_entry` is the number of bits.
         //self.cpu.pc = header.e_entry as usize;
 
-        self.mem.set_dram(binary);
+        self.bus.set_dram(binary);
     }
 
     /// Start executing.
     pub fn start(&mut self) {
-        self.cpu.start(&mut self.mem, stdin);
+        self.cpu.start(&mut self.bus, stdin);
     }
 
     /// Output current registers.

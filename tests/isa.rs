@@ -5,9 +5,11 @@ use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use rvemu::{cpu::Cpu, cpu::Mode, memory::Memory};
-
-//const BASE_ADDRESS: usize = 0x80000000;
+use rvemu::{
+    bus::{Bus, DRAM_BASE},
+    cpu::Cpu,
+    cpu::Mode,
+};
 
 #[macro_export]
 macro_rules! add_test {
@@ -23,12 +25,13 @@ macro_rules! add_test {
             file.read_to_end(&mut dram)?;
 
             let mut cpu = Cpu::new();
-            //cpu.pc = BASE_ADDRESS;
+            // The text in riscv/riscv-tests starts 0x80001000.
+            cpu.pc = DRAM_BASE + 0x1000;
 
-            let mut mem = Memory::new();
-            mem.dram.splice(..dram.len(), dram.iter().cloned());
+            let mut bus = Bus::new();
+            bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
 
-            cpu.start(&mut mem, || ());
+            cpu.start(&mut bus, || ());
 
             // Test result is stored at a0 (x10), a function argument and a return value.
             // The riscv-tests set a0 to 0 when all tests pass.

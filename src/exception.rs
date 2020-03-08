@@ -178,6 +178,10 @@ impl Exception {
         }
 
         match self {
+            // TODO: Stop executing if the fetching binary fails or the operaion is unimplemented.
+            Exception::InstructionAccessFault => {
+                return Err(Exception::InstructionAccessFault);
+            }
             // TODO: Stop executing only if the operation is unimplemented.
             Exception::Unimplemented => {
                 return Err(Exception::Unimplemented);

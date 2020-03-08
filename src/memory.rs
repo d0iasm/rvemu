@@ -15,8 +15,8 @@ impl Memory {
         }
     }
 
-    /// Return the length of the memory.
-    pub fn len(&self) -> usize {
+    /// Return the code size in the memory.
+    pub fn size(&self) -> usize {
         self.dram.len()
     }
 

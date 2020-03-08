@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
+use rvemu_core::bus::*;
 use rvemu_core::cpu::*;
-use rvemu_core::memory::*;
 
 use stdio::*;
 
@@ -31,10 +31,10 @@ fn main() -> io::Result<()> {
     file.read_to_end(&mut dram)?;
 
     let mut cpu = Cpu::new();
-    let mut mem = Memory::new();
-    mem.dram.splice(..dram.len(), dram.iter().cloned());
+    let mut bus = Bus::new();
+    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
 
-    cpu.start(&mut mem, stdin);
+    cpu.start(&mut bus, stdin);
 
     dump_registers(&cpu);
 

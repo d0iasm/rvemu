@@ -7,7 +7,11 @@ use std::cmp::PartialEq;
 use std::fmt;
 use std::num::FpCategory;
 
-use crate::{csr::*, exception::Exception, memory::Memory};
+use crate::{
+    bus::{Bus, DRAM_BASE},
+    csr::*,
+    exception::Exception,
+};
 
 const SP: usize = 2;
 
@@ -196,8 +200,8 @@ impl Cpu {
     }
 
     /// Start executing the CPU.
-    pub fn start(&mut self, mem: &mut Memory, stdin: fn() -> ()) {
-        let size = mem.len();
+    pub fn start(&mut self, bus: &mut Bus, stdin: fn() -> ()) {
+        let size = bus.dram_size();
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
         loop {
@@ -207,16 +211,22 @@ impl Cpu {
             stdin();
 
             // 1. Fetch.
-            let binary = self.fetch(mem);
-            dbg!(format!("pc: {}, binary: {:#x}", self.pc, binary));
+            let binary_or_error = self.fetch(bus);
+
+            dbg!(format!("pc: {}, binary: {:#?}", self.pc, &binary_or_error));
+
             // 2. Add 4 to the program counter.
             self.pc += 4;
+
             // 3. Decode.
             // 4. Execution.
             // `result` becomes an error only if the error kind is unimplemented.
-            //let result = self.execute(binary, mem).map_err(|e| e.take_trap(self));
-            let result = match self.execute(binary, mem) {
-                Ok(_) => Ok(()),
+            //let result = self.execute(binary, bus).map_err(|e| e.take_trap(self));
+            let result = match binary_or_error {
+                Ok(binary) => match self.execute(binary, bus) {
+                    Ok(_) => Ok(()),
+                    Err(error) => error.take_trap(self),
+                },
                 Err(error) => error.take_trap(self),
             };
 
@@ -225,29 +235,25 @@ impl Cpu {
             // TODO: Delete this count because it's for debug.
             count += 1;
 
-            // TODO: reconsider it: Finish the execution when opcode is 0 or the program counter is 0.
-            if result.is_err() | (binary == 0) | (self.pc >= size) | (count > 1000000) {
-                //if result.is_err() | (binary == 0) | (self.pc == 0) | (self.pc >= size) {
-                dbg!(
-                    "count: {}, binaray: {}, result err {}, pc: {}",
-                    count,
-                    binary,
-                    result.is_err(),
-                    self.pc
-                );
+            // TODO: reconsider the termination condition.
+            if result.is_err() | (self.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
+                dbg!(format!(
+                    "pc: {}, count: {}, result {:#?}",
+                    self.pc, count, result
+                ));
                 return;
             }
         }
     }
 
-    /// Fetch the next instruction from a memory at the current program counter.
-    fn fetch(&mut self, mem: &Memory) -> u32 {
-        mem.read32(self.pc)
+    /// Fetch the next instruction from a busory at the current program counter.
+    fn fetch(&mut self, bus: &Bus) -> Result<u32, Exception> {
+        bus.read32(self.pc)
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
-    pub fn execute(&mut self, binary: u32, mem: &mut Memory) -> Result<(), Exception> {
+    pub fn execute(&mut self, binary: u32, bus: &mut Bus) -> Result<(), Exception> {
         let opcode = binary & 0x0000007f;
         let rd = ((binary & 0x00000f80) >> 7) as usize;
         let rs1 = ((binary & 0x000f8000) >> 15) as usize;
@@ -268,13 +274,13 @@ impl Cpu {
                 } | ((binary >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = binary[30:20]
                 let addr = xregs.read(rs1).wrapping_add(offset) as usize;
                 match funct3 {
-                    0x0 => xregs.write(rd, (mem.read8(addr) as i8) as i64), // lb
-                    0x1 => xregs.write(rd, (mem.read16(addr) as i16) as i64), // lh
-                    0x2 => xregs.write(rd, (mem.read32(addr) as i32) as i64), // lw
-                    0x3 => xregs.write(rd, mem.read64(addr) as i64),        // ld
-                    0x4 => xregs.write(rd, (mem.read8(addr) as i64) & 0xff), // lbu
-                    0x5 => xregs.write(rd, (mem.read16(addr) as i64) & 0xffff), // lhu
-                    0x6 => xregs.write(rd, (mem.read32(addr) as i64) & 0xffffffff), // lwu
+                    0x0 => xregs.write(rd, (bus.read8(addr)? as i8) as i64), // lb
+                    0x1 => xregs.write(rd, (bus.read16(addr)? as i16) as i64), // lh
+                    0x2 => xregs.write(rd, (bus.read32(addr)? as i32) as i64), // lw
+                    0x3 => xregs.write(rd, bus.read64(addr)? as i64),        // ld
+                    0x4 => xregs.write(rd, (bus.read8(addr)? as i64) & 0xff), // lbu
+                    0x5 => xregs.write(rd, (bus.read16(addr)? as i64) & 0xffff), // lhu
+                    0x6 => xregs.write(rd, (bus.read32(addr)? as i64) & 0xffffffff), // lwu
                     _ => {}
                 }
             }
@@ -283,8 +289,8 @@ impl Cpu {
                 let offset = ((binary & 0xfff00000) as u64) >> 20;
                 let addr = (xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
-                    0x2 => fregs.write(rd, f64::from_bits(mem.read32(addr) as u64)), // flw
-                    0x3 => fregs.write(rd, f64::from_bits(mem.read64(addr))),        // fld
+                    0x2 => fregs.write(rd, f64::from_bits(bus.read32(addr)? as u64)), // flw
+                    0x3 => fregs.write(rd, f64::from_bits(bus.read64(addr)?)),        // fld
                     _ => {}
                 }
             }
@@ -388,10 +394,10 @@ impl Cpu {
                 ) as i32 as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
-                    0x0 => mem.write8(addr, xregs.read(rs2) as u8), // sb
-                    0x1 => mem.write16(addr, xregs.read(rs2) as u16), // sh
-                    0x2 => mem.write32(addr, xregs.read(rs2) as u32), // sw
-                    0x3 => mem.write64(addr, xregs.read(rs2) as u64), // sd
+                    0x0 => bus.write8(addr, xregs.read(rs2) as u8)?, // sb
+                    0x1 => bus.write16(addr, xregs.read(rs2) as u16)?, // sh
+                    0x2 => bus.write32(addr, xregs.read(rs2) as u32)?, // sw
+                    0x3 => bus.write64(addr, xregs.read(rs2) as u64)?, // sd
                     _ => {}
                 }
             }
@@ -402,8 +408,8 @@ impl Cpu {
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
-                    0x2 => mem.write32(addr, (fregs.read(rs2) as f32).to_bits()), // fsw
-                    0x3 => mem.write64(addr, fregs.read(rs2).to_bits()),          // fsd
+                    0x2 => bus.write32(addr, (fregs.read(rs2) as f32).to_bits())?, // fsw
+                    0x3 => bus.write64(addr, fregs.read(rs2).to_bits())?,          // fsd
                     _ => {}
                 }
             }
@@ -417,165 +423,165 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             (t.wrapping_add(xregs.read(rs2) as i32)) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(
                             xregs.read(rs1) as usize,
                             t.wrapping_add(xregs.read(rs2)) as u64,
-                        );
+                        )?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32);
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32)?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64);
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64)?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x02) => {
-                        xregs.write(rd, (mem.read32(xregs.read(rs1) as usize) as i32) as i64)
+                        xregs.write(rd, (bus.read32(xregs.read(rs1) as usize)? as i32) as i64)
                     } // lr.w
-                    (0x3, 0x02) => xregs.write(rd, mem.read64(xregs.read(rs1) as usize) as i64), // lr.d
+                    (0x3, 0x02) => xregs.write(rd, bus.read64(xregs.read(rs1) as usize)? as i64), // lr.d
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
                         xregs.write(rd, 0);
-                        mem.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32);
+                        bus.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
                         xregs.write(rd, 0);
-                        mem.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64);
+                        bus.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             (t ^ (xregs.read(rs2) as i32)) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(xregs.read(rs1) as usize, (t ^ xregs.read(rs2)) as u64);
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(xregs.read(rs1) as usize, (t ^ xregs.read(rs2)) as u64)?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             (t | (xregs.read(rs2) as i32)) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(xregs.read(rs1) as usize, (t | xregs.read(rs2)) as u64);
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(xregs.read(rs1) as usize, (t | xregs.read(rs2)) as u64)?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             (t & (xregs.read(rs2) as i32)) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(xregs.read(rs1) as usize, (t & xregs.read(rs1)) as u64);
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(xregs.read(rs1) as usize, (t & xregs.read(rs1)) as u64)?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             cmp::min(t, xregs.read(rs2) as i32) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(
                             xregs.read(rs1) as usize,
                             cmp::min(t, xregs.read(rs2)) as u64,
-                        );
+                        )?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = mem.read32(xregs.read(rs1) as usize) as i32;
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             cmp::max(t, xregs.read(rs2) as i32) as u32,
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = mem.read64(xregs.read(rs1) as usize) as i64;
-                        mem.write64(
+                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
+                        bus.write64(
                             xregs.read(rs1) as usize,
                             cmp::max(t, xregs.read(rs2)) as u64,
-                        );
+                        )?;
                         xregs.write(rd, t);
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = mem.read32(xregs.read(rs1) as usize);
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)?;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             cmp::min(t, xregs.read(rs2) as u32),
-                        );
+                        )?;
                         xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = mem.read64(xregs.read(rs1) as usize);
-                        mem.write64(
+                        let t = bus.read64(xregs.read(rs1) as usize)?;
+                        bus.write64(
                             xregs.read(rs1) as usize,
                             cmp::min(t, xregs.read(rs2) as u64),
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = mem.read32(xregs.read(rs1) as usize);
-                        mem.write32(
+                        let t = bus.read32(xregs.read(rs1) as usize)?;
+                        bus.write32(
                             xregs.read(rs1) as usize,
                             cmp::max(t, xregs.read(rs2) as u32),
-                        );
+                        )?;
                         xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = mem.read64(xregs.read(rs1) as usize);
-                        mem.write64(
+                        let t = bus.read64(xregs.read(rs1) as usize)?;
+                        bus.write64(
                             xregs.read(rs1) as usize,
                             cmp::max(t, xregs.read(rs2) as u64),
-                        );
+                        )?;
                         xregs.write(rd, t as i64);
                     }
                     _ => {}
