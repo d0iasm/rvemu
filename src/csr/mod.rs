@@ -9,6 +9,7 @@ pub mod mhartid;
 pub mod mideleg;
 pub mod mie;
 pub mod mimpid;
+pub mod mip;
 pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
@@ -32,6 +33,7 @@ use crate::csr::mhartid::Mhartid;
 use crate::csr::mideleg::Mideleg;
 use crate::csr::mie::Mie;
 use crate::csr::mimpid::Mimpid;
+use crate::csr::mip::Mip;
 use crate::csr::misa::Misa;
 use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
@@ -157,6 +159,7 @@ pub enum Csr {
     Mtvec(Mtvec),
     Mepc(Mepc),
     Mcause(Mcause),
+    Mip(Mip),
     Pmpcfg0(Pmpcfg0),
     Pmpaddr0(Pmpaddr0),
 }
@@ -192,6 +195,7 @@ impl State {
 
         csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
         csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
+        csrs.insert(MIP, Csr::Mip(Mip::new(0)));
 
         csrs.insert(PMPCFG0, Csr::Pmpcfg0(Pmpcfg0::new(0)));
         csrs.insert(PMPADDR0, Csr::Pmpaddr0(Pmpaddr0::new(0)));
@@ -244,6 +248,7 @@ impl State {
                 Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
                 Csr::Mepc(mepc) => Ok(mepc.read_value()),
                 Csr::Mcause(mcause) => Ok(mcause.read_value()),
+                Csr::Mip(mip) => Ok(mip.read_value()),
                 Csr::Pmpcfg0(pmpcfg0) => Ok(pmpcfg0.read_value()),
                 Csr::Pmpaddr0(pmpaddr0) => Ok(pmpaddr0.read_value()),
             }
@@ -296,6 +301,7 @@ impl State {
                 Csr::Mtvec(mtvec) => mtvec.write_value(value),
                 Csr::Mepc(mepc) => mepc.write_value(value),
                 Csr::Mcause(mcause) => mcause.write_value(value),
+                Csr::Mip(mip) => mip.write_value(value),
                 Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.write_value(value),
                 Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.write_value(value),
             }
@@ -328,6 +334,7 @@ impl State {
                 Csr::Mtvec(mtvec) => mtvec.reset(),
                 Csr::Mepc(mepc) => mepc.reset(),
                 Csr::Mcause(mcause) => mcause.reset(),
+                Csr::Mip(mip) => mip.reset(),
                 Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.reset(),
                 Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.reset(),
             }

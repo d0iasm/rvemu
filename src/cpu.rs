@@ -203,6 +203,7 @@ impl Cpu {
         loop {
             // The external standard input stores a byte to the uart if an input exists.
             // Otherwise, do nothing.
+            // TODO: Check interrupts are enable or not.
             stdin();
 
             // 1. Fetch.
@@ -219,11 +220,14 @@ impl Cpu {
                 Err(error) => error.take_trap(self),
             };
 
+            // Take interrupts.
+
+            // TODO: Delete this count because it's for debug.
             count += 1;
 
             // TODO: reconsider it: Finish the execution when opcode is 0 or the program counter is 0.
             if result.is_err() | (binary == 0) | (self.pc >= size) {
-            //if result.is_err() | (binary == 0) | (self.pc == 0) | (self.pc >= size) {
+                //if result.is_err() | (binary == 0) | (self.pc == 0) | (self.pc >= size) {
                 dbg!(
                     "count: {}, binaray: {}, result err {}, pc: {}",
                     count,
