@@ -29,9 +29,9 @@ impl Bus {
         self.dram.size()
     }
 
-    /// Set the binary to the memory.
-    pub fn set_dram(&mut self, binary: Vec<u8>) {
-        self.dram.set_dram(binary);
+    /// Set the binary data to the memory.
+    pub fn set_dram(&mut self, data: Vec<u8>) {
+        self.dram.set_dram(data);
     }
 
     /// Write a byte to the system bus.

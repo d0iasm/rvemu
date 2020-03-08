@@ -27,13 +27,13 @@ fn main() -> io::Result<()> {
     }
 
     let mut file = File::open(&args[1])?;
-    let mut dram = Vec::new();
-    file.read_to_end(&mut dram)?;
+    let mut data = Vec::new();
+    file.read_to_end(&mut data)?;
 
     let mut cpu = Cpu::new();
     cpu.pc = DRAM_BASE;
     let mut bus = Bus::new();
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.start(&mut bus, stdin);
 

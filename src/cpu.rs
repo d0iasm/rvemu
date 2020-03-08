@@ -212,9 +212,9 @@ impl Cpu {
             stdin();
 
             // 1. Fetch.
-            let binary_or_error = self.fetch(bus);
+            let data_or_error = self.fetch(bus);
 
-            dbg!(format!("pc: {}, binary: {:#?}", self.pc, &binary_or_error));
+            dbg!(format!("pc: {}, data: {:#?}", self.pc, &data_or_error));
 
             // 2. Add 4 to the program counter.
             self.pc += 4;
@@ -222,9 +222,9 @@ impl Cpu {
             // 3. Decode.
             // 4. Execution.
             // `result` becomes an error only if the error kind is unimplemented.
-            //let result = self.execute(binary, bus).map_err(|e| e.take_trap(self));
-            let result = match binary_or_error {
-                Ok(binary) => match self.execute(binary, bus) {
+            //let result = self.execute(data, bus).map_err(|e| e.take_trap(self));
+            let result = match data_or_error {
+                Ok(data) => match self.execute(data, bus) {
                     Ok(_) => Ok(()),
                     Err(error) => error.take_trap(self),
                 },
@@ -254,13 +254,13 @@ impl Cpu {
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
-    pub fn execute(&mut self, binary: u32, bus: &mut Bus) -> Result<(), Exception> {
-        let opcode = binary & 0x0000007f;
-        let rd = ((binary & 0x00000f80) >> 7) as usize;
-        let rs1 = ((binary & 0x000f8000) >> 15) as usize;
-        let rs2 = ((binary & 0x01f00000) >> 20) as usize;
-        let funct3 = (binary & 0x00007000) >> 12;
-        let funct7 = (binary & 0xfe000000) >> 25;
+    pub fn execute(&mut self, data: u32, bus: &mut Bus) -> Result<(), Exception> {
+        let opcode = data & 0x0000007f;
+        let rd = ((data & 0x00000f80) >> 7) as usize;
+        let rs1 = ((data & 0x000f8000) >> 15) as usize;
+        let rs2 = ((data & 0x01f00000) >> 20) as usize;
+        let funct3 = (data & 0x00007000) >> 12;
+        let funct7 = (data & 0xfe000000) >> 25;
 
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
@@ -268,11 +268,11 @@ impl Cpu {
         match opcode {
             0x03 => {
                 // I-type
-                let offset = (match binary & 0x80000000 {
+                let offset = (match data & 0x80000000 {
                     // Extend the most significant bit.
-                    0x80000000 => 0xfffff800, // offset[:11] = binary[31]
+                    0x80000000 => 0xfffff800, // offset[:11] = data[31]
                     _ => 0,
-                } | ((binary >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = binary[30:20]
+                } | ((data >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = data[30:20]
                 let addr = xregs.read(rs1).wrapping_add(offset) as usize;
                 match funct3 {
                     0x0 => xregs.write(rd, (bus.read8(addr)? as i8) as i64), // lb
@@ -287,7 +287,7 @@ impl Cpu {
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                let offset = ((binary & 0xfff00000) as u64) >> 20;
+                let offset = ((data & 0xfff00000) as u64) >> 20;
                 let addr = (xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
                     0x2 => fregs.write(rd, f64::from_bits(bus.read32(addr)? as u64)), // flw
@@ -298,7 +298,7 @@ impl Cpu {
             0x0F => {
                 // I-type
                 // fence instructions are not supportted yet because this emulator executes a
-                // binary sequentially on a single thread.
+                // data sequentially on a single thread.
                 // fence i is a part of the Zifencei extension.
                 match funct3 {
                     0x0 => {} // fence
@@ -308,10 +308,10 @@ impl Cpu {
             }
             0x13 => {
                 // I-type
-                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
-                // let shamt = (binary & 0x01F00000) >> 20; // This is for RV32I
-                let shamt = (binary & 0x03f00000) >> 20;
+                // let shamt = (data & 0x01F00000) >> 20; // This is for RV32I
+                let shamt = (data & 0x03f00000) >> 20;
                 let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => xregs.write(rd, xregs.read(rs1).wrapping_add(imm)), // addi
@@ -345,13 +345,13 @@ impl Cpu {
                 // U-type
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
-                let imm = ((binary & 0xfffff000) as i32) as i64;
+                let imm = ((data & 0xfffff000) as i32) as i64;
                 // auipc
                 xregs.write(rd, (self.pc as i64) + imm - 4);
             }
             0x1B => {
                 // I-type (RV64I only)
-                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
                 // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
                 let shamt = imm & 0x1f;
                 match funct3 {
@@ -383,15 +383,15 @@ impl Cpu {
             0x23 => {
                 // S-type
                 let offset = (
-                    match binary & 0x80000000 {
+                    match data & 0x80000000 {
                         // Extend the most significant bit.
-                        // offset[:12] = binary[31]
+                        // offset[:12] = data[31]
                         0x80000000 => 0xfffff800,
                         _ => 0
                     } |
-                    ((binary & 0xfe000000) >> 20) | // offset[10:5] = binary[30:25],
-                    ((binary & 0x00000f80) >> 7)
-                    // offset[4:0]= binary[11:7]
+                    ((data & 0xfe000000) >> 20) | // offset[10:5] = data[30:25],
+                    ((data & 0x00000f80) >> 7)
+                    // offset[4:0]= data[11:7]
                 ) as i32 as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
@@ -404,8 +404,8 @@ impl Cpu {
             }
             0x27 => {
                 // S-type (RV32F and RV64F)
-                let imm11_5 = (((binary & 0xfe000000) as i32) as i64) >> 25;
-                let imm4_0 = ((binary & 0x00000f80) >> 7) as u64;
+                let imm11_5 = (((data & 0xfe000000) as i32) as i64) >> 25;
+                let imm4_0 = ((data & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (xregs.read(rs1) + offset) as usize;
                 match funct3 {
@@ -729,7 +729,7 @@ impl Cpu {
                 // U-type
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
-                xregs.write(rd, ((binary & 0xfffff000) as i32) as i64); // lui
+                xregs.write(rd, ((data & 0xfffff000) as i32) as i64); // lui
             }
             0x3B => {
                 // R-type (RV64I and RV64M)
@@ -854,8 +854,8 @@ impl Cpu {
             0x43 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
-                let funct2 = (binary & 0x03000000) >> 25;
+                let rs3 = ((data & 0xf8000000) >> 27) as usize;
+                let funct2 = (data & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmadd.s
@@ -876,8 +876,8 @@ impl Cpu {
             0x47 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
-                let funct2 = (binary & 0x03000000) >> 25;
+                let rs3 = ((data & 0xf8000000) >> 27) as usize;
+                let funct2 = (data & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmsub.s
@@ -898,8 +898,8 @@ impl Cpu {
             0x4B => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
-                let funct2 = (binary & 0x03000000) >> 25;
+                let rs3 = ((data & 0xf8000000) >> 27) as usize;
+                let funct2 = (data & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmadd.s
@@ -920,8 +920,8 @@ impl Cpu {
             0x4F => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((binary & 0xf8000000) >> 27) as usize;
-                let funct2 = (binary & 0x03000000) >> 25;
+                let rs3 = ((data & 0xf8000000) >> 27) as usize;
+                let funct2 = (data & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmsub.s
@@ -1200,10 +1200,10 @@ impl Cpu {
             }
             0x63 => {
                 // B-type
-                let imm12 = (((binary & 0x80000000) as i32) as i64) >> 31;
-                let imm10_5 = ((binary & 0x7e000000) >> 25) as u64;
-                let imm4_1 = ((binary & 0x00000f00) >> 8) as u64;
-                let imm11 = ((binary & 0x00000080) >> 7) as u64;
+                let imm12 = (((data & 0x80000000) as i32) as i64) >> 31;
+                let imm10_5 = ((data & 0x7e000000) >> 25) as u64;
+                let imm4_1 = ((data & 0x00000f00) >> 8) as u64;
+                let imm11 = ((data & 0x00000080) >> 7) as u64;
                 let offset =
                     ((imm12 << 12) as u64 | (imm11 << 11) | (imm10_5 << 5) | (imm4_1 << 1)) as i64;
                 match funct3 {
@@ -1287,7 +1287,7 @@ impl Cpu {
                 // jalr
                 let t = self.pc as i64;
 
-                let imm = (((binary & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
                 let target = (xregs.read(rs1).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1303,10 +1303,10 @@ impl Cpu {
                 // jal
                 xregs.write(rd, self.pc as i64);
 
-                let imm20 = (((binary & 0x80000000) as i32) as i64) >> 31;
-                let imm10_1 = ((binary & 0x7fe00000) >> 21) as u64;
-                let imm11 = ((binary & 0x100000) >> 20) as u64;
-                let imm19_12 = ((binary & 0xff000) >> 12) as u64;
+                let imm20 = (((data & 0x80000000) as i32) as i64) >> 31;
+                let imm10_1 = ((data & 0x7fe00000) >> 21) as u64;
+                let imm11 = ((data & 0x100000) >> 20) as u64;
+                let imm19_12 = ((data & 0xff000) >> 12) as u64;
                 let offset =
                     ((imm20 << 20) as u64 | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1))
                         as i64;
@@ -1320,7 +1320,7 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let csr_address = ((binary & 0xfff00000) >> 20) as u16;
+                let csr_address = ((data & 0xfff00000) >> 20) as u16;
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {

@@ -12,12 +12,12 @@ const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 pub fn illegal_isa() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0x50, 0x00, // addi x31, x0, 5
         0xaa, 0xaa, 0xaa, 0xaa, // Invalid ISA
         0x93, 0x0f, 0x50, 0x00, // addi x31, x0, 5
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());

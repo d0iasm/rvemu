@@ -21,15 +21,15 @@ macro_rules! add_test {
             root.push(stringify!($name));
 
             let mut file = File::open(root.as_path())?;
-            let mut dram = Vec::new();
-            file.read_to_end(&mut dram)?;
+            let mut data = Vec::new();
+            file.read_to_end(&mut data)?;
 
             let mut cpu = Cpu::new();
             // The text in riscv/riscv-tests starts 0x80001000.
             cpu.pc = DRAM_BASE + 0x1000;
 
             let mut bus = Bus::new();
-            bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+            bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
             cpu.start(&mut bus, || ());
 

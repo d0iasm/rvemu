@@ -33,8 +33,8 @@ impl Emulator {
         self.cpu.reset()
     }
 
-    /// Set a binary to the beginning of the DRAM from the emulator console of a browser.
-    pub fn set_dram(&mut self, binary: Vec<u8>) {
+    /// Set binary data to the beginning of the DRAM from the emulator console of a browser.
+    pub fn set_dram(&mut self, data: Vec<u8>) {
         //let header = Elf64Ehdr::new(&bin);
         //if !header.verify() {
         //stdout_log(&format!("unexpected ELF format"))
@@ -43,7 +43,7 @@ impl Emulator {
         // Set an entry point. Divide 8 because `e_entry` is the number of bits.
         //self.cpu.pc = header.e_entry as usize;
 
-        self.bus.set_dram(binary);
+        self.bus.set_dram(data);
     }
 
     /// Start executing.

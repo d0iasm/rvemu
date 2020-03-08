@@ -12,12 +12,12 @@ const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 pub fn fld_rd_offset_rs1() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
         0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
         0x87, 0xbf, 0x0f, 0x00, // fld f31, 0(x31)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -47,13 +47,13 @@ pub fn fld_rd_offset_rs1() {
 pub fn fsd_rs2_offset_rs1() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
         0x13, 0x0f, 0x40, 0x00, // addi x30, x0, 4
         0x27, 0xb0, 0xff, 0x01, // fsd f31, 0(x31)
         0x87, 0xbf, 0x0f, 0x00, // fld f31, 0(x31)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -80,10 +80,10 @@ pub fn fsd_rs2_offset_rs1() {
 pub fn fmaddd_rd_rs1_rs2_rs3() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xc3, 0x0f, 0xdf, 0xe3, // fmadd.d f31, f30, f29, f28
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(28, -0.5);
     cpu.fregs.write(29, 4.2);
@@ -106,10 +106,10 @@ pub fn fmaddd_rd_rs1_rs2_rs3() {
 pub fn fmsubd_rd_rs1_rs2_rs3() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xc7, 0x0f, 0xdf, 0xe3, // fmsub.d f31, f30, f29, f28
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(28, -0.5);
     cpu.fregs.write(29, 4.2);
@@ -132,10 +132,10 @@ pub fn fmsubd_rd_rs1_rs2_rs3() {
 pub fn fnmaddd_rd_rs1_rs2_rs3() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xcb, 0x0f, 0xdf, 0xe3, // fnmadd.d f31, f30, f29, f28
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(28, -0.5);
     cpu.fregs.write(29, 4.2);
@@ -158,10 +158,10 @@ pub fn fnmaddd_rd_rs1_rs2_rs3() {
 pub fn fnmsubd_rd_rs1_rs2_rs3() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xcf, 0x0f, 0xdf, 0xe3, // fnmsub.d f31, f30, f29, f28
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(28, -0.5);
     cpu.fregs.write(29, 4.2);
@@ -184,10 +184,10 @@ pub fn fnmsubd_rd_rs1_rs2_rs3() {
 pub fn faddd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x03, // fadd.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 2.5);
@@ -209,10 +209,10 @@ pub fn faddd_rd_rs1_rs2() {
 pub fn fsubd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x0b, // fsub.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 2.8);
@@ -235,10 +235,10 @@ pub fn fsubd_rd_rs1_rs2() {
 pub fn fmuld_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x13, // fmul.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
@@ -260,10 +260,10 @@ pub fn fmuld_rd_rs1_rs2() {
 pub fn fdivd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x1b, // fdiv.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
@@ -286,10 +286,10 @@ pub fn fdivd_rd_rs1_rs2() {
 pub fn fsgnjd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x23, // fsgnj.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
@@ -311,10 +311,10 @@ pub fn fsgnjd_rd_rs1_rs2() {
 pub fn fsgnjnd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x1f, 0xdf, 0x23, // fsgnjn.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
@@ -336,10 +336,10 @@ pub fn fsgnjnd_rd_rs1_rs2() {
 pub fn fsgnjxd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x2f, 0xdf, 0x23, // fsgnjx.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, -1.2);
     cpu.fregs.write(30, 4.2);
@@ -362,10 +362,10 @@ pub fn fsgnjxd_rd_rs1_rs2() {
 pub fn fmind_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0x2b, // fmin.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
@@ -387,10 +387,10 @@ pub fn fmind_rd_rs1_rs2() {
 pub fn fmaxd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x1f, 0xdf, 0x2b, // fmax.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
@@ -412,10 +412,10 @@ pub fn fmaxd_rd_rs1_rs2() {
 pub fn fcvtsd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0x1f, 0x40, // fcvt.s.d f31, f30
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(30, -1.2);
 
@@ -436,10 +436,10 @@ pub fn fcvtsd_rd_rs1_rs2() {
 pub fn fcvtds_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0x0f, 0x42, // fcvt.d.s f31, f30
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(30, -1.2);
 
@@ -461,10 +461,10 @@ pub fn fcvtds_rd_rs1_rs2() {
 pub fn fsqrtd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0x0f, 0x5a, // fmax.d f31, f30
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(30, 4.2);
 
@@ -515,10 +515,10 @@ pub fn fsqrtd_rd_rs1_rs2() {
 pub fn fled_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x0f, 0xdf, 0xa3, // fle.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 4.2);
@@ -548,10 +548,10 @@ pub fn fled_rd_rs1_rs2() {
 pub fn fltd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x1f, 0xdf, 0xa3, // flt.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, -1.2);
@@ -581,10 +581,10 @@ pub fn fltd_rd_rs1_rs2() {
 pub fn feqd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x2f, 0xdf, 0xa3, // feq.d f31, f30, f29
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(29, 4.2);
     cpu.fregs.write(30, 4.2);
@@ -614,10 +614,10 @@ pub fn feqd_rd_rs1_rs2() {
 pub fn fcvtwd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x8f, 0x0f, 0xc2, // fcvt.w.d x31, f31 (rm: 000)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(31, -4.2);
 
@@ -646,10 +646,10 @@ pub fn fcvtwd_rd_rs1_rs2() {
 pub fn fcvtwud_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x8f, 0x1f, 0xc2, // fcvt.wu.d x31, f31 (rm: 000)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(31, 4.2);
 
@@ -678,10 +678,10 @@ pub fn fcvtwud_rd_rs1_rs2() {
 pub fn fcvtdw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x8f, 0x0f, 0xd2, // fcvt.d.w x31, f31 (rm: 000)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.xregs.write(31, -4);
 
@@ -710,10 +710,10 @@ pub fn fcvtdw_rd_rs1_rs2() {
 pub fn fcvtdwu_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x8f, 0x1f, 0xd2, // fcvt.d.wu x31, f31 (rm: 000)
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.xregs.write(31, 4);
 
@@ -742,10 +742,10 @@ pub fn fcvtdwu_rd_rs1_rs2() {
 pub fn fclassd_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0xd3, 0x9f, 0x0f, 0xe2, // fclass.d x31, f31
     ];
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.fregs.write(31, std::f64::INFINITY);
 

@@ -12,13 +12,13 @@ const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 pub fn ld_rd_offset_rs1() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0x50, 0x00, // addi x31, x0, 5
         0x13, 0x0f, 0x30, 0x00, // addi x30, x0, 3
         0x83, 0x3E, 0x40, 0x00, // ld x29, 4(x0)
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -72,13 +72,13 @@ pub fn ld_rd_offset_rs1() {
 pub fn lwu_rd_offset_rs1() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0xb0, 0xff, // addi x31, x0, -5
         0x13, 0x0f, 0x30, 0x00, // addi x30, x0, 3
         0x83, 0x6E, 0x00, 0x00, // lwu x29, 0(x0)
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -102,12 +102,12 @@ pub fn lwu_rd_offset_rs1() {
 pub fn addiw_rd_rs1_imm() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         // addiw x31, x0, 5
         0x9B, 0x0F, 0x50, 0x00,
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -125,12 +125,12 @@ pub fn addiw_rd_rs1_imm() {
 pub fn slliw_rd_rs1_imm() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0x40, 0x00, // addiw x31, x0, 4
         0x1B, 0x9F, 0x3F, 0x00, // slliw x30, x31, 3
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -148,12 +148,12 @@ pub fn slliw_rd_rs1_imm() {
 pub fn srliw_rd_rs1_imm() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0x40, 0x00, // addiw x31, x0, 4
         0x1B, 0xDF, 0x1F, 0x00, // srliw x30, x31, 1
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -171,12 +171,12 @@ pub fn srliw_rd_rs1_imm() {
 pub fn sraiw_rd_rs1_imm() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0xCF, 0xFF, // addiw x31, x0, -4
         0x1B, 0xDF, 0x1F, 0x40, // sraiw x30, x31, 1
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -194,13 +194,13 @@ pub fn sraiw_rd_rs1_imm() {
 pub fn addw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0xCF, 0xFF, // addiw x31, x0, -4
         0x1B, 0x0F, 0x80, 0x00, // addiw x30, x0, 8
         0xBB, 0x0E, 0xFF, 0x01, // addw x29, x30, x31
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -218,13 +218,13 @@ pub fn addw_rd_rs1_rs2() {
 pub fn subw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0xCF, 0xFF, // addiw x31, x0, -4
         0x1B, 0x0F, 0x80, 0x00, // addiw x30, x0, 8
         0xBB, 0x0E, 0xFF, 0x41, // subw x29, x30, x31
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -242,13 +242,13 @@ pub fn subw_rd_rs1_rs2() {
 pub fn sllw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0x20, 0x00, // addiw x31, x0, 2
         0x1B, 0x0F, 0x80, 0x00, // addiw x30, x0, 8
         0xBB, 0x1E, 0xFF, 0x01, // sllw x29, x30, x31
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -266,13 +266,13 @@ pub fn sllw_rd_rs1_rs2() {
 pub fn srlw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0x20, 0x00, // addiw x31, x0, 2
         0x1B, 0x0F, 0x80, 0x00, // addiw x30, x0, 8
         0xBB, 0x5E, 0xFF, 0x01, // srlw x29, x30, x31
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -290,13 +290,13 @@ pub fn srlw_rd_rs1_rs2() {
 pub fn sraw_rd_rs1_rs2() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x9B, 0x0F, 0x20, 0x00, // addiw x31, x0, 2
         0x1B, 0x0F, 0x8F, 0xFF, // addiw x30, x0, -8
         0xBB, 0x5E, 0xFF, 0x41, // sraw x29, x30, x31
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
@@ -314,14 +314,14 @@ pub fn sraw_rd_rs1_rs2() {
 pub fn sd_rs2_offset_rs1() {
     let mut cpu = rvemu_core::cpu::Cpu::new();
     let mut bus = rvemu_core::bus::Bus::new();
-    let dram = vec![
+    let data = vec![
         0x93, 0x0f, 0xb0, 0xff, // addi x31, x0, -5
         0x13, 0x0f, 0x30, 0x00, // addi x30, x0, 3
         0x23, 0x30, 0xf0, 0x01, // sw x31, 0(x0)
         0x83, 0x3E, 0x00, 0x00, // ld x29, 0(x0)
     ];
 
-    bus.dram.dram.splice(..dram.len(), dram.iter().cloned());
+    bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
     cpu.start(&mut bus, || ());
