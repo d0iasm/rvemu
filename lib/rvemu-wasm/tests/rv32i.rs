@@ -6,7 +6,7 @@ use rvemu_core::bus::DRAM_BASE;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const DEFAULT_SP: i64 = 1048000;
+const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 
 #[wasm_bindgen_test]
 pub fn lb_rd_offset_rs1() {
@@ -1098,13 +1098,43 @@ pub fn jalr_rd_imm() {
     cpu.start(&mut bus, || ());
 
     let expected = [
-        0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 12, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0,
+        0,
+        DEFAULT_SP,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        5,
+        12 + DRAM_BASE as i64,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     ];
     for (i, e) in expected.iter().enumerate() {
         assert_eq!(*e, cpu.xregs.read(i));
     }
-    assert_eq!(44, cpu.pc);
+    assert_eq!(48, cpu.pc);
 }
 
 #[wasm_bindgen_test]

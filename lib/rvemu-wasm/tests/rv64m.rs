@@ -6,7 +6,7 @@ use rvemu_core::bus::DRAM_BASE;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const DEFAULT_SP: i64 = 1048000;
+const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 
 #[wasm_bindgen_test]
 pub fn mulw_rd_rs1_rs2() {
