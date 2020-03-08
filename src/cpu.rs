@@ -226,7 +226,7 @@ impl Cpu {
             count += 1;
 
             // TODO: reconsider it: Finish the execution when opcode is 0 or the program counter is 0.
-            if result.is_err() | (binary == 0) | (self.pc >= size) {
+            if result.is_err() | (binary == 0) | (self.pc >= size) | (count > 1000000) {
                 //if result.is_err() | (binary == 0) | (self.pc == 0) | (self.pc >= size) {
                 dbg!(
                     "count: {}, binaray: {}, result err {}, pc: {}",

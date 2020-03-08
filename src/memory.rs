@@ -9,7 +9,7 @@ pub struct Memory {
 impl Memory {
     /// Create a new `memory` object with default memory size (1048KB).
     pub fn new() -> Memory {
-        Memory {
+        Self {
             // Default memory size is 1048KB.
             dram: vec![0; 1048 * 1000],
         }
