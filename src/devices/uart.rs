@@ -38,11 +38,12 @@ pub struct Uart {
 }
 
 impl Uart {
+    /// Create a new UART object.
     pub fn new() -> Self {
         let uart = Arc::new((Mutex::new([0; UART_SIZE]), Condvar::new()));
         {
             let (uart, _cvar) = &*uart;
-            let mut uart = uart.lock().unwrap();
+            let mut uart = uart.lock().expect("failed to get an UART object");
             uart[UART_LSR - UART_BASE] |= 1 << 5;
         }
 
@@ -53,9 +54,9 @@ impl Uart {
                 Ok(_) => {
                     // Wait for the thread to start up.
                     let (uart, cvar) = &*cloned_uart;
-                    let mut uart = uart.lock().unwrap();
+                    let mut uart = uart.lock().expect("failed to get an UART object");
                     while (uart[UART_LSR - UART_BASE] & 1) == 1 {
-                        uart = cvar.wait(uart).unwrap();
+                        uart = cvar.wait(uart).expect("the mutex is poisoned");
                     }
                     uart[0] = byte[0];
                     uart[UART_LSR - UART_BASE] |= 1;
@@ -72,7 +73,7 @@ impl Uart {
     /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: usize) -> u8 {
         let (uart, cvar) = &*self.uart;
-        let mut uart = uart.lock().unwrap();
+        let mut uart = uart.lock().expect("failed to get an UART object");
         match index {
             UART_RHR => {
                 cvar.notify_one();
@@ -86,11 +87,11 @@ impl Uart {
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: usize, value: u8) {
         let (uart, _cvar) = &*self.uart;
-        let mut uart = uart.lock().unwrap();
+        let mut uart = uart.lock().expect("failed to get an UART object");
         match index {
             UART_THR => {
                 print!("{}", value as char);
-                io::stdout().flush().unwrap();
+                io::stdout().flush().expect("failed to flush stdout");
             }
             _ => {
                 uart[index - UART_BASE] = value;
