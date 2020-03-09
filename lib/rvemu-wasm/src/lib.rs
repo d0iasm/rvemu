@@ -1,8 +1,10 @@
 mod utils;
 
+use rvemu_core::bus::DRAM_BASE;
 use rvemu_core::emulator;
 
 use wasm_bindgen::prelude::*;
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -63,6 +65,7 @@ impl Emulator {
 
     /// Start executing.
     pub fn start(&mut self) {
+        self.emu.set_pc(DRAM_BASE);
         self.emu.start();
     }
 

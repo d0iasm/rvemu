@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use rvemu_core::bus::*;
-use rvemu_core::cpu::*;
+use rvemu_core::bus::DRAM_BASE;
+use rvemu_core::cpu::Cpu;
 use rvemu_core::emulator::Emulator;
 
 /// Output current registers to the console.

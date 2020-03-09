@@ -1,12 +1,13 @@
 //! The uart module contains the implementation of a universal asynchronous receiver-transmitter
-//! (UART). The device is 16550a UART, which is used in the QEMU virt machine. See more information
+//! (UART) for CLI tool. The device is 16550a UART, which is used in the QEMU virt machine. See more information
 //! in http://byterunner.com/16550.html.
 
-use crate::bus::UART_BASE;
 use std::io;
 use std::io::prelude::*;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
+
+use crate::bus::UART_BASE;
 
 /// The size of UART.
 pub const UART_SIZE: usize = 0x100;
@@ -23,7 +24,6 @@ pub const UART_FCR: usize = UART_BASE + 2;
 pub const UART_ISR: usize = UART_BASE + 2;
 /// Line control register.
 pub const UART_LCR: usize = UART_BASE + 3;
-/// Line status register.
 /// LSR BIT 1:
 /// 0 = no overrun error (normal)
 /// 1 = overrun error. A character arived before receive holding register was emptied or if FIFOs are enabled, an overrun error will occur only after the FIFO is full and the next character has been completely received in the shift register. Note that character in the shift register is overwritten, but it is not transferred to the FIFO.
