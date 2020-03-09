@@ -3,6 +3,10 @@
 //! in http://byterunner.com/16550.html.
 
 use crate::bus::UART_BASE;
+use std::io;
+use std::io::prelude::*;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 /// Receive holding register (for input bytes).
 pub const UART_RHR: usize = UART_BASE + 0;
@@ -27,44 +31,70 @@ pub const UART_LSR: usize = UART_BASE + 5;
 
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
-    uart: [u8; 0x100],
+    uart: Arc<Mutex<[u8; 0x100]>>,
 }
 
 impl Uart {
     pub fn new() -> Self {
-        let mut uart = [0; 0x100];
-        uart[UART_LSR - UART_BASE] |= 1 << 5;
+        let mut uart = Arc::new(Mutex::new([0; 0x100]));
+        {
+            let mut uart = uart.lock().unwrap();
+            uart[UART_LSR - UART_BASE] |= 1 << 5;
+        }
+
+        let mut byte = [0; 1];
+        let cloned_uart = uart.clone();
+        let mut uart_thread = thread::spawn(move || loop {
+            loop {
+                let mut uart = cloned_uart.lock().unwrap();
+                if (uart[UART_LSR - UART_BASE] & 1) == 0 {
+                    break;
+                }
+            }
+
+            match io::stdin().read(&mut byte) {
+                Ok(_) => {
+                    let mut uart = cloned_uart.lock().unwrap();
+                    uart[0] = byte[0];
+                    uart[UART_LSR - UART_BASE] |= 1;
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        });
+
         Self { uart }
     }
 
     /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: usize) -> u8 {
+        let mut uart = self.uart.lock().unwrap();
         match index {
             UART_RHR => {
-                self.uart[UART_LSR - UART_BASE] &= !1;
-                self.uart[UART_LSR - UART_BASE] |= 1 << 5;
-                self.uart[index - UART_BASE]
+                uart[UART_LSR - UART_BASE] &= !1;
+                uart[index - UART_BASE]
             }
-            _ => self.uart[index - UART_BASE],
+            _ => uart[index - UART_BASE],
         }
     }
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: usize, value: u8) {
+        let mut uart = self.uart.lock().unwrap();
         match index {
             UART_THR => {
-                self.uart[UART_LSR - UART_BASE] |= 1;
-                self.uart[UART_LSR - UART_BASE] &= !(1 << 5);
-                self.uart[index - UART_BASE] = value;
-                //print!("!!!!!!!!!!!!!!!!! {}\n", value as char);
+                print!("{}", value as char);
+                io::stdout().flush().unwrap();
             }
             _ => {
-                self.uart[index - UART_BASE] = value;
+                uart[index - UART_BASE] = value;
             }
         }
     }
 
     pub fn size(&self) -> usize {
-        self.uart.len()
+        let mut uart = self.uart.lock().unwrap();
+        uart.len()
     }
 }

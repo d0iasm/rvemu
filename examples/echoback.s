@@ -11,12 +11,12 @@ main:
 	addi	sp,sp,-32
 	sd	s0,24(sp)
 	addi	s0,sp,32
-.L3:
+.L4:
 	li	a5,268435456
-	sd	a5,-24(s0)
+	sd	a5,-32(s0)
 	nop
 .L2:
-	ld	a5,-24(s0)
+	ld	a5,-32(s0)
 	addi	a5,a5,5
 	lbu	a5,0(a5)
 	andi	a5,a5,0xff
@@ -24,14 +24,24 @@ main:
 	andi	a5,a5,1
 	sext.w	a5,a5
 	beq	a5,zero,.L2
-	ld	a5,-24(s0)
+	ld	a5,-32(s0)
 	lbu	a5,0(a5)
-	sb	a5,-25(s0)
-	lbu	a5,-25(s0)
-	addiw	a5,a5,1
+	sb	a5,-17(s0)
+	lbu	a5,-17(s0)
 	andi	a4,a5,0xff
-	ld	a5,-24(s0)
+	li	a5,96
+	bleu	a4,a5,.L3
+	lbu	a5,-17(s0)
+	andi	a4,a5,0xff
+	li	a5,122
+	bgtu	a4,a5,.L3
+	lbu	a5,-17(s0)
+	addiw	a5,a5,-32
+	sb	a5,-17(s0)
+.L3:
+	ld	a5,-32(s0)
+	lbu	a4,-17(s0)
 	sb	a4,0(a5)
-	j	.L3
+	j	.L4
 	.size	main, .-main
 	.ident	"GCC: (GNU) 9.2.0"

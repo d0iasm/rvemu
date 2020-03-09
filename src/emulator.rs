@@ -46,6 +46,7 @@ impl Emulator {
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
 
+        /*
         // Create a new thread for the standard input.
         let cloned_cpu_in = self.cpu.clone();
         let _stdin_thread = thread::spawn(move || {
@@ -57,6 +58,7 @@ impl Emulator {
         let _stdout_thread = thread::spawn(move || {
             stdout(cloned_cpu_out);
         });
+        */
 
         loop {
             // TODO: Delete the following sleep function. This is for debug.
@@ -66,6 +68,7 @@ impl Emulator {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
+                /*
                 dbg!(format!(
                     "pc: , data: {:#?}, size {}, uart data {:#?}",
                     //cpu.pc,
@@ -73,6 +76,7 @@ impl Emulator {
                     size,
                     cpu.bus.read8(UART_RHR)
                 ));
+                */
 
                 // 2. Add 4 to the program counter.
                 cpu.pc += 4;
@@ -93,7 +97,8 @@ impl Emulator {
                 count += 1;
 
                 // TODO: reconsider the termination condition.
-                if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
+                //if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
+                if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) {
                     dbg!(format!(
                         "pc: {}, count: {}, result {:#?}",
                         cpu.pc, count, result
