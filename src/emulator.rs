@@ -2,8 +2,9 @@
 
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time;
 
-use crate::{bus::DRAM_BASE, cpu::Cpu};
+use crate::{bus::DRAM_BASE, cpu::Cpu, devices::uart::*};
 
 /// Emulator struct to holds a CPU.
 pub struct Emulator {
@@ -37,7 +38,7 @@ impl Emulator {
     }
 
     /// Start executing the emulator.
-    pub fn start(&mut self, stdin: fn(Arc<Mutex<Cpu>>) -> ()) {
+    pub fn start(&mut self, stdin: fn(Arc<Mutex<Cpu>>) -> (), stdout: fn(Arc<Mutex<Cpu>>) -> ()) {
         let cpu = self.cpu.lock().expect("failed to get a CPU object");
         let size = cpu.bus.dram_size();
         drop(cpu);
@@ -45,22 +46,32 @@ impl Emulator {
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
 
-        let cloned_cpu = self.cpu.clone();
+        // Create a new thread for the standard input.
+        let cloned_cpu_in = self.cpu.clone();
         let _stdin_thread = thread::spawn(move || {
-            stdin(cloned_cpu);
+            stdin(cloned_cpu_in);
+        });
+
+        // Create a new thread for the standard output.
+        let cloned_cpu_out = self.cpu.clone();
+        let _stdout_thread = thread::spawn(move || {
+            stdout(cloned_cpu_out);
         });
 
         loop {
             // TODO: Delete the following sleep function. This is for debug.
-            //thread::sleep(std::time::Duration::from_millis(1000));
+            //thread::sleep(time::Duration::from_millis(500));
 
             if let Ok(mut cpu) = self.cpu.try_lock() {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
                 dbg!(format!(
-                    "pc: {}, data: {:#?} size {}",
-                    cpu.pc, &data_or_error, size
+                    "pc: , data: {:#?}, size {}, uart data {:#?}",
+                    //cpu.pc,
+                    &data_or_error,
+                    size,
+                    cpu.bus.read8(UART_RHR)
                 ));
 
                 // 2. Add 4 to the program counter.

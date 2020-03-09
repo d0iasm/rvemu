@@ -12,7 +12,10 @@ extern "C" {
 pub fn stdin(_cpu: Arc<Mutex<Cpu>>) {}
 
 /// Output a message to the emulator console.
-pub fn stdout(message: &str) {
+pub fn stdout(_cpu: Arc<Mutex<Cpu>>) {}
+
+/// Output a message to the emulator console.
+pub fn stdout_to_browser(message: &str) {
     let window = web_sys::window().expect("no global `window` exists");
     let document = window.document().expect("should have a document on window");
     let buffer = document
@@ -32,5 +35,5 @@ pub fn stdout(message: &str) {
 /// Output a message to both the browser console and the emulator console.
 pub fn stdout_log(message: &str) {
     log(message);
-    stdout(message);
+    stdout_to_browser(message);
 }

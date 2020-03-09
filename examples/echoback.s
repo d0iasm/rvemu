@@ -27,8 +27,10 @@ main:
 	ld	a5,-24(s0)
 	lbu	a5,0(a5)
 	sb	a5,-25(s0)
+	lbu	a5,-25(s0)
+	addiw	a5,a5,1
+	andi	a4,a5,0xff
 	ld	a5,-24(s0)
-	lbu	a4,-25(s0)
 	sb	a4,0(a5)
 	j	.L3
 	.size	main, .-main

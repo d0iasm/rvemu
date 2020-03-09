@@ -35,7 +35,7 @@ fn main() -> io::Result<()> {
     emu.set_dram(data);
     emu.set_pc(DRAM_BASE);
 
-    emu.start(stdin);
+    emu.start(stdin, stdout);
 
     {
         let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");

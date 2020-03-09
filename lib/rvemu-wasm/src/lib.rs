@@ -37,7 +37,7 @@ impl Emulator {
 
     /// Start executing.
     pub fn start(&mut self) {
-        self.emu.start(stdin);
+        self.emu.start(stdin, stdout);
     }
 
     /// Output current registers.
