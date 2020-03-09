@@ -48,7 +48,7 @@ impl Emulator {
 
     /// Start executing.
     pub fn start(&mut self) {
-        self.cpu.start(&mut self.bus, stdin);
+        self.cpu.start(&mut self.bus);
     }
 
     /// Output current registers.

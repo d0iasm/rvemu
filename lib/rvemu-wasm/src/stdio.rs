@@ -1,3 +1,5 @@
+use rvemu_core::cpu::Cpu;
+use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -7,7 +9,7 @@ extern "C" {
 }
 
 /// Input a message from the emulator console.
-pub fn stdin() {}
+pub fn stdin(_cpu: Arc<Mutex<Cpu>>) {}
 
 /// Output a message to the emulator console.
 pub fn stdout(message: &str) {

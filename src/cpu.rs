@@ -5,8 +5,8 @@ pub const REGISTERS_COUNT: usize = 32;
 use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
-use std::num::FpCategory;
 use std::thread;
+use std::num::FpCategory;
 
 use crate::{
     bus::{Bus, DRAM_BASE},
@@ -65,6 +65,7 @@ impl Mode {
 }
 
 /// The integer eregisters.
+#[derive(Debug)]
 pub struct XRegisters {
     xregs: [i64; REGISTERS_COUNT],
 }
@@ -118,6 +119,7 @@ impl fmt::Display for XRegisters {
 }
 
 /// The floating-point registers.
+#[derive(Debug)]
 pub struct FRegisters {
     fregs: [f64; REGISTERS_COUNT],
 }
@@ -202,19 +204,15 @@ impl Cpu {
     }
 
     /// Start executing the CPU.
-    pub fn start(&mut self, bus: &mut Bus, stdin: fn() -> ()) {
+    pub fn start(&mut self, bus: &mut Bus) {
+        //pub fn start(&mut self, bus: &mut Bus, stdin: fn(Arc<Mutex<Vec<u32>>>) -> ()) {
         let size = bus.dram_size();
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
 
-        // Make a new thread for the external input.
-        let _stdin_thread = thread::spawn(move || {
-            stdin();
-        });
-
         loop {
             // TODO: Delete the following sleep function. This is for debug.
-            //thread::sleep(std::time::Duration::from_millis(1000));
+            thread::sleep(std::time::Duration::from_millis(1000));
 
             // 1. Fetch.
             let data_or_error = self.fetch(bus);
@@ -226,8 +224,6 @@ impl Cpu {
 
             // 3. Decode.
             // 4. Execution.
-            // `result` becomes an error only if the error kind is unimplemented.
-            //let result = self.execute(data, bus).map_err(|e| e.take_trap(self));
             let result = match data_or_error {
                 Ok(data) => match self.execute(data, bus) {
                     Ok(_) => Ok(()),
