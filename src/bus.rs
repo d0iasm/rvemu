@@ -1,7 +1,7 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
-use crate::devices::uart::Uart;
+use crate::devices::uart::{Uart, UART_SIZE};
 use crate::exception::Exception;
 use crate::memory::Memory;
 
@@ -37,7 +37,7 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, index: usize, val: u8) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
-        if UART_BASE <= index && index < UART_BASE + self.uart.size() {
+        if UART_BASE <= index && index < UART_BASE + UART_SIZE {
             Ok(self.uart.write(index, val))
         } else if DRAM_BASE <= index {
             let physical = index - DRAM_BASE;
@@ -80,7 +80,7 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, index: usize) -> Result<u8, Exception> {
-        if UART_BASE <= index && index < UART_BASE + self.uart.size() {
+        if UART_BASE <= index && index < UART_BASE + UART_SIZE {
             Ok(self.uart.read(index))
         } else if DRAM_BASE <= index {
             let physical = index - DRAM_BASE;

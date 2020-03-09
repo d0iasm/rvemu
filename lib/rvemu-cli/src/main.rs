@@ -1,5 +1,3 @@
-pub mod stdio;
-
 use std::env;
 use std::fs::File;
 use std::io;
@@ -8,8 +6,6 @@ use std::io::prelude::*;
 use rvemu_core::bus::*;
 use rvemu_core::cpu::*;
 use rvemu_core::emulator::Emulator;
-
-use stdio::*;
 
 /// Output current registers to the console.
 fn dump_registers(cpu: &Cpu) {
@@ -35,7 +31,7 @@ fn main() -> io::Result<()> {
     emu.set_dram(data);
     emu.set_pc(DRAM_BASE);
 
-    emu.start(stdin, stdout);
+    emu.start();
 
     {
         let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");

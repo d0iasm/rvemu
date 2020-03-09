@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
-use crate::{bus::DRAM_BASE, cpu::Cpu, devices::uart::*};
+use crate::{bus::DRAM_BASE, cpu::Cpu};
 
 /// Emulator struct to holds a CPU.
 pub struct Emulator {
@@ -38,27 +38,13 @@ impl Emulator {
     }
 
     /// Start executing the emulator.
-    pub fn start(&mut self, stdin: fn(Arc<Mutex<Cpu>>) -> (), stdout: fn(Arc<Mutex<Cpu>>) -> ()) {
+    pub fn start(&mut self) {
         let cpu = self.cpu.lock().expect("failed to get a CPU object");
         let size = cpu.bus.dram_size();
         drop(cpu);
 
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
-
-        /*
-        // Create a new thread for the standard input.
-        let cloned_cpu_in = self.cpu.clone();
-        let _stdin_thread = thread::spawn(move || {
-            stdin(cloned_cpu_in);
-        });
-
-        // Create a new thread for the standard output.
-        let cloned_cpu_out = self.cpu.clone();
-        let _stdout_thread = thread::spawn(move || {
-            stdout(cloned_cpu_out);
-        });
-        */
 
         loop {
             // TODO: Delete the following sleep function. This is for debug.

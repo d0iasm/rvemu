@@ -29,7 +29,7 @@ macro_rules! add_test {
             // The text in riscv/riscv-tests starts 0x80001000.
             emu.set_pc(DRAM_BASE + 0x1000);
 
-            emu.start(|_| {}, |_| {});
+            emu.start();
 
             let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
 
