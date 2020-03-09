@@ -6,6 +6,7 @@ use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
 use std::num::FpCategory;
+use std::thread;
 
 use crate::{
     bus::{Bus, DRAM_BASE},
@@ -205,11 +206,15 @@ impl Cpu {
         let size = bus.dram_size();
         // TODO: delete `count` variable bacause it's for debug.
         let mut count = 0;
-        loop {
-            // The external standard input stores a byte to the uart if an input exists.
-            // Otherwise, do nothing.
-            // TODO: Check interrupts are enable or not.
+
+        // Make a new thread for the external input.
+        let _stdin_thread = thread::spawn(move || {
             stdin();
+        });
+
+        loop {
+            // TODO: Delete the following sleep function. This is for debug.
+            //thread::sleep(std::time::Duration::from_millis(1000));
 
             // 1. Fetch.
             let data_or_error = self.fetch(bus);

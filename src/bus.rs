@@ -37,7 +37,7 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, index: usize, val: u8) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
-        if UART_BASE <= index && index < UART_BASE + 0x100 {
+        if UART_BASE <= index && index < UART_BASE + self.uart.size() {
             Ok(self.uart.write(val))
         } else if DRAM_BASE <= index {
             let physical = index - DRAM_BASE;
@@ -80,7 +80,7 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&self, index: usize) -> Result<u8, Exception> {
-        if UART_BASE <= index && index < UART_BASE + 0x100 {
+        if UART_BASE <= index && index < UART_BASE + self.uart.size() {
             Ok(self.uart.read())
         } else if DRAM_BASE <= index {
             let physical = index - DRAM_BASE;

@@ -1,15 +1,19 @@
-use console::Term;
+use std::io;
+use std::io::prelude::*;
 
 /// Input a message from the console in a host computer.
 pub fn stdin() {
-    let term = Term::stdout();
-    match term.read_key() {
-        Ok(c) => {
-            println!("something comes! {:#?}", c);
-            // TODO: Change csr states in order to transmit an interrupt occurs.
-        }
-        Err(e) => {
-            println!("{}", e);
+    // TODO: It can detect only after `Enter` key is pressed.
+    loop {
+        for byte in io::stdin().bytes() {
+            match byte {
+                Ok(b) => {
+                    println!("something comes! {:#?} {}", b, b as char);
+                }
+                Err(e) => {
+                    println!("{:#?}", e);
+                }
+            }
         }
     }
 }
