@@ -5,7 +5,6 @@ pub const REGISTERS_COUNT: usize = 32;
 use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
-use std::thread;
 use std::num::FpCategory;
 
 use crate::{
@@ -178,6 +177,7 @@ pub struct Cpu {
     pub pc: usize,
     pub state: State,
     pub mode: Mode,
+    pub bus: Bus,
 }
 
 impl Cpu {
@@ -189,6 +189,7 @@ impl Cpu {
             pc: 0,
             state: State::new(),
             mode: Mode::Machine,
+            bus: Bus::new(),
         }
     }
 
@@ -205,6 +206,7 @@ impl Cpu {
 
     /// Start executing the CPU.
     pub fn start(&mut self, bus: &mut Bus) {
+        /*
         //pub fn start(&mut self, bus: &mut Bus, stdin: fn(Arc<Mutex<Vec<u32>>>) -> ()) {
         let size = bus.dram_size();
         // TODO: delete `count` variable bacause it's for debug.
@@ -246,16 +248,17 @@ impl Cpu {
                 return;
             }
         }
+        */
     }
 
-    /// Fetch the next instruction from a busory at the current program counter.
-    fn fetch(&mut self, bus: &Bus) -> Result<u32, Exception> {
-        bus.read32(self.pc)
+    /// Fetch the next instruction from the memory at the current program counter.
+    pub fn fetch(&mut self) -> Result<u32, Exception> {
+        self.bus.read32(self.pc)
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
-    pub fn execute(&mut self, data: u32, bus: &mut Bus) -> Result<(), Exception> {
+    pub fn execute(&mut self, data: u32) -> Result<(), Exception> {
         let opcode = data & 0x0000007f;
         let rd = ((data & 0x00000f80) >> 7) as usize;
         let rs1 = ((data & 0x000f8000) >> 15) as usize;
@@ -265,6 +268,7 @@ impl Cpu {
 
         let xregs = &mut self.xregs;
         let fregs = &mut self.fregs;
+        let bus = &mut self.bus;
 
         match opcode {
             0x03 => {

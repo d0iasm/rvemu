@@ -4,5 +4,6 @@ pub mod bus;
 pub mod cpu;
 pub mod csr;
 pub mod devices;
+pub mod emulator;
 pub mod exception;
 pub mod memory;

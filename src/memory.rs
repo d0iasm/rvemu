@@ -4,6 +4,7 @@
 #[derive(Debug)]
 pub struct Memory {
     pub dram: Vec<u8>,
+    code_size: usize,
 }
 
 impl Memory {
@@ -12,16 +13,18 @@ impl Memory {
         Self {
             // Default memory size is 1048KB.
             dram: vec![0; 1048 * 1000],
+            code_size: 0,
         }
     }
 
     /// Return the code size in the memory.
     pub fn size(&self) -> usize {
-        self.dram.len()
+        self.code_size
     }
 
     /// Set the binary in the memory.
     pub fn set_dram(&mut self, binary: Vec<u8>) {
+        self.code_size = binary.len();
         self.dram.splice(..binary.len(), binary.iter().cloned());
     }
 

@@ -1,66 +1,56 @@
 pub mod stdio;
 mod utils;
 
-use rvemu_core::bus::*;
-use rvemu_core::cpu::*;
+use rvemu_core::emulator;
 
 use wasm_bindgen::prelude::*;
 
 use stdio::*;
 
-/// An emulator struct to holds a CPU and a bus.
+/// Wrapper for rvemu::emulator::Emulator to connect to WebAssembly.
 #[wasm_bindgen]
 pub struct Emulator {
-    cpu: Cpu,
-    bus: Bus,
+    emu: emulator::Emulator,
 }
 
 #[wasm_bindgen]
 impl Emulator {
-    /// Constructor for an emulator.
+    /// Constructor for the emulator.
     pub fn new() -> Emulator {
         // Initialize for putting error messages to a browser console.
         utils::set_panic_hook();
 
-        Emulator {
-            cpu: Cpu::new(),
-            bus: Bus::new(),
+        Self {
+            emu: emulator::Emulator::new(),
         }
     }
 
-    /// Reset CPU state.
+    /// Reset the emulator.
     pub fn reset(&mut self) {
-        self.cpu.reset()
+        self.emu.reset();
     }
 
     /// Set binary data to the beginning of the DRAM from the emulator console of a browser.
     pub fn set_dram(&mut self, data: Vec<u8>) {
-        //let header = Elf64Ehdr::new(&bin);
-        //if !header.verify() {
-        //stdout_log(&format!("unexpected ELF format"))
-        //}
-        //log(&format!("{:#?}", header));
-        // Set an entry point. Divide 8 because `e_entry` is the number of bits.
-        //self.cpu.pc = header.e_entry as usize;
-
-        self.bus.set_dram(data);
+        self.emu.set_dram(data);
     }
 
     /// Start executing.
     pub fn start(&mut self) {
-        self.cpu.start(&mut self.bus);
+        self.emu.start(stdin);
     }
 
     /// Output current registers.
     pub fn dump_registers(&self) {
-        stdout_log(&format!("{}", self.cpu.xregs));
+        let cpu = self.emu.cpu.lock().expect("failed to get a CPU object");
+        stdout_log(&format!("{}", cpu.xregs));
         stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        stdout_log(&format!("{}", self.cpu.fregs));
+        stdout_log(&format!("{}", cpu.fregs));
         stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        stdout_log(&format!("pc: {}", self.cpu.pc));
+        stdout_log(&format!("pc: {}", cpu.pc));
     }
 }

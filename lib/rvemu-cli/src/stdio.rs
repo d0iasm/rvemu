@@ -13,7 +13,10 @@ pub fn stdin(cpu: Arc<Mutex<Cpu>>) {
                 Ok(b) => {
                     println!("get stdin!!!!");
                     let mut cpu = cpu.lock().expect("failed to get a mutable CPU.");
-                    println!("something comes! {:#?} {} at cpu pc {}", b, b as char, cpu.pc);
+                    println!(
+                        "something comes! {:#?} {} at cpu pc {}",
+                        b, b as char, cpu.pc
+                    );
                 }
                 Err(e) => {
                     println!("{:#?}", e);

@@ -4,11 +4,10 @@ use std::env;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::sync::{Arc, Mutex};
-use std::thread;
 
 use rvemu_core::bus::*;
 use rvemu_core::cpu::*;
+use rvemu_core::emulator::Emulator;
 
 use stdio::*;
 
@@ -32,28 +31,16 @@ fn main() -> io::Result<()> {
     let mut data = Vec::new();
     file.read_to_end(&mut data)?;
 
-    let mut cpu = Arc::new(Mutex::new(Cpu::new()));
-    {
-        cpu.lock().expect("failed to get a mutable CPU.").pc = DRAM_BASE;
-    }
+    let mut emu = Emulator::new();
+    emu.set_dram(data);
+    emu.set_pc(DRAM_BASE);
 
-    let mut bus = Bus::new();
-    bus.dram.dram.splice(..data.len(), data.iter().cloned());
-
-    // Make a new thread for the standard input.
-    let cloned_cpu = cpu.clone();
-    let stdin_thread = thread::spawn(move || {
-        stdin(cloned_cpu);
-    });
+    emu.start(stdin);
 
     {
-        // TODO: Get the lock inside the start function.
-        let mut cpu = cpu.lock().expect("failed to get a mutable CPU.");
-        cpu.start(&mut bus);
-
+        let mut cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
         dump_registers(&cpu);
     }
 
-    let _ = stdin_thread.join();
     Ok(())
 }
