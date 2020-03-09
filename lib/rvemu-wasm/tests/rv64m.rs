@@ -10,7 +10,7 @@ const DEFAULT_SP: i64 = 1048000 + 0x8000_0000;
 
 #[wasm_bindgen_test]
 pub fn mulw_rd_rs1_rs2() {
-    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut emu = Emulator::new();
     let mut bus = rvemu_core::bus::Bus::new();
     let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
@@ -34,7 +34,7 @@ pub fn mulw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn divw_rd_rs1_rs2() {
-    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut emu = Emulator::new();
     let mut bus = rvemu_core::bus::Bus::new();
     let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
@@ -58,7 +58,7 @@ pub fn divw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn divuw_rd_rs1_rs2() {
-    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut emu = Emulator::new();
     let mut bus = rvemu_core::bus::Bus::new();
     let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
@@ -82,7 +82,7 @@ pub fn divuw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn remw_rd_rs1_rs2() {
-    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut emu = Emulator::new();
     let mut bus = rvemu_core::bus::Bus::new();
     let data = vec![
         0x93, 0x0f, 0x30, 0x00, // addi x31, x0, 3
@@ -106,7 +106,7 @@ pub fn remw_rd_rs1_rs2() {
 
 #[wasm_bindgen_test]
 pub fn remuw_rd_rs1_rs2() {
-    let mut cpu = rvemu_core::cpu::Cpu::new();
+    let mut emu = Emulator::new();
     let mut bus = rvemu_core::bus::Bus::new();
     let data = vec![
         0x93, 0x0f, 0x30, 0x00, // addi x31, x0, 3

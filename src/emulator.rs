@@ -3,10 +3,7 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::{
-    bus::{DRAM_BASE},
-    cpu::Cpu,
-};
+use crate::{bus::DRAM_BASE, cpu::Cpu};
 
 /// Emulator struct to holds a CPU.
 pub struct Emulator {
@@ -55,13 +52,16 @@ impl Emulator {
 
         loop {
             // TODO: Delete the following sleep function. This is for debug.
-            thread::sleep(std::time::Duration::from_millis(1000));
+            //thread::sleep(std::time::Duration::from_millis(1000));
 
             if let Ok(mut cpu) = self.cpu.try_lock() {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
-                dbg!(format!("pc: {}, data: {:#?} size {}", cpu.pc, &data_or_error, size));
+                dbg!(format!(
+                    "pc: {}, data: {:#?} size {}",
+                    cpu.pc, &data_or_error, size
+                ));
 
                 // 2. Add 4 to the program counter.
                 cpu.pc += 4;

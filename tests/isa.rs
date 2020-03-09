@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 use rvemu::{
     bus::{Bus, DRAM_BASE},
-    cpu::Cpu,
     cpu::Mode,
+    emulator::Emulator,
 };
 
 #[macro_export]
@@ -24,14 +24,14 @@ macro_rules! add_test {
             let mut data = Vec::new();
             file.read_to_end(&mut data)?;
 
-            let mut cpu = Cpu::new();
+            let mut emu = Emulator::new();
+            emu.set_dram(data);
             // The text in riscv/riscv-tests starts 0x80001000.
-            cpu.pc = DRAM_BASE + 0x1000;
+            emu.set_pc(DRAM_BASE + 0x1000);
 
-            let mut bus = Bus::new();
-            bus.dram.dram.splice(..data.len(), data.iter().cloned());
+            emu.start(|_| {});
 
-            cpu.start(&mut bus);
+            let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
 
             // Test result is stored at a0 (x10), a function argument and a return value.
             // The riscv-tests set a0 to 0 when all tests pass.

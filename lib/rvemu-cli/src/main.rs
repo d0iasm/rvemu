@@ -38,7 +38,7 @@ fn main() -> io::Result<()> {
     emu.start(stdin);
 
     {
-        let mut cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
+        let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
         dump_registers(&cpu);
     }
 

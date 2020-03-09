@@ -204,53 +204,6 @@ impl Cpu {
         }
     }
 
-    /// Start executing the CPU.
-    pub fn start(&mut self, bus: &mut Bus) {
-        /*
-        //pub fn start(&mut self, bus: &mut Bus, stdin: fn(Arc<Mutex<Vec<u32>>>) -> ()) {
-        let size = bus.dram_size();
-        // TODO: delete `count` variable bacause it's for debug.
-        let mut count = 0;
-
-        loop {
-            // TODO: Delete the following sleep function. This is for debug.
-            //thread::sleep(std::time::Duration::from_millis(1000));
-
-            // 1. Fetch.
-            let data_or_error = self.fetch(bus);
-
-            dbg!(format!("pc: {}, data: {:#?}", self.pc, &data_or_error));
-
-            // 2. Add 4 to the program counter.
-            self.pc += 4;
-
-            // 3. Decode.
-            // 4. Execution.
-            let result = match data_or_error {
-                Ok(data) => match self.execute(data, bus) {
-                    Ok(_) => Ok(()),
-                    Err(error) => error.take_trap(self),
-                },
-                Err(error) => error.take_trap(self),
-            };
-
-            // TODO: Take interrupts.
-
-            // TODO: Delete this count because it's for debug.
-            count += 1;
-
-            // TODO: reconsider the termination condition.
-            if result.is_err() | (self.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
-                dbg!(format!(
-                    "pc: {}, count: {}, result {:#?}",
-                    self.pc, count, result
-                ));
-                return;
-            }
-        }
-        */
-    }
-
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         self.bus.read32(self.pc)
