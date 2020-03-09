@@ -21,7 +21,7 @@ pub fn fcvtld_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [
@@ -54,7 +54,7 @@ pub fn fcvtlud_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [
@@ -87,7 +87,7 @@ pub fn fcvtdl_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [
@@ -120,7 +120,7 @@ pub fn fcvtdlu_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [
@@ -153,7 +153,7 @@ pub fn fmvxd_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [
@@ -186,7 +186,7 @@ pub fn fmvdx_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // x0-x31
     let expected_x = [

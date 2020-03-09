@@ -212,7 +212,7 @@ impl Cpu {
 
         loop {
             // TODO: Delete the following sleep function. This is for debug.
-            thread::sleep(std::time::Duration::from_millis(1000));
+            //thread::sleep(std::time::Duration::from_millis(1000));
 
             // 1. Fetch.
             let data_or_error = self.fetch(bus);

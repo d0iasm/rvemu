@@ -20,7 +20,7 @@ pub fn illegal_isa() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     assert_eq!(8 + DRAM_BASE, cpu.pc);
 

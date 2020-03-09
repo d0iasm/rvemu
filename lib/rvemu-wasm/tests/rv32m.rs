@@ -21,7 +21,7 @@ pub fn mul_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -48,7 +48,7 @@ pub fn mulh_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // TODO: use negative values in x30 and x31
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
@@ -108,7 +108,7 @@ pub fn mulhsu_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // TODO: use a negative value for x30
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x20000000_00000000_00000000_00000000
@@ -167,7 +167,7 @@ pub fn mulhu_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     // hex: 0x40000000_00000000 * 0x40000000_00000000 = 0x10000000_00000000_00000000_00000000
 
@@ -223,7 +223,7 @@ pub fn div_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -247,7 +247,7 @@ pub fn divu_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -271,7 +271,7 @@ pub fn rem_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -295,7 +295,7 @@ pub fn remu_rd_rs1_rs2() {
     bus.dram.dram.splice(..data.len(), data.iter().cloned());
 
     cpu.pc = DRAM_BASE;
-    cpu.start(&mut bus, || ());
+    cpu.start(&mut bus);
 
     let expected = [
         0, 0, DEFAULT_SP, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
