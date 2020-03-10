@@ -16,7 +16,10 @@
 import init, { Emulator } from "./pkg/rvemu_wasm.js";
 
 const fileIn = document.getElementById("file");
+// The `buffer`, that will be observed for mutations, stores the output from Rust.
 const buffer = document.getElementById("buffer");
+// Options for the observer (which mutations to observe)
+const config = { childList: true, subtree: true };
 
 const termContainer = document.getElementById("terminal");
 const term  = new Terminal({cursorBlink: true});
@@ -30,6 +33,25 @@ let emu = null;
 const fileReader = new FileReader();
 let files = [];
 
+// Callback function to execute when mutations are observed.
+const callback = function(mutationsList, observer) {
+  for(let mutation of mutationsList) {
+    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+      term.write(deleteLine);
+      const firstChild = mutation.addedNodes[0];
+      const texts = firstChild.innerText.split("\n");
+      for (let i=0; i<texts.length; i++) {
+        term.writeln(texts[i]);
+      }
+      buffer.removeChild(firstChild);
+      term.write("$ ");
+    }
+  }
+};
+
+// Create an observer instance linked to the callback function.
+const observer = new MutationObserver(callback);
+
 async function initialize() {
   // Load the wasm file.
   await init();
@@ -40,19 +62,8 @@ async function initialize() {
 
   runTerminal();
 
-  buffer.addEventListener('DOMSubtreeModified', (e) => {
-    if (e.target.childNodes.length <= 0) {
-      term.write("$ ");
-      return;
-    }
-    const firstChild = e.target.childNodes[0];
-    term.write(deleteLine);
-    const texts = firstChild.innerText.split("\n");
-    for (let i=0; i<texts.length; i++) {
-      term.writeln(texts[i]);
-    }
-    e.target.removeChild(firstChild);
-  });
+  // Start observing the target node for configured mutations
+  observer.observe(buffer, config);
 
   fileReader.onloadend = e => {
     emu = Emulator.new();
