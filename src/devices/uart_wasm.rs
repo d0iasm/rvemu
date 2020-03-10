@@ -67,6 +67,7 @@ impl Uart {
             uart[UART_LSR - UART_BASE] |= 1 << 5;
         }
 
+        /*
         let mut byte = [0; 1];
         let cloned_uart = uart.clone();
         let _uart_thread = thread::spawn(move || loop {
@@ -86,6 +87,7 @@ impl Uart {
                 }
             }
         });
+        */
 
         Self { uart }
     }

@@ -149,10 +149,17 @@ function command(input) {
 }
 
 function loadApps() {
-  fetch("./apps/fib")
+  fetch("./apps/fib.text")
     .then(response => response.blob())
     .then(blob => {
       const sampleFile = new File([blob], "fib");
+      files.push(sampleFile);
+    });
+
+  fetch("./apps/echoback.text")
+    .then(response => response.blob())
+    .then(blob => {
+      const sampleFile = new File([blob], "echoback");
       files.push(sampleFile);
     });
 }
