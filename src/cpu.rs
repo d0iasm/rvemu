@@ -216,8 +216,8 @@ impl Cpu {
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
     pub fn translate(&mut self, addr: usize) -> Result<usize, Exception> {
-        let address_mode = match self.state.get(SATP)? {
-            Csr::Satp(satp) => satp.read_mode(),
+        let satp = match self.state.get(SATP)? {
+            Csr::Satp(satp) => satp,
             _ => {
                 return Err(Exception::IllegalInstruction(String::from(
                     "failed to get a satp",
@@ -225,16 +225,14 @@ impl Cpu {
             }
         };
 
-        match address_mode {
+        match satp.read_mode() {
             satp::Mode::Bare => Ok(addr),
             satp::Mode::Sv39 => {
-                /*
                 let vpn2 = (addr >> 30) & 0x1ff;
                 let vpn1 = (addr >> 21) & 0x1ff;
                 let vpn0 =  (addr >> 12) & 0x1ff;
-                traverse_page(address, 3 - 1, self.ppn, &vpns, access_type)
-                */
-                //let pte =
+                let ppn = satp.read_ppn();
+                let pte = self.bus.read64(ppn * PAGE_SIZE * vpn2 * 8)?;
                 Ok(addr)
             }
             satp::Mode::Sv48 => {
