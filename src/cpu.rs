@@ -11,6 +11,7 @@ use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
     exception::Exception,
+    mmu,
 };
 
 const SP: usize = 2;
@@ -231,7 +232,14 @@ impl Cpu {
                     0x80000000 => 0xfffff800, // offset[:11] = data[31]
                     _ => 0,
                 } | ((data >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = data[30:20]
-                let addr = xregs.read(rs1).wrapping_add(offset) as usize;
+                let v_addr = xregs.read(rs1).wrapping_add(offset) as usize;
+                let address_mode = match self.state.get(SATP)? {
+                    Csr::Satp(satp) => satp.read_mode(),
+                    _ => return Err(Exception::IllegalInstruction(String::from(
+                        "failed to get a satp",
+                    ))),
+                };
+                let addr = mmu::translate(v_addr, address_mode)?;
                 match funct3 {
                     0x0 => xregs.write(rd, (bus.read8(addr)? as i8) as i64), // lb
                     0x1 => xregs.write(rd, (bus.read16(addr)? as i16) as i64), // lh
@@ -246,7 +254,14 @@ impl Cpu {
             0x07 => {
                 // I-type (RV32F and RV64F)
                 let offset = ((data & 0xfff00000) as u64) >> 20;
-                let addr = (xregs.read(rs1) + offset as i64) as usize;
+                let v_addr = (xregs.read(rs1) + offset as i64) as usize;
+                let address_mode = match self.state.get(SATP)? {
+                    Csr::Satp(satp) => satp.read_mode(),
+                    _ => return Err(Exception::IllegalInstruction(String::from(
+                        "failed to get a satp",
+                    ))),
+                };
+                let addr = mmu::translate(v_addr, address_mode)?;
                 match funct3 {
                     0x2 => fregs.write(rd, f64::from_bits(bus.read32(addr)? as u64)), // flw
                     0x3 => fregs.write(rd, f64::from_bits(bus.read64(addr)?)),        // fld
@@ -351,7 +366,14 @@ impl Cpu {
                     ((data & 0x00000f80) >> 7)
                     // offset[4:0]= data[11:7]
                 ) as i32 as i64;
-                let addr = (xregs.read(rs1) + offset) as usize;
+                let v_addr = (xregs.read(rs1) + offset) as usize;
+                let address_mode = match self.state.get(SATP)? {
+                    Csr::Satp(satp) => satp.read_mode(),
+                    _ => return Err(Exception::IllegalInstruction(String::from(
+                        "failed to get a satp",
+                    ))),
+                };
+                let addr = mmu::translate(v_addr, address_mode)?;
                 match funct3 {
                     0x0 => bus.write8(addr, xregs.read(rs2) as u8)?, // sb
                     0x1 => bus.write16(addr, xregs.read(rs2) as u16)?, // sh
@@ -365,7 +387,14 @@ impl Cpu {
                 let imm11_5 = (((data & 0xfe000000) as i32) as i64) >> 25;
                 let imm4_0 = ((data & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
-                let addr = (xregs.read(rs1) + offset) as usize;
+                let v_addr = (xregs.read(rs1) + offset) as usize;
+                let address_mode = match self.state.get(SATP)? {
+                    Csr::Satp(satp) => satp.read_mode(),
+                    _ => return Err(Exception::IllegalInstruction(String::from(
+                        "failed to get a satp",
+                    ))),
+                };
+                let addr = mmu::translate(v_addr, address_mode)?;
                 match funct3 {
                     0x2 => bus.write32(addr, (fregs.read(rs2) as f32).to_bits())?, // fsw
                     0x3 => bus.write64(addr, fregs.read(rs2).to_bits())?,          // fsd

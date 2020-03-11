@@ -54,15 +54,13 @@ impl Emulator {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
-                /*
                 dbg!(format!(
-                    "pc: , data: {:#?}, size {}, uart data {:#?}",
-                    //cpu.pc,
+                    "pc: {} , data: {:#?}, size {}, uart data",
+                    cpu.pc,
                     &data_or_error,
                     size,
-                    cpu.bus.read8(UART_RHR)
+                    //cpu.bus.read8(UART_RHR)
                 ));
-                */
 
                 // 2. Add 4 to the program counter.
                 cpu.pc += 4;
@@ -84,7 +82,7 @@ impl Emulator {
 
                 // TODO: reconsider the termination condition.
                 if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
-                //if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) {
+                    //if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) {
                     dbg!(format!(
                         "pc: {}, count: {}, result {:#?}",
                         cpu.pc, count, result
