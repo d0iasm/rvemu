@@ -29,66 +29,66 @@ impl Memory {
     }
 
     /// Write a byte to the memory.
-    pub fn write8(&mut self, index: usize, val: u8) {
-        self.dram[index] = val
+    pub fn write8(&mut self, addr: usize, val: u8) {
+        self.dram[addr] = val
     }
 
     /// Write 2 bytes to the memory.
-    pub fn write16(&mut self, index: usize, val: u16) {
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val & 0xFF00) >> 8) as u8;
+    pub fn write16(&mut self, addr: usize, val: u16) {
+        self.dram[addr] = (val & 0xFF) as u8;
+        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
     }
 
     /// Write 4 bytes to the memory.
-    pub fn write32(&mut self, index: usize, val: u32) {
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val & 0xFF00) >> 8) as u8;
-        self.dram[index + 2] = ((val & 0xFF0000) >> 16) as u8;
-        self.dram[index + 3] = ((val & 0xFF000000) >> 24) as u8;
+    pub fn write32(&mut self, addr: usize, val: u32) {
+        self.dram[addr] = (val & 0xFF) as u8;
+        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
+        self.dram[addr + 2] = ((val & 0xFF0000) >> 16) as u8;
+        self.dram[addr + 3] = ((val & 0xFF000000) >> 24) as u8;
     }
 
     /// Write 8 bytes to the memory.
-    pub fn write64(&mut self, index: usize, val: u64) {
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val & 0xFF00) >> 8) as u8;
-        self.dram[index + 2] = ((val & 0xFF0000) >> 16) as u8;
-        self.dram[index + 3] = ((val & 0xFF000000) >> 24) as u8;
-        self.dram[index + 4] = ((val & 0xFF00000000) >> 32) as u8;
-        self.dram[index + 5] = ((val & 0xFF0000000000) >> 40) as u8;
-        self.dram[index + 6] = ((val & 0xFF000000000000) >> 48) as u8;
-        self.dram[index + 7] = ((val & 0xFF00000000000000) >> 56) as u8;
+    pub fn write64(&mut self, addr: usize, val: u64) {
+        self.dram[addr] = (val & 0xFF) as u8;
+        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
+        self.dram[addr + 2] = ((val & 0xFF0000) >> 16) as u8;
+        self.dram[addr + 3] = ((val & 0xFF000000) >> 24) as u8;
+        self.dram[addr + 4] = ((val & 0xFF00000000) >> 32) as u8;
+        self.dram[addr + 5] = ((val & 0xFF0000000000) >> 40) as u8;
+        self.dram[addr + 6] = ((val & 0xFF000000000000) >> 48) as u8;
+        self.dram[addr + 7] = ((val & 0xFF00000000000000) >> 56) as u8;
     }
 
     /// Read a byte from the memory.
-    pub fn read8(&self, index: usize) -> u8 {
-        self.dram[index]
+    pub fn read8(&self, addr: usize) -> u8 {
+        self.dram[addr]
     }
 
     /// Read 2 bytes from the memory.
-    pub fn read16(&self, index: usize) -> u16 {
+    pub fn read16(&self, addr: usize) -> u16 {
         // little endian
-        return (self.dram[index] as u16) | ((self.dram[index + 1] as u16) << 8);
+        return (self.dram[addr] as u16) | ((self.dram[addr + 1] as u16) << 8);
     }
 
     /// Read 4 bytes from the memory.
-    pub fn read32(&self, index: usize) -> u32 {
+    pub fn read32(&self, addr: usize) -> u32 {
         // little endian
-        return (self.dram[index] as u32)
-            | ((self.dram[index + 1] as u32) << 8)
-            | ((self.dram[index + 2] as u32) << 16)
-            | ((self.dram[index + 3] as u32) << 24);
+        return (self.dram[addr] as u32)
+            | ((self.dram[addr + 1] as u32) << 8)
+            | ((self.dram[addr + 2] as u32) << 16)
+            | ((self.dram[addr + 3] as u32) << 24);
     }
 
     /// Read 8 bytes from the memory.
-    pub fn read64(&self, index: usize) -> u64 {
+    pub fn read64(&self, addr: usize) -> u64 {
         // little endian
-        return (self.dram[index] as u64)
-            | ((self.dram[index + 1] as u64) << 8)
-            | ((self.dram[index + 2] as u64) << 16)
-            | ((self.dram[index + 3] as u64) << 24)
-            | ((self.dram[index + 4] as u64) << 32)
-            | ((self.dram[index + 5] as u64) << 40)
-            | ((self.dram[index + 6] as u64) << 48)
-            | ((self.dram[index + 7] as u64) << 56);
+        return (self.dram[addr] as u64)
+            | ((self.dram[addr + 1] as u64) << 8)
+            | ((self.dram[addr + 2] as u64) << 16)
+            | ((self.dram[addr + 3] as u64) << 24)
+            | ((self.dram[addr + 4] as u64) << 32)
+            | ((self.dram[addr + 5] as u64) << 40)
+            | ((self.dram[addr + 6] as u64) << 48)
+            | ((self.dram[addr + 7] as u64) << 56);
     }
 }
