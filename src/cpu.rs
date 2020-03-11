@@ -11,10 +11,13 @@ use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
     exception::Exception,
-    mmu,
 };
 
+/// The stack pointer.
 const SP: usize = 2;
+
+/// The page size (4 KiB) for the virtual memory system.
+const PAGE_SIZR: usize = 4096;
 
 /// The privileged mode.
 #[derive(Debug, PartialEq, Eq)]
@@ -207,7 +210,39 @@ impl Cpu {
 
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
-        self.bus.read32(self.pc)
+        let pc = self.translate(self.pc)?;
+        self.bus.read32(pc)
+    }
+
+    /// Translate a virtual address to a physical address for the paged virtual-memory system.
+    pub fn translate(&mut self, addr: usize) -> Result<usize, Exception> {
+        let address_mode = match self.state.get(SATP)? {
+            Csr::Satp(satp) => satp.read_mode(),
+            _ => {
+                return Err(Exception::IllegalInstruction(String::from(
+                    "failed to get a satp",
+                )))
+            }
+        };
+
+        match address_mode {
+            satp::Mode::Bare => Ok(addr),
+            satp::Mode::Sv39 => {
+                /*
+                let vpn2 = (addr >> 30) & 0x1ff;
+                let vpn1 = (addr >> 21) & 0x1ff;
+                let vpn0 =  (addr >> 12) & 0x1ff;
+                traverse_page(address, 3 - 1, self.ppn, &vpns, access_type)
+                */
+                //let pte =
+                Ok(addr)
+            }
+            satp::Mode::Sv48 => {
+                dbg!("Sv48: not implemented yet");
+                Ok(addr)
+            }
+            _ => Err(Exception::InstructionPageFault),
+        }
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
@@ -220,10 +255,6 @@ impl Cpu {
         let funct3 = (data & 0x00007000) >> 12;
         let funct7 = (data & 0xfe000000) >> 25;
 
-        let xregs = &mut self.xregs;
-        let fregs = &mut self.fregs;
-        let bus = &mut self.bus;
-
         match opcode {
             0x03 => {
                 // I-type
@@ -232,39 +263,33 @@ impl Cpu {
                     0x80000000 => 0xfffff800, // offset[:11] = data[31]
                     _ => 0,
                 } | ((data >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = data[30:20]
-                let v_addr = xregs.read(rs1).wrapping_add(offset) as usize;
-                let address_mode = match self.state.get(SATP)? {
-                    Csr::Satp(satp) => satp.read_mode(),
-                    _ => return Err(Exception::IllegalInstruction(String::from(
-                        "failed to get a satp",
-                    ))),
-                };
-                let addr = mmu::translate(v_addr, address_mode)?;
+                let v_addr = self.xregs.read(rs1).wrapping_add(offset) as usize;
+                let addr = self.translate(v_addr)?;
                 match funct3 {
-                    0x0 => xregs.write(rd, (bus.read8(addr)? as i8) as i64), // lb
-                    0x1 => xregs.write(rd, (bus.read16(addr)? as i16) as i64), // lh
-                    0x2 => xregs.write(rd, (bus.read32(addr)? as i32) as i64), // lw
-                    0x3 => xregs.write(rd, bus.read64(addr)? as i64),        // ld
-                    0x4 => xregs.write(rd, (bus.read8(addr)? as i64) & 0xff), // lbu
-                    0x5 => xregs.write(rd, (bus.read16(addr)? as i64) & 0xffff), // lhu
-                    0x6 => xregs.write(rd, (bus.read32(addr)? as i64) & 0xffffffff), // lwu
+                    0x0 => self.xregs.write(rd, (self.bus.read8(addr)? as i8) as i64), // lb
+                    0x1 => self.xregs.write(rd, (self.bus.read16(addr)? as i16) as i64), // lh
+                    0x2 => self.xregs.write(rd, (self.bus.read32(addr)? as i32) as i64), // lw
+                    0x3 => self.xregs.write(rd, self.bus.read64(addr)? as i64),        // ld
+                    0x4 => self.xregs.write(rd, (self.bus.read8(addr)? as i64) & 0xff), // lbu
+                    0x5 => self
+                        .xregs
+                        .write(rd, (self.bus.read16(addr)? as i64) & 0xffff), // lhu
+                    0x6 => self
+                        .xregs
+                        .write(rd, (self.bus.read32(addr)? as i64) & 0xffffffff), // lwu
                     _ => {}
                 }
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
                 let offset = ((data & 0xfff00000) as u64) >> 20;
-                let v_addr = (xregs.read(rs1) + offset as i64) as usize;
-                let address_mode = match self.state.get(SATP)? {
-                    Csr::Satp(satp) => satp.read_mode(),
-                    _ => return Err(Exception::IllegalInstruction(String::from(
-                        "failed to get a satp",
-                    ))),
-                };
-                let addr = mmu::translate(v_addr, address_mode)?;
+                let v_addr = (self.xregs.read(rs1) + offset as i64) as usize;
+                let addr = self.translate(v_addr)?;
                 match funct3 {
-                    0x2 => fregs.write(rd, f64::from_bits(bus.read32(addr)? as u64)), // flw
-                    0x3 => fregs.write(rd, f64::from_bits(bus.read64(addr)?)),        // fld
+                    0x2 => self
+                        .fregs
+                        .write(rd, f64::from_bits(self.bus.read32(addr)? as u64)), // flw
+                    0x3 => self.fregs.write(rd, f64::from_bits(self.bus.read64(addr)?)), // fld
                     _ => {}
                 }
             }
@@ -287,30 +312,36 @@ impl Cpu {
                 let shamt = (data & 0x03f00000) >> 20;
                 let funct6 = funct7 >> 1;
                 match funct3 {
-                    0x0 => xregs.write(rd, xregs.read(rs1).wrapping_add(imm)), // addi
-                    0x1 => xregs.write(rd, ((xregs.read(rs1) as u64) << shamt) as i64), // slli
-                    0x2 => xregs.write(rd, if xregs.read(rs1) < imm { 1 } else { 0 }), // slti
+                    0x0 => self.xregs.write(rd, self.xregs.read(rs1).wrapping_add(imm)), // addi
+                    0x1 => self
+                        .xregs
+                        .write(rd, ((self.xregs.read(rs1) as u64) << shamt) as i64), // slli
+                    0x2 => self
+                        .xregs
+                        .write(rd, if self.xregs.read(rs1) < imm { 1 } else { 0 }), // slti
                     0x3 => {
                         // sltiu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            if (xregs.read(rs1) as u64) < (imm as u64) {
+                            if (self.xregs.read(rs1) as u64) < (imm as u64) {
                                 1
                             } else {
                                 0
                             },
                         );
                     }
-                    0x4 => xregs.write(rd, xregs.read(rs1) ^ imm), // xori
+                    0x4 => self.xregs.write(rd, self.xregs.read(rs1) ^ imm), // xori
                     0x5 => {
                         match funct6 {
-                            0x00 => xregs.write(rd, ((xregs.read(rs1) as u64) >> shamt) as i64), // srli
-                            0x10 => xregs.write(rd, xregs.read(rs1) >> shamt), // srai
+                            0x00 => self
+                                .xregs
+                                .write(rd, ((self.xregs.read(rs1) as u64) >> shamt) as i64), // srli
+                            0x10 => self.xregs.write(rd, self.xregs.read(rs1) >> shamt), // srai
                             _ => {}
                         }
                     }
-                    0x6 => xregs.write(rd, xregs.read(rs1) | imm), // ori
-                    0x7 => xregs.write(rd, xregs.read(rs1) & imm), // andi
+                    0x6 => self.xregs.write(rd, self.xregs.read(rs1) | imm), // ori
+                    0x7 => self.xregs.write(rd, self.xregs.read(rs1) & imm), // andi
                     _ => {}
                 }
             }
@@ -320,7 +351,7 @@ impl Cpu {
                 // in the lowest 12 bits with zeros.
                 let imm = ((data & 0xfffff000) as i32) as i64;
                 // auipc
-                xregs.write(rd, (self.pc as i64) + imm - 4);
+                self.xregs.write(rd, (self.pc as i64) + imm - 4);
             }
             0x1B => {
                 // I-type (RV64I only)
@@ -330,23 +361,28 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // addiw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            (((xregs.read(rs1).wrapping_add(imm)) & 0xffffffff) as i32) as i64,
+                            (((self.xregs.read(rs1).wrapping_add(imm)) & 0xffffffff) as i32) as i64,
                         );
                     }
-                    0x1 => xregs.write(
+                    0x1 => self.xregs.write(
                         // slliw
                         rd,
-                        (((xregs.read(rs1) << shamt) & 0xffffffff) as i32) as i64,
+                        (((self.xregs.read(rs1) << shamt) & 0xffffffff) as i32) as i64,
                     ),
                     0x5 => {
                         match funct7 {
                             0x00 => {
                                 // srliw
-                                xregs.write(rd, (((xregs.read(rs1) as u32) >> shamt) as i32) as i64)
+                                self.xregs.write(
+                                    rd,
+                                    (((self.xregs.read(rs1) as u32) >> shamt) as i32) as i64,
+                                )
                             }
-                            0x20 => xregs.write(rd, ((xregs.read(rs1) as i32) >> shamt) as i64), // sraiw
+                            0x20 => self
+                                .xregs
+                                .write(rd, ((self.xregs.read(rs1) as i32) >> shamt) as i64), // sraiw
                             _ => {}
                         }
                     }
@@ -366,19 +402,13 @@ impl Cpu {
                     ((data & 0x00000f80) >> 7)
                     // offset[4:0]= data[11:7]
                 ) as i32 as i64;
-                let v_addr = (xregs.read(rs1) + offset) as usize;
-                let address_mode = match self.state.get(SATP)? {
-                    Csr::Satp(satp) => satp.read_mode(),
-                    _ => return Err(Exception::IllegalInstruction(String::from(
-                        "failed to get a satp",
-                    ))),
-                };
-                let addr = mmu::translate(v_addr, address_mode)?;
+                let v_addr = (self.xregs.read(rs1) + offset) as usize;
+                let addr = self.translate(v_addr)?;
                 match funct3 {
-                    0x0 => bus.write8(addr, xregs.read(rs2) as u8)?, // sb
-                    0x1 => bus.write16(addr, xregs.read(rs2) as u16)?, // sh
-                    0x2 => bus.write32(addr, xregs.read(rs2) as u32)?, // sw
-                    0x3 => bus.write64(addr, xregs.read(rs2) as u64)?, // sd
+                    0x0 => self.bus.write8(addr, self.xregs.read(rs2) as u8)?, // sb
+                    0x1 => self.bus.write16(addr, self.xregs.read(rs2) as u16)?, // sh
+                    0x2 => self.bus.write32(addr, self.xregs.read(rs2) as u32)?, // sw
+                    0x3 => self.bus.write64(addr, self.xregs.read(rs2) as u64)?, // sd
                     _ => {}
                 }
             }
@@ -387,17 +417,13 @@ impl Cpu {
                 let imm11_5 = (((data & 0xfe000000) as i32) as i64) >> 25;
                 let imm4_0 = ((data & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
-                let v_addr = (xregs.read(rs1) + offset) as usize;
-                let address_mode = match self.state.get(SATP)? {
-                    Csr::Satp(satp) => satp.read_mode(),
-                    _ => return Err(Exception::IllegalInstruction(String::from(
-                        "failed to get a satp",
-                    ))),
-                };
-                let addr = mmu::translate(v_addr, address_mode)?;
+                let v_addr = (self.xregs.read(rs1) + offset) as usize;
+                let addr = self.translate(v_addr)?;
                 match funct3 {
-                    0x2 => bus.write32(addr, (fregs.read(rs2) as f32).to_bits())?, // fsw
-                    0x3 => bus.write64(addr, fregs.read(rs2).to_bits())?,          // fsd
+                    0x2 => self
+                        .bus
+                        .write32(addr, (self.fregs.read(rs2) as f32).to_bits())?, // fsw
+                    0x3 => self.bus.write64(addr, self.fregs.read(rs2).to_bits())?, // fsd
                     _ => {}
                 }
             }
@@ -411,166 +437,182 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            (t.wrapping_add(xregs.read(rs2) as i32)) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            (t.wrapping_add(self.xregs.read(rs2) as i32)) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(
-                            xregs.read(rs1) as usize,
-                            t.wrapping_add(xregs.read(rs2)) as u64,
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            t.wrapping_add(self.xregs.read(rs2)) as u64,
                         )?;
-                        xregs.write(rd, t);
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32)?;
-                        xregs.write(rd, t as i64);
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus
+                            .write32(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u32)?;
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64)?;
-                        xregs.write(rd, t);
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus
+                            .write64(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u64)?;
+                        self.xregs.write(rd, t);
                     }
-                    (0x2, 0x02) => {
-                        xregs.write(rd, (bus.read32(xregs.read(rs1) as usize)? as i32) as i64)
-                    } // lr.w
-                    (0x3, 0x02) => xregs.write(rd, bus.read64(xregs.read(rs1) as usize)? as i64), // lr.d
+                    (0x2, 0x02) => self.xregs.write(
+                        rd,
+                        (self.bus.read32(self.xregs.read(rs1) as usize)? as i32) as i64,
+                    ), // lr.w
+                    (0x3, 0x02) => self
+                        .xregs
+                        .write(rd, self.bus.read64(self.xregs.read(rs1) as usize)? as i64), // lr.d
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
-                        xregs.write(rd, 0);
-                        bus.write32(xregs.read(rs1) as usize, xregs.read(rs2) as u32)?;
+                        self.xregs.write(rd, 0);
+                        self.bus
+                            .write32(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u32)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
-                        xregs.write(rd, 0);
-                        bus.write64(xregs.read(rs1) as usize, xregs.read(rs2) as u64)?;
+                        self.xregs.write(rd, 0);
+                        self.bus
+                            .write64(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u64)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            (t ^ (xregs.read(rs2) as i32)) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            (t ^ (self.xregs.read(rs2) as i32)) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(xregs.read(rs1) as usize, (t ^ xregs.read(rs2)) as u64)?;
-                        xregs.write(rd, t);
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            (t ^ self.xregs.read(rs2)) as u64,
+                        )?;
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            (t | (xregs.read(rs2) as i32)) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            (t | (self.xregs.read(rs2) as i32)) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(xregs.read(rs1) as usize, (t | xregs.read(rs2)) as u64)?;
-                        xregs.write(rd, t);
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            (t | self.xregs.read(rs2)) as u64,
+                        )?;
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            (t & (xregs.read(rs2) as i32)) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            (t & (self.xregs.read(rs2) as i32)) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(xregs.read(rs1) as usize, (t & xregs.read(rs1)) as u64)?;
-                        xregs.write(rd, t);
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            (t & self.xregs.read(rs1)) as u64,
+                        )?;
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            cmp::min(t, xregs.read(rs2) as i32) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            cmp::min(t, self.xregs.read(rs2) as i32) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(
-                            xregs.read(rs1) as usize,
-                            cmp::min(t, xregs.read(rs2)) as u64,
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            cmp::min(t, self.xregs.read(rs2)) as u64,
                         )?;
-                        xregs.write(rd, t);
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = bus.read32(xregs.read(rs1) as usize)? as i32;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            cmp::max(t, xregs.read(rs2) as i32) as u32,
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            cmp::max(t, self.xregs.read(rs2) as i32) as u32,
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = bus.read64(xregs.read(rs1) as usize)? as i64;
-                        bus.write64(
-                            xregs.read(rs1) as usize,
-                            cmp::max(t, xregs.read(rs2)) as u64,
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            cmp::max(t, self.xregs.read(rs2)) as u64,
                         )?;
-                        xregs.write(rd, t);
+                        self.xregs.write(rd, t);
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = bus.read32(xregs.read(rs1) as usize)?;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            cmp::min(t, xregs.read(rs2) as u32),
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)?;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            cmp::min(t, self.xregs.read(rs2) as u32),
                         )?;
-                        xregs.write(rd, (t as i32) as i64);
+                        self.xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = bus.read64(xregs.read(rs1) as usize)?;
-                        bus.write64(
-                            xregs.read(rs1) as usize,
-                            cmp::min(t, xregs.read(rs2) as u64),
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)?;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            cmp::min(t, self.xregs.read(rs2) as u64),
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = bus.read32(xregs.read(rs1) as usize)?;
-                        bus.write32(
-                            xregs.read(rs1) as usize,
-                            cmp::max(t, xregs.read(rs2) as u32),
+                        let t = self.bus.read32(self.xregs.read(rs1) as usize)?;
+                        self.bus.write32(
+                            self.xregs.read(rs1) as usize,
+                            cmp::max(t, self.xregs.read(rs2) as u32),
                         )?;
-                        xregs.write(rd, (t as i32) as i64);
+                        self.xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = bus.read64(xregs.read(rs1) as usize)?;
-                        bus.write64(
-                            xregs.read(rs1) as usize,
-                            cmp::max(t, xregs.read(rs2) as u64),
+                        let t = self.bus.read64(self.xregs.read(rs1) as usize)?;
+                        self.bus.write64(
+                            self.xregs.read(rs1) as usize,
+                            cmp::max(t, self.xregs.read(rs2) as u64),
                         )?;
-                        xregs.write(rd, t as i64);
+                        self.xregs.write(rd, t as i64);
                     }
                     _ => {}
                 }
@@ -580,24 +622,33 @@ impl Cpu {
                 // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic right
                 // shifts on the value in register rs1 by the shift amount held in register rs2.
                 // In RV64I, only the low 6 bits of rs2 are considered for the shift amount."
-                let shamt = ((xregs.read(rs2) & 0x3f) as u64) as u32;
+                let shamt = ((self.xregs.read(rs2) & 0x3f) as u64) as u32;
                 match (funct3, funct7) {
-                    (0x0, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_add(xregs.read(rs2))), // add
-                    (0x0, 0x01) => xregs.write(rd, xregs.read(rs1).wrapping_mul(xregs.read(rs2))), // mul
-                    (0x0, 0x20) => xregs.write(rd, xregs.read(rs1).wrapping_sub(xregs.read(rs2))), // sub
-                    (0x1, 0x00) => xregs.write(rd, xregs.read(rs1).wrapping_shl(shamt)), // sll
+                    (0x0, 0x00) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2))), // add
+                    (0x0, 0x01) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1).wrapping_mul(self.xregs.read(rs2))), // mul
+                    (0x0, 0x20) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2))), // sub
+                    (0x1, 0x00) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1).wrapping_shl(shamt)), // sll
                     (0x1, 0x01) => {
                         // mulh
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            ((xregs.read(rs1) as i128).wrapping_mul(xregs.read(rs2) as i128) >> 64)
-                                as i64,
+                            ((self.xregs.read(rs1) as i128)
+                                .wrapping_mul(self.xregs.read(rs2) as i128)
+                                >> 64) as i64,
                         );
                     }
-                    (0x2, 0x00) => xregs.write(
+                    (0x2, 0x00) => self.xregs.write(
                         // slt
                         rd,
-                        if xregs.read(rs1) < xregs.read(rs2) {
+                        if self.xregs.read(rs1) < self.xregs.read(rs2) {
                             1
                         } else {
                             0
@@ -605,18 +656,18 @@ impl Cpu {
                     ),
                     (0x2, 0x01) => {
                         // mulhsu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            ((xregs.read(rs1) as u128)
-                                .wrapping_mul((xregs.read(rs2) as u64) as u128)
+                            ((self.xregs.read(rs1) as u128)
+                                .wrapping_mul((self.xregs.read(rs2) as u64) as u128)
                                 >> 64) as i64,
                         );
                     }
                     (0x3, 0x00) => {
                         // sltu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            if (xregs.read(rs1) as u64) < (xregs.read(rs2) as u64) {
+                            if (self.xregs.read(rs1) as u64) < (self.xregs.read(rs2) as u64) {
                                 1
                             } else {
                                 0
@@ -625,19 +676,21 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            (((xregs.read(rs1) as u64) as u128)
-                                .wrapping_mul((xregs.read(rs2) as u64) as u128)
+                            (((self.xregs.read(rs1) as u64) as u128)
+                                .wrapping_mul((self.xregs.read(rs2) as u64) as u128)
                                 >> 64) as i128 as i64,
                         );
                     }
-                    (0x4, 0x00) => xregs.write(rd, xregs.read(rs1) ^ xregs.read(rs2)), // xor
+                    (0x4, 0x00) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1) ^ self.xregs.read(rs2)), // xor
                     (0x4, 0x01) => {
                         // div
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
+                            match self.xregs.read(rs2) {
                                 0 => {
                                     match self.state.get(FCSR)? {
                                         Csr::Fcsr(fcsr) => {
@@ -652,16 +705,18 @@ impl Cpu {
                                     }
                                     -1
                                 }
-                                _ => xregs.read(rs1).wrapping_div(xregs.read(rs2)),
+                                _ => self.xregs.read(rs1).wrapping_div(self.xregs.read(rs2)),
                             },
                         );
                     }
-                    (0x5, 0x00) => xregs.write(rd, ((xregs.read(rs1) as u64) >> shamt) as i64), // srl
+                    (0x5, 0x00) => self
+                        .xregs
+                        .write(rd, ((self.xregs.read(rs1) as u64) >> shamt) as i64), // srl
                     (0x5, 0x01) => {
                         // divu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
+                            match self.xregs.read(rs2) {
                                 0 => {
                                     match self.state.get(FCSR)? {
                                         Csr::Fcsr(fcsr) => {
@@ -677,33 +732,37 @@ impl Cpu {
                                     -1
                                 }
                                 _ => {
-                                    let dividend = xregs.read(rs1) as u64;
-                                    let divisor = xregs.read(rs2) as u64;
+                                    let dividend = self.xregs.read(rs1) as u64;
+                                    let divisor = self.xregs.read(rs2) as u64;
                                     dividend.wrapping_div(divisor) as i64
                                 }
                             },
                         );
                     }
-                    (0x5, 0x20) => xregs.write(rd, xregs.read(rs1) >> shamt), // sra
-                    (0x6, 0x00) => xregs.write(rd, xregs.read(rs1) | xregs.read(rs2)), // or
-                    (0x6, 0x01) => xregs.write(
+                    (0x5, 0x20) => self.xregs.write(rd, self.xregs.read(rs1) >> shamt), // sra
+                    (0x6, 0x00) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1) | self.xregs.read(rs2)), // or
+                    (0x6, 0x01) => self.xregs.write(
                         // rem
                         rd,
-                        match xregs.read(rs2) {
-                            0 => xregs.read(rs1),
-                            _ => xregs.read(rs1).wrapping_rem(xregs.read(rs2)),
+                        match self.xregs.read(rs2) {
+                            0 => self.xregs.read(rs1),
+                            _ => self.xregs.read(rs1).wrapping_rem(self.xregs.read(rs2)),
                         },
                     ),
-                    (0x7, 0x00) => xregs.write(rd, xregs.read(rs1) & xregs.read(rs2)), // and
+                    (0x7, 0x00) => self
+                        .xregs
+                        .write(rd, self.xregs.read(rs1) & self.xregs.read(rs2)), // and
                     (0x7, 0x01) => {
                         // remu
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
-                                0 => xregs.read(rs1),
+                            match self.xregs.read(rs2) {
+                                0 => self.xregs.read(rs1),
                                 _ => {
-                                    let dividend = xregs.read(rs1) as u64;
-                                    let divisor = xregs.read(rs2) as u64;
+                                    let dividend = self.xregs.read(rs1) as u64;
+                                    let divisor = self.xregs.read(rs2) as u64;
                                     dividend.wrapping_rem(divisor) as i64
                                 }
                             },
@@ -716,42 +775,44 @@ impl Cpu {
                 // U-type
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
-                xregs.write(rd, ((data & 0xfffff000) as i32) as i64); // lui
+                self.xregs.write(rd, ((data & 0xfffff000) as i32) as i64); // lui
             }
             0x3B => {
                 // R-type (RV64I and RV64M)
                 // The shift amount is given by rs2[4:0].
-                let shamt = (xregs.read(rs2) & 0x1f) as u32;
+                let shamt = (self.xregs.read(rs2) & 0x1f) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // addw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            ((xregs.read(rs1).wrapping_add(xregs.read(rs2))) as i32) as i64,
+                            ((self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2))) as i32)
+                                as i64,
                         );
                     }
                     (0x0, 0x01) => {
                         // mulw
-                        let n1 = xregs.read(rs1) as i32;
-                        let n2 = xregs.read(rs2) as i32;
+                        let n1 = self.xregs.read(rs1) as i32;
+                        let n2 = self.xregs.read(rs2) as i32;
                         let result = n1.wrapping_mul(n2);
-                        xregs.write(rd, result as i64);
+                        self.xregs.write(rd, result as i64);
                     }
                     (0x0, 0x20) => {
                         // subw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            ((xregs.read(rs1).wrapping_sub(xregs.read(rs2))) as i32) as i64,
+                            ((self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2))) as i32)
+                                as i64,
                         );
                     }
-                    (0x1, 0x00) => {
-                        xregs.write(rd, (((xregs.read(rs1) as u32) << shamt) as i32) as i64)
-                    } // sllw
+                    (0x1, 0x00) => self
+                        .xregs
+                        .write(rd, (((self.xregs.read(rs1) as u32) << shamt) as i32) as i64), // sllw
                     (0x4, 0x01) => {
                         // divw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
+                            match self.xregs.read(rs2) {
                                 0 => {
                                     match self.state.get(FCSR)? {
                                         Csr::Fcsr(fcsr) => {
@@ -767,21 +828,21 @@ impl Cpu {
                                     -1
                                 }
                                 _ => {
-                                    let dividend = xregs.read(rs1) as i32;
-                                    let divisor = xregs.read(rs2) as i32;
+                                    let dividend = self.xregs.read(rs1) as i32;
+                                    let divisor = self.xregs.read(rs2) as i32;
                                     dividend.wrapping_div(divisor) as i64
                                 }
                             },
                         );
                     }
-                    (0x5, 0x00) => {
-                        xregs.write(rd, (((xregs.read(rs1) as u32) >> shamt) as i32) as i64)
-                    } // srlw
+                    (0x5, 0x00) => self
+                        .xregs
+                        .write(rd, (((self.xregs.read(rs1) as u32) >> shamt) as i32) as i64), // srlw
                     (0x5, 0x01) => {
                         // divuw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
+                            match self.xregs.read(rs2) {
                                 0 => {
                                     match self.state.get(FCSR)? {
                                         Csr::Fcsr(fcsr) => {
@@ -797,25 +858,25 @@ impl Cpu {
                                     -1
                                 }
                                 _ => {
-                                    let dividend = xregs.read(rs1) as u32;
-                                    let divisor = xregs.read(rs2) as u32;
+                                    let dividend = self.xregs.read(rs1) as u32;
+                                    let divisor = self.xregs.read(rs2) as u32;
                                     (dividend.wrapping_div(divisor) as i32) as i64
                                 }
                             },
                         );
                     }
-                    (0x5, 0x20) => {
-                        xregs.write(rd, ((xregs.read(rs1) as i32) >> (shamt as i32)) as i64)
-                    } // sraw
+                    (0x5, 0x20) => self
+                        .xregs
+                        .write(rd, ((self.xregs.read(rs1) as i32) >> (shamt as i32)) as i64), // sraw
                     (0x6, 0x01) => {
                         // remw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
-                                0 => xregs.read(rs1),
+                            match self.xregs.read(rs2) {
+                                0 => self.xregs.read(rs1),
                                 _ => {
-                                    let dividend = xregs.read(rs1) as i32;
-                                    let divisor = xregs.read(rs2) as i32;
+                                    let dividend = self.xregs.read(rs1) as i32;
+                                    let divisor = self.xregs.read(rs2) as i32;
                                     dividend.wrapping_rem(divisor) as i64
                                 }
                             },
@@ -823,13 +884,13 @@ impl Cpu {
                     }
                     (0x7, 0x01) => {
                         // remuw
-                        xregs.write(
+                        self.xregs.write(
                             rd,
-                            match xregs.read(rs2) {
-                                0 => xregs.read(rs1),
+                            match self.xregs.read(rs2) {
+                                0 => self.xregs.read(rs1),
                                 _ => {
-                                    let dividend = xregs.read(rs1) as u64 as u32;
-                                    let divisor = xregs.read(rs2) as u64 as u32;
+                                    let dividend = self.xregs.read(rs1) as u64 as u32;
+                                    let divisor = self.xregs.read(rs2) as u64 as u32;
                                     dividend.wrapping_rem(divisor) as i32 as i64
                                 }
                             },
@@ -846,16 +907,18 @@ impl Cpu {
                 match funct2 {
                     0x0 => {
                         // fmadd.s
-                        fregs.write(
+                        self.fregs.write(
                             rd,
-                            (fregs.read(rs1) as f32)
-                                .mul_add(fregs.read(rs2) as f32, fregs.read(rs3) as f32)
+                            (self.fregs.read(rs1) as f32)
+                                .mul_add(self.fregs.read(rs2) as f32, self.fregs.read(rs3) as f32)
                                 as f64,
                         );
                     }
-                    0x1 => fregs.write(
+                    0x1 => self.fregs.write(
                         rd,
-                        fregs.read(rs1).mul_add(fregs.read(rs2), fregs.read(rs3)),
+                        self.fregs
+                            .read(rs1)
+                            .mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
                     ), // fmadd.d
                     _ => {}
                 }
@@ -868,16 +931,18 @@ impl Cpu {
                 match funct2 {
                     0x0 => {
                         // fmsub.s
-                        fregs.write(
+                        self.fregs.write(
                             rd,
-                            (fregs.read(rs1) as f32)
-                                .mul_add(fregs.read(rs2) as f32, -fregs.read(rs3) as f32)
+                            (self.fregs.read(rs1) as f32)
+                                .mul_add(self.fregs.read(rs2) as f32, -self.fregs.read(rs3) as f32)
                                 as f64,
                         );
                     }
-                    0x1 => fregs.write(
+                    0x1 => self.fregs.write(
                         rd,
-                        fregs.read(rs1).mul_add(fregs.read(rs2), -fregs.read(rs3)),
+                        self.fregs
+                            .read(rs1)
+                            .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
                     ), // fmsub.d
                     _ => {}
                 }
@@ -890,16 +955,16 @@ impl Cpu {
                 match funct2 {
                     0x0 => {
                         // fnmadd.s
-                        fregs.write(
+                        self.fregs.write(
                             rd,
-                            (-fregs.read(rs1) as f32)
-                                .mul_add(fregs.read(rs2) as f32, fregs.read(rs3) as f32)
+                            (-self.fregs.read(rs1) as f32)
+                                .mul_add(self.fregs.read(rs2) as f32, self.fregs.read(rs3) as f32)
                                 as f64,
                         );
                     }
-                    0x1 => fregs.write(
+                    0x1 => self.fregs.write(
                         rd,
-                        (-fregs.read(rs1)).mul_add(fregs.read(rs2), fregs.read(rs3)),
+                        (-self.fregs.read(rs1)).mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
                     ), // fnmadd.d
                     _ => {}
                 }
@@ -912,16 +977,17 @@ impl Cpu {
                 match funct2 {
                     0x0 => {
                         // fnmsub.s
-                        fregs.write(
+                        self.fregs.write(
                             rd,
-                            (-fregs.read(rs1) as f32)
-                                .mul_add(fregs.read(rs2) as f32, -fregs.read(rs3) as f32)
+                            (-self.fregs.read(rs1) as f32)
+                                .mul_add(self.fregs.read(rs2) as f32, -self.fregs.read(rs3) as f32)
                                 as f64,
                         );
                     }
-                    0x1 => fregs.write(
+                    0x1 => self.fregs.write(
                         rd,
-                        (-fregs.read(rs1)).mul_add(fregs.read(rs2), -fregs.read(rs3)),
+                        (-self.fregs.read(rs1))
+                            .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
                     ), // fnmsub.d
                     _ => {}
                 }
@@ -961,91 +1027,131 @@ impl Cpu {
                 match funct7 {
                     0x00 => {
                         // fadd.s
-                        fregs.write(rd, (fregs.read(rs1) as f32 + fregs.read(rs2) as f32) as f64)
+                        self.fregs.write(
+                            rd,
+                            (self.fregs.read(rs1) as f32 + self.fregs.read(rs2) as f32) as f64,
+                        )
                     }
-                    0x01 => fregs.write(rd, fregs.read(rs1) + fregs.read(rs2)), // fadd.d
+                    0x01 => self
+                        .fregs
+                        .write(rd, self.fregs.read(rs1) + self.fregs.read(rs2)), // fadd.d
                     0x04 => {
                         // fsub.s
-                        fregs.write(rd, (fregs.read(rs1) as f32 - fregs.read(rs2) as f32) as f64)
+                        self.fregs.write(
+                            rd,
+                            (self.fregs.read(rs1) as f32 - self.fregs.read(rs2) as f32) as f64,
+                        )
                     }
-                    0x05 => fregs.write(rd, fregs.read(rs1) - fregs.read(rs2)), // fsub.d
+                    0x05 => self
+                        .fregs
+                        .write(rd, self.fregs.read(rs1) - self.fregs.read(rs2)), // fsub.d
                     0x08 => {
                         // fmul.s
-                        fregs.write(rd, (fregs.read(rs1) as f32 * fregs.read(rs2) as f32) as f64)
+                        self.fregs.write(
+                            rd,
+                            (self.fregs.read(rs1) as f32 * self.fregs.read(rs2) as f32) as f64,
+                        )
                     }
-                    0x09 => fregs.write(rd, fregs.read(rs1) * fregs.read(rs2)), // fmul.d
+                    0x09 => self
+                        .fregs
+                        .write(rd, self.fregs.read(rs1) * self.fregs.read(rs2)), // fmul.d
                     0x0c => {
                         // fdiv.s
-                        fregs.write(rd, (fregs.read(rs1) as f32 / fregs.read(rs2) as f32) as f64)
+                        self.fregs.write(
+                            rd,
+                            (self.fregs.read(rs1) as f32 / self.fregs.read(rs2) as f32) as f64,
+                        )
                     }
-                    0x0d => fregs.write(rd, fregs.read(rs1) / fregs.read(rs2)), // fdiv.d
+                    0x0d => self
+                        .fregs
+                        .write(rd, self.fregs.read(rs1) / self.fregs.read(rs2)), // fdiv.d
                     0x10 => {
                         match funct3 {
-                            0x0 => fregs.write(rd, fregs.read(rs1).copysign(fregs.read(rs2))), // fsgnj.s
-                            0x1 => fregs.write(rd, fregs.read(rs1).copysign(-fregs.read(rs2))), // fsgnjn.s
+                            0x0 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2))), // fsgnj.s
+                            0x1 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).copysign(-self.fregs.read(rs2))), // fsgnjn.s
                             0x2 => {
-                                let sign1 = (fregs.read(rs1) as f32).to_bits() & 0x80000000;
-                                let sign2 = (fregs.read(rs2) as f32).to_bits() & 0x80000000;
-                                let other = (fregs.read(rs1) as f32).to_bits() & 0x7fffffff;
+                                let sign1 = (self.fregs.read(rs1) as f32).to_bits() & 0x80000000;
+                                let sign2 = (self.fregs.read(rs2) as f32).to_bits() & 0x80000000;
+                                let other = (self.fregs.read(rs1) as f32).to_bits() & 0x7fffffff;
                                 // fsgnjx.s
-                                fregs.write(rd, f32::from_bits((sign1 ^ sign2) | other) as f64);
+                                self.fregs
+                                    .write(rd, f32::from_bits((sign1 ^ sign2) | other) as f64);
                             }
                             _ => {}
                         }
                     }
                     0x11 => {
                         match funct3 {
-                            0x0 => fregs.write(rd, fregs.read(rs1).copysign(fregs.read(rs2))), // fsgnj.d
-                            0x1 => fregs.write(rd, fregs.read(rs1).copysign(-fregs.read(rs2))), // fsgnjn.d
+                            0x0 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2))), // fsgnj.d
+                            0x1 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).copysign(-self.fregs.read(rs2))), // fsgnjn.d
                             0x2 => {
-                                let sign1 = fregs.read(rs1).to_bits() & 0x80000000_00000000;
-                                let sign2 = fregs.read(rs2).to_bits() & 0x80000000_00000000;
-                                let other = fregs.read(rs1).to_bits() & 0x7fffffff_ffffffff;
+                                let sign1 = self.fregs.read(rs1).to_bits() & 0x80000000_00000000;
+                                let sign2 = self.fregs.read(rs2).to_bits() & 0x80000000_00000000;
+                                let other = self.fregs.read(rs1).to_bits() & 0x7fffffff_ffffffff;
                                 // fsgnjx.d
-                                fregs.write(rd, f64::from_bits((sign1 ^ sign2) | other));
+                                self.fregs
+                                    .write(rd, f64::from_bits((sign1 ^ sign2) | other));
                             }
                             _ => {}
                         }
                     }
                     0x14 => {
                         match funct3 {
-                            0x0 => fregs.write(rd, fregs.read(rs1).min(fregs.read(rs2))), // fmin.s
-                            0x1 => fregs.write(rd, fregs.read(rs1).max(fregs.read(rs2))), // fmax.s
+                            0x0 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2))), // fmin.s
+                            0x1 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.s
                             _ => {}
                         }
                     }
                     0x15 => {
                         match funct3 {
-                            0x0 => fregs.write(rd, fregs.read(rs1).min(fregs.read(rs2))), // fmin.d
-                            0x1 => fregs.write(rd, fregs.read(rs1).max(fregs.read(rs2))), // fmax.d
+                            0x0 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2))), // fmin.d
+                            0x1 => self
+                                .fregs
+                                .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.d
                             _ => {}
                         }
                     }
-                    0x20 => fregs.write(rd, fregs.read(rs1)), // fcvt.s.d
-                    0x21 => fregs.write(rd, (fregs.read(rs1) as f32) as f64), // fcvt.d.s
-                    0x2c => fregs.write(rd, (fregs.read(rs1) as f32).sqrt() as f64), // fsqrt.s
-                    0x2d => fregs.write(rd, fregs.read(rs1).sqrt()), // fsqrt.d
+                    0x20 => self.fregs.write(rd, self.fregs.read(rs1)), // fcvt.s.d
+                    0x21 => self.fregs.write(rd, (self.fregs.read(rs1) as f32) as f64), // fcvt.d.s
+                    0x2c => self
+                        .fregs
+                        .write(rd, (self.fregs.read(rs1) as f32).sqrt() as f64), // fsqrt.s
+                    0x2d => self.fregs.write(rd, self.fregs.read(rs1).sqrt()), // fsqrt.d
                     0x50 => {
                         match funct3 {
-                            0x0 => xregs.write(
+                            0x0 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) <= fregs.read(rs2) {
+                                if self.fregs.read(rs1) <= self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
                                 },
                             ), // fle.s
-                            0x1 => xregs.write(
+                            0x1 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) < fregs.read(rs2) {
+                                if self.fregs.read(rs1) < self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
                                 },
                             ), // flt.s
-                            0x2 => xregs.write(
+                            0x2 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) == fregs.read(rs2) {
+                                if self.fregs.read(rs1) == self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
@@ -1056,25 +1162,25 @@ impl Cpu {
                     }
                     0x51 => {
                         match funct3 {
-                            0x0 => xregs.write(
+                            0x0 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) <= fregs.read(rs2) {
+                                if self.fregs.read(rs1) <= self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
                                 },
                             ), // fle.d
-                            0x1 => xregs.write(
+                            0x1 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) < fregs.read(rs2) {
+                                if self.fregs.read(rs1) < self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
                                 },
                             ), // flt.d
-                            0x2 => xregs.write(
+                            0x2 => self.xregs.write(
                                 rd,
-                                if fregs.read(rs1) == fregs.read(rs2) {
+                                if self.fregs.read(rs1) == self.fregs.read(rs2) {
                                     1
                                 } else {
                                     0
@@ -1085,70 +1191,86 @@ impl Cpu {
                     }
                     0x60 => {
                         match rs2 {
-                            0x0 => {
-                                xregs.write(rd, ((fregs.read(rs1) as f32).round() as i32) as i64)
-                            } // fcvt.w.s
-                            0x1 => xregs.write(
+                            0x0 => self
+                                .xregs
+                                .write(rd, ((self.fregs.read(rs1) as f32).round() as i32) as i64), // fcvt.w.s
+                            0x1 => self.xregs.write(
                                 rd,
-                                (((fregs.read(rs1) as f32).round() as u32) as i32) as i64,
+                                (((self.fregs.read(rs1) as f32).round() as u32) as i32) as i64,
                             ), // fcvt.wu.s
-                            0x2 => xregs.write(rd, (fregs.read(rs1) as f32).round() as i64), // fcvt.l.s
-                            0x3 => {
-                                xregs.write(rd, ((fregs.read(rs1) as f32).round() as u64) as i64)
-                            } // fcvt.lu.s
+                            0x2 => self
+                                .xregs
+                                .write(rd, (self.fregs.read(rs1) as f32).round() as i64), // fcvt.l.s
+                            0x3 => self
+                                .xregs
+                                .write(rd, ((self.fregs.read(rs1) as f32).round() as u64) as i64), // fcvt.lu.s
                             _ => {}
                         }
                     }
                     0x61 => {
                         match rs2 {
-                            0x0 => xregs.write(rd, (fregs.read(rs1).round() as i32) as i64), // fcvt.w.d
-                            0x1 => {
-                                xregs.write(rd, ((fregs.read(rs1).round() as u32) as i32) as i64)
-                            } // fcvt.wu.d
-                            0x2 => xregs.write(rd, fregs.read(rs1).round() as i64), // fcvt.l.d
-                            0x3 => xregs.write(rd, (fregs.read(rs1).round() as u64) as i64), // fcvt.lu.d
+                            0x0 => self
+                                .xregs
+                                .write(rd, (self.fregs.read(rs1).round() as i32) as i64), // fcvt.w.d
+                            0x1 => self
+                                .xregs
+                                .write(rd, ((self.fregs.read(rs1).round() as u32) as i32) as i64), // fcvt.wu.d
+                            0x2 => self.xregs.write(rd, self.fregs.read(rs1).round() as i64), // fcvt.l.d
+                            0x3 => self
+                                .xregs
+                                .write(rd, (self.fregs.read(rs1).round() as u64) as i64), // fcvt.lu.d
                             _ => {}
                         }
                     }
                     0x68 => {
                         match rs2 {
-                            0x0 => fregs.write(rd, ((xregs.read(rs1) as i32) as f32) as f64), // fcvt.s.w
-                            0x1 => fregs.write(rd, ((xregs.read(rs1) as u32) as f32) as f64), // fcvt.s.wu
-                            0x2 => fregs.write(rd, (xregs.read(rs1) as f32) as f64), // fcvt.s.l
-                            0x3 => fregs.write(rd, ((xregs.read(rs1) as u64) as f32) as f64), // fcvt.s.lu
+                            0x0 => self
+                                .fregs
+                                .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64), // fcvt.s.w
+                            0x1 => self
+                                .fregs
+                                .write(rd, ((self.xregs.read(rs1) as u32) as f32) as f64), // fcvt.s.wu
+                            0x2 => self.fregs.write(rd, (self.xregs.read(rs1) as f32) as f64), // fcvt.s.l
+                            0x3 => self
+                                .fregs
+                                .write(rd, ((self.xregs.read(rs1) as u64) as f32) as f64), // fcvt.s.lu
                             _ => {}
                         }
                     }
                     0x69 => {
                         match rs2 {
-                            0x0 => fregs.write(rd, (xregs.read(rs1) as i32) as f64), // fcvt.d.w
-                            0x1 => fregs.write(rd, (xregs.read(rs1) as u32) as f64), // fcvt.d.wu
-                            0x2 => fregs.write(rd, xregs.read(rs1) as f64),          // fcvt.d.l
-                            0x3 => fregs.write(rd, (xregs.read(rs1) as u64) as f64), // fcvt.d.lu
+                            0x0 => self.fregs.write(rd, (self.xregs.read(rs1) as i32) as f64), // fcvt.d.w
+                            0x1 => self.fregs.write(rd, (self.xregs.read(rs1) as u32) as f64), // fcvt.d.wu
+                            0x2 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fcvt.d.l
+                            0x3 => self.fregs.write(rd, (self.xregs.read(rs1) as u64) as f64), // fcvt.d.lu
                             _ => {}
                         }
                     }
                     0x70 => {
                         match funct3 {
-                            0x0 => xregs.write(rd, (fregs.read(rs1) as i32) as i64), // fmv.x.w
+                            0x0 => self.xregs.write(rd, (self.fregs.read(rs1) as i32) as i64), // fmv.x.w
                             0x1 => {
                                 // fclass.s
-                                let f = fregs.read(rs1);
+                                let f = self.fregs.read(rs1);
                                 match f.classify() {
                                     FpCategory::Infinite => {
-                                        xregs.write(rd, if f.is_sign_negative() { 0 } else { 7 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 0 } else { 7 });
                                     }
                                     FpCategory::Normal => {
-                                        xregs.write(rd, if f.is_sign_negative() { 1 } else { 6 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 1 } else { 6 });
                                     }
                                     FpCategory::Subnormal => {
-                                        xregs.write(rd, if f.is_sign_negative() { 2 } else { 5 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 2 } else { 5 });
                                     }
                                     FpCategory::Zero => {
-                                        xregs.write(rd, if f.is_sign_negative() { 3 } else { 4 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 3 } else { 4 });
                                     }
                                     // don't support a signaling nan, only support a quiet nan.
-                                    FpCategory::Nan => xregs.write(rd, 9),
+                                    FpCategory::Nan => self.xregs.write(rd, 9),
                                 }
                             }
                             _ => {}
@@ -1156,32 +1278,38 @@ impl Cpu {
                     }
                     0x71 => {
                         match funct3 {
-                            0x0 => xregs.write(rd, fregs.read(rs1) as i64), // fmv.x.d
+                            0x0 => self.xregs.write(rd, self.fregs.read(rs1) as i64), // fmv.x.d
                             0x1 => {
                                 // fclass.d
-                                let f = fregs.read(rs1);
+                                let f = self.fregs.read(rs1);
                                 match f.classify() {
                                     FpCategory::Infinite => {
-                                        xregs.write(rd, if f.is_sign_negative() { 0 } else { 7 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 0 } else { 7 });
                                     }
                                     FpCategory::Normal => {
-                                        xregs.write(rd, if f.is_sign_negative() { 1 } else { 6 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 1 } else { 6 });
                                     }
                                     FpCategory::Subnormal => {
-                                        xregs.write(rd, if f.is_sign_negative() { 2 } else { 5 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 2 } else { 5 });
                                     }
                                     FpCategory::Zero => {
-                                        xregs.write(rd, if f.is_sign_negative() { 3 } else { 4 });
+                                        self.xregs
+                                            .write(rd, if f.is_sign_negative() { 3 } else { 4 });
                                     }
                                     // don't support a signaling nan, only support a quiet nan.
-                                    FpCategory::Nan => xregs.write(rd, 9),
+                                    FpCategory::Nan => self.xregs.write(rd, 9),
                                 }
                             }
                             _ => {}
                         }
                     }
-                    0x78 => fregs.write(rd, ((xregs.read(rs1) as i32) as f32) as f64), // fmv.w.x
-                    0x79 => fregs.write(rd, xregs.read(rs1) as f64),                   // fmv.d.x
+                    0x78 => self
+                        .fregs
+                        .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64), // fmv.w.x
+                    0x79 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fmv.d.x
                     _ => {}
                 }
             }
@@ -1196,7 +1324,7 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // beq
-                        if xregs.read(rs1) == xregs.read(rs2) {
+                        if self.xregs.read(rs1) == self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1208,7 +1336,7 @@ impl Cpu {
                     }
                     0x1 => {
                         // bne
-                        if xregs.read(rs1) != xregs.read(rs2) {
+                        if self.xregs.read(rs1) != self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1220,7 +1348,7 @@ impl Cpu {
                     }
                     0x4 => {
                         // blt
-                        if xregs.read(rs1) < xregs.read(rs2) {
+                        if self.xregs.read(rs1) < self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1232,7 +1360,7 @@ impl Cpu {
                     }
                     0x5 => {
                         // bge
-                        if xregs.read(rs1) >= xregs.read(rs2) {
+                        if self.xregs.read(rs1) >= self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1244,7 +1372,7 @@ impl Cpu {
                     }
                     0x6 => {
                         // bltu
-                        if (xregs.read(rs1) as u64) < (xregs.read(rs2) as u64) {
+                        if (self.xregs.read(rs1) as u64) < (self.xregs.read(rs2) as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1256,7 +1384,7 @@ impl Cpu {
                     }
                     0x7 => {
                         // bgeu
-                        if (xregs.read(rs1) as u64) >= (xregs.read(rs2) as u64) {
+                        if (self.xregs.read(rs1) as u64) >= (self.xregs.read(rs2) as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned(String::from(
@@ -1275,7 +1403,7 @@ impl Cpu {
                 let t = self.pc as i64;
 
                 let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
-                let target = (xregs.read(rs1).wrapping_add(imm)) & !1;
+                let target = (self.xregs.read(rs1).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned(String::from(
                         "must be aligned on a four-byte boundary",
@@ -1283,12 +1411,12 @@ impl Cpu {
                 }
 
                 self.pc = target as usize;
-                xregs.write(rd, t);
+                self.xregs.write(rd, t);
             }
             0x6F => {
                 // J-type
                 // jal
-                xregs.write(rd, self.pc as i64);
+                self.xregs.write(rd, self.pc as i64);
 
                 let imm20 = (((data & 0x80000000) as i32) as i64) >> 31;
                 let imm10_1 = ((data & 0x7fe00000) >> 21) as u64;
@@ -1409,38 +1537,39 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, xregs.read(rs1))?;
+                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.state.write(csr_address, self.xregs.read(rs1))?;
                     }
                     0x2 => {
                         // csrrs
-                        xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address)?);
                         self.state
-                            .write(csr_address, xregs.read(rd) | xregs.read(rs1))?;
+                            .write(csr_address, self.xregs.read(rd) | self.xregs.read(rs1))?;
                     }
                     0x3 => {
                         // csrrc
-                        xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address)?);
                         self.state
-                            .write(csr_address, xregs.read(rd) & (!xregs.read(rs1)))?;
+                            .write(csr_address, self.xregs.read(rd) & (!self.xregs.read(rs1)))?;
                     }
                     0x5 => {
                         // csrrwi
                         let uimm = rs1 as u64 as i64;
-                        xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address)?);
                         self.state.write(csr_address, uimm)?;
                     }
                     0x6 => {
                         // csrrsi
                         let uimm = rs1 as u64 as i64;
-                        xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, xregs.read(rd) | uimm)?;
+                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.state.write(csr_address, self.xregs.read(rd) | uimm)?;
                     }
                     0x7 => {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
-                        xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, xregs.read(rd) & (!uimm))?;
+                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.state
+                            .write(csr_address, self.xregs.read(rd) & (!uimm))?;
                     }
                     _ => {}
                 }
