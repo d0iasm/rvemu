@@ -1,3 +1,5 @@
+//! Machine trap-handler base address.
+
 use crate::csr::*;
 
 pub enum Mode {
