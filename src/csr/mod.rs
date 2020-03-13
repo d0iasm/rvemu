@@ -19,6 +19,7 @@ pub mod pmpaddr0;
 pub mod pmpcfg0;
 pub mod satp;
 pub mod sepc;
+pub mod sstatus;
 pub mod stvec;
 pub mod uepc;
 
@@ -44,6 +45,7 @@ use crate::csr::pmpaddr0::Pmpaddr0;
 use crate::csr::pmpcfg0::Pmpcfg0;
 use crate::csr::satp::Satp;
 use crate::csr::sepc::Sepc;
+use crate::csr::sstatus::Sstatus;
 use crate::csr::stvec::Stvec;
 use crate::csr::uepc::Uepc;
 use crate::exception::Exception;
@@ -74,6 +76,8 @@ pub const FCSR: CsrAddress = 0x003;
 // Supervisor-level CSR addresses //
 ////////////////////////////////////
 // Supervisor trap setup.
+/// Supervisor status register.
+pub const SSTATUS: CsrAddress = 0x100;
 /// Supervisor trap handler base address.
 pub const STVEC: CsrAddress = 0x105;
 
@@ -145,6 +149,7 @@ pub enum Csr {
     Uepc(Uepc),
     Fcsr(Fcsr),
     // Supervisor-level CSRs.
+    Sstatus(Sstatus),
     Stvec(Stvec),
     Sepc(Sepc),
     Satp(Satp),
@@ -178,6 +183,7 @@ impl State {
         csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
 
         // Supervisor-level CSRs.
+        csrs.insert(SSTATUS, Csr::Sstatus(Sstatus::new(0)));
         csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
         csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
 
@@ -237,6 +243,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => Ok(uepc.read_value()),
                 Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
+                Csr::Sstatus(sstatus) => Ok(sstatus.read_value()),
                 Csr::Stvec(stvec) => Ok(stvec.read_value()),
                 Csr::Sepc(sepc) => Ok(sepc.read_value()),
                 Csr::Satp(satp) => Ok(satp.read_value()),
@@ -270,6 +277,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => uepc.write_value(value),
                 Csr::Fcsr(fcsr) => fcsr.write_value(value),
+                Csr::Sstatus(sstatus) => sstatus.write_value(value),
                 Csr::Stvec(stvec) => stvec.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
                 Csr::Satp(satp) => satp.write_value(value),
@@ -325,6 +333,7 @@ impl State {
             match csr {
                 Csr::Uepc(uepc) => uepc.reset(),
                 Csr::Fcsr(fcsr) => fcsr.reset(),
+                Csr::Sstatus(sstatus) => sstatus.reset(),
                 Csr::Stvec(stvec) => stvec.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
                 Csr::Satp(satp) => satp.reset(),

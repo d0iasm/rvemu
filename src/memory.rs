@@ -11,8 +11,8 @@ impl Memory {
     /// Create a new `memory` object with default memory size (1048KB).
     pub fn new() -> Memory {
         Self {
-            // Default memory size is 1048KB.
-            dram: vec![0; 1048 * 1000],
+            // Default memory size is 1GiB.
+            dram: vec![0; 1024 * 1024 * 1024],
             code_size: 0,
         }
     }
