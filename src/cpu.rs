@@ -247,7 +247,7 @@ impl Cpu {
                     // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
                     //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
                     //    exception corresponding to the original access type.
-                    pte = self.bus.read64(a + vpn[i] * 8)? as usize;
+                    pte = self.bus.read64(a + vpn[i] * 8)?;
                     // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
                     //    exception corresponding to the original access type.
                     let v = pte & 1;
@@ -269,7 +269,7 @@ impl Cpu {
                     }
                     i -= 1;
                     let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
-                    a = ppn * PAGE_SIZE;
+                    a = ppn as usize * PAGE_SIZE;
                     if i < 0 {
                         // TODO: raise InstructionPageFault, LoadPageFault, or StoreAMOPageFault
                         // depending on the original access type.
@@ -306,14 +306,14 @@ impl Cpu {
                 let offset = addr & 0xfff;
                 Ok(if i > 0 {
                     let ppn = [
-                        (pte >> 10) & 0x1ff,
-                        (pte >> 19) & 0x1ff,
-                        (pte >> 28) & 0x03ff_ffff,
+                        ((pte >> 10) & 0x1ff) as usize,
+                        ((pte >> 19) & 0x1ff) as usize,
+                        ((pte >> 28) & 0x03ff_ffff) as usize,
                     ];
                     (ppn[2] << 30) | (ppn[1] << 21) | (vpn[0] << 12) | offset
                 } else {
                     let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
-                    (ppn << 12) | offset
+                    (ppn << 12) as usize | offset
                 })
             }
             satp::Mode::Sv48 => {
