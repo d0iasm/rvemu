@@ -55,11 +55,9 @@ impl Emulator {
                 let data_or_error = cpu.fetch();
 
                 dbg!(format!(
-                    "pc: {} , data: {:#?}, size {}, uart data",
+                    "pc: {} , data: {:#?}",
                     cpu.pc,
                     &data_or_error,
-                    size,
-                    //cpu.bus.read8(UART_RHR)
                 ));
 
                 // 2. Add 4 to the program counter.

@@ -1,5 +1,5 @@
 //! The uart module contains the implementation of a universal asynchronous receiver-transmitter
-//! (UART) for CLI tool. The device is 16550a UART, which is used in the QEMU virt machine. See more information
+//! (UART) for the CLI tool. The device is 16550a UART, which is used in the QEMU virt machine. See more information
 //! in http://byterunner.com/16550.html.
 
 use std::io;
@@ -88,13 +88,13 @@ impl Uart {
     pub fn write(&mut self, index: usize, value: u8) {
         let (uart, _cvar) = &*self.uart;
         let mut uart = uart.lock().expect("failed to get an UART object");
-        match index {
+        match index + UART_BASE {
             UART_THR => {
                 print!("{}", value as char);
                 io::stdout().flush().expect("failed to flush stdout");
             }
             _ => {
-                uart[index - UART_BASE] = value;
+                uart[index] = value;
             }
         }
     }
