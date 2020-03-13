@@ -11,6 +11,7 @@ pub mod mie;
 pub mod mimpid;
 pub mod mip;
 pub mod misa;
+pub mod mscratch;
 pub mod mstatus;
 pub mod mtvec;
 pub mod mvendorid;
@@ -35,6 +36,7 @@ use crate::csr::mie::Mie;
 use crate::csr::mimpid::Mimpid;
 use crate::csr::mip::Mip;
 use crate::csr::misa::Misa;
+use crate::csr::mscratch::Mscratch;
 use crate::csr::mstatus::Mstatus;
 use crate::csr::mtvec::Mtvec;
 use crate::csr::mvendorid::Mvendorid;
@@ -157,6 +159,7 @@ pub enum Csr {
     Mideleg(Mideleg),
     Mie(Mie),
     Mtvec(Mtvec),
+    Mscratch(Mscratch),
     Mepc(Mepc),
     Mcause(Mcause),
     Mip(Mip),
@@ -193,6 +196,7 @@ impl State {
         csrs.insert(MIE, Csr::Mie(Mie::new(0)));
         csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
 
+        csrs.insert(MSCRATCH, Csr::Mscratch(Mscratch::new(0)));
         csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
         csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
         csrs.insert(MIP, Csr::Mip(Mip::new(0)));
@@ -246,6 +250,7 @@ impl State {
                 Csr::Mideleg(mideleg) => Ok(mideleg.read_value()),
                 Csr::Mie(mie) => Ok(mie.read_value()),
                 Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
+                Csr::Mscratch(mscratch) => Ok(mscratch.read_value()),
                 Csr::Mepc(mepc) => Ok(mepc.read_value()),
                 Csr::Mcause(mcause) => Ok(mcause.read_value()),
                 Csr::Mip(mip) => Ok(mip.read_value()),
@@ -299,6 +304,7 @@ impl State {
                 Csr::Mideleg(mideleg) => mideleg.write_value(value),
                 Csr::Mie(mie) => mie.write_value(value),
                 Csr::Mtvec(mtvec) => mtvec.write_value(value),
+                Csr::Mscratch(mscratch) => mscratch.write_value(value),
                 Csr::Mepc(mepc) => mepc.write_value(value),
                 Csr::Mcause(mcause) => mcause.write_value(value),
                 Csr::Mip(mip) => mip.write_value(value),
@@ -332,6 +338,7 @@ impl State {
                 Csr::Mideleg(mideleg) => mideleg.reset(),
                 Csr::Mie(mie) => mie.reset(),
                 Csr::Mtvec(mtvec) => mtvec.reset(),
+                Csr::Mscratch(mscratch) => mscratch.reset(),
                 Csr::Mepc(mepc) => mepc.reset(),
                 Csr::Mcause(mcause) => mcause.reset(),
                 Csr::Mip(mip) => mip.reset(),
