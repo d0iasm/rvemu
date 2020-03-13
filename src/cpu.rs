@@ -302,7 +302,6 @@ impl Cpu {
                 //    • If i > 0, then this is a superpage translation and pa.ppn[i−1:0] =
                 //    va.vpn[i−1:0].
                 //    • pa.ppn[LEVELS−1:i] = pte.ppn[LEVELS−1:i].
-
                 let offset = addr & 0xfff;
                 Ok(if i > 0 {
                     let ppn = [

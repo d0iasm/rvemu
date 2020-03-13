@@ -1,10 +1,16 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
-use crate::devices::uart::{Uart, UART_SIZE};
+use crate::devices::{
+    clint::{Clint, CLINT_SIZE},
+    uart::{Uart, UART_SIZE},
+};
 use crate::exception::Exception;
 use crate::memory::Memory;
 
+/// Core-Local Interruptor (CLINT). The CLINT block holds memory-mapped control and status
+/// registers associated with software and timer interrupts.
+pub const CLINT_BASE: usize = 0x200_0000;
 /// The address which UART starts. QEMU puts UART registers here in physical memory.
 pub const UART_BASE: usize = 0x1000_0000;
 /// The address which DRAM starts.
@@ -12,6 +18,7 @@ pub const DRAM_BASE: usize = 0x8000_0000;
 
 /// The system bus.
 pub struct Bus {
+    clint: Clint,
     uart: Uart,
     pub dram: Memory,
 }
@@ -19,6 +26,7 @@ pub struct Bus {
 impl Bus {
     pub fn new() -> Bus {
         Self {
+            clint: Clint::new(),
             uart: Uart::new(),
             dram: Memory::new(),
         }
@@ -37,11 +45,12 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, addr: usize, val: u8) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
-        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            Ok(self.uart.write(addr, val))
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            Ok(self.clint.write8(addr - CLINT_BASE, val))
+        } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
+            Ok(self.uart.write(addr - UART_BASE, val))
         } else if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.write8(physical, val))
+            Ok(self.dram.write8(addr - DRAM_BASE, val))
         } else {
             // TODO: The type of an exception InstructionAccessFault is correct?
             Err(Exception::InstructionAccessFault)
@@ -51,8 +60,7 @@ impl Bus {
     /// Write 2 bytes to the system bus.
     pub fn write16(&mut self, addr: usize, val: u16) -> Result<(), Exception> {
         if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.write16(physical, val))
+            Ok(self.dram.write16(addr - DRAM_BASE, val))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -61,8 +69,7 @@ impl Bus {
     /// Write 4 bytes to the system bus.
     pub fn write32(&mut self, addr: usize, val: u32) -> Result<(), Exception> {
         if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.write32(physical, val))
+            Ok(self.dram.write32(addr - DRAM_BASE, val))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -70,9 +77,10 @@ impl Bus {
 
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: usize, val: u64) -> Result<(), Exception> {
-        if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.write64(physical, val))
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            Ok(self.clint.write64(addr - CLINT_BASE, val))
+        } else if DRAM_BASE <= addr {
+            Ok(self.dram.write64(addr - DRAM_BASE, val))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -80,11 +88,12 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
-        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            Ok(self.uart.read(addr))
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            Ok(self.clint.read8(addr - CLINT_BASE))
+        } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
+            Ok(self.uart.read(addr - UART_BASE))
         } else if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.read8(physical))
+            Ok(self.dram.read8(addr - DRAM_BASE))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -93,8 +102,7 @@ impl Bus {
     /// Read 2 bytes from the system bus.
     pub fn read16(&self, addr: usize) -> Result<u16, Exception> {
         if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.read16(physical))
+            Ok(self.dram.read16(addr - DRAM_BASE))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -103,8 +111,7 @@ impl Bus {
     /// Read 4 bytes from the system bus.
     pub fn read32(&self, addr: usize) -> Result<u32, Exception> {
         if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.read32(physical))
+            Ok(self.dram.read32(addr - DRAM_BASE))
         } else {
             Err(Exception::InstructionAccessFault)
         }
@@ -112,9 +119,10 @@ impl Bus {
 
     /// Read 8 bytes from the system bus.
     pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
-        if DRAM_BASE <= addr {
-            let physical = addr - DRAM_BASE;
-            Ok(self.dram.read64(physical))
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            Ok(self.clint.read64(addr - CLINT_BASE))
+        } else if DRAM_BASE <= addr {
+            Ok(self.dram.read64(addr - DRAM_BASE))
         } else {
             Err(Exception::InstructionAccessFault)
         }

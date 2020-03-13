@@ -50,13 +50,13 @@ impl Memory {
     /// Write 8 bytes to the memory.
     pub fn write64(&mut self, addr: usize, val: u64) {
         self.dram[addr] = (val & 0xFF) as u8;
-        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
-        self.dram[addr + 2] = ((val & 0xFF0000) >> 16) as u8;
-        self.dram[addr + 3] = ((val & 0xFF000000) >> 24) as u8;
-        self.dram[addr + 4] = ((val & 0xFF00000000) >> 32) as u8;
-        self.dram[addr + 5] = ((val & 0xFF0000000000) >> 40) as u8;
-        self.dram[addr + 6] = ((val & 0xFF000000000000) >> 48) as u8;
-        self.dram[addr + 7] = ((val & 0xFF00000000000000) >> 56) as u8;
+        self.dram[addr + 1] = ((val >> 8) & 0xFF) as u8;
+        self.dram[addr + 2] = ((val >> 16) & 0xFF) as u8;
+        self.dram[addr + 3] = ((val >> 24) & 0xFF) as u8;
+        self.dram[addr + 4] = ((val >> 32) & 0xFF) as u8;
+        self.dram[addr + 5] = ((val >> 40) & 0xFF) as u8;
+        self.dram[addr + 6] = ((val >> 48) & 0xFF) as u8;
+        self.dram[addr + 7] = ((val >> 56) & 0xFF) as u8;
     }
 
     /// Read a byte from the memory.

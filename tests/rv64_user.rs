@@ -218,4 +218,3 @@ add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
 add_test!(rv64um_p_remuw);
 add_test!(rv64um_p_remw);
-
