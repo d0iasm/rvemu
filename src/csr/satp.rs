@@ -30,9 +30,7 @@ impl CsrBase for Satp {
     }
 
     fn write_value(&mut self, value: Mxlen) {
-        dbg!("write_value {}", value);
         self.value = value;
-        dbg!("satp {:?}", self.read_mode());
     }
 
     fn read_value(&self) -> Mxlen {

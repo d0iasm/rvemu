@@ -432,7 +432,7 @@ pub trait Read: CsrBase {
         }
 
         // Shift away low bits.
-        (self.read_value() & !bitmask) >> range.start
+        ((self.read_value() as u64 & !bitmask) >> range.start) as i64
     }
 }
 
