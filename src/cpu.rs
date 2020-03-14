@@ -1654,7 +1654,7 @@ impl Cpu {
                 }
             }
             _ => {
-                return Err(Exception::Unimplemented);
+                return Err(Exception::IllegalInstruction(String::from("instruction not found")));
             }
         }
         Ok(())

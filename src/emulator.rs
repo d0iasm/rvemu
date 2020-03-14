@@ -74,12 +74,10 @@ impl Emulator {
                 // TODO: Take interrupts.
 
                 if result.is_err() {
-                    if self.is_debug {
                     dbg!(format!(
                         "pc: {}, result {:#?}",
                         cpu.pc, result
                     ));
-                    }
                     return;
                 }
             }

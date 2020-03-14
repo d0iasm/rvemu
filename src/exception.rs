@@ -22,7 +22,6 @@ pub enum Exception {
     InstructionPageFault,
     LoadPageFault,
     StoreAMOPageFault,
-    Unimplemented,
 }
 
 impl Exception {
@@ -155,10 +154,6 @@ impl Exception {
             Exception::StoreAMOPageFault => {
                 exception_code = 15;
             }
-            Exception::Unimplemented => {
-                // TODO: Unimplemented operation is same with illegal instruction for now.
-                exception_code = 2;
-            }
         }
 
         match cpu.mode {
@@ -178,15 +173,20 @@ impl Exception {
         }
 
         match self {
-            // TODO: Stop executing if the fetching binary fails or the operaion is unimplemented.
-            Exception::InstructionAccessFault => {
-                return Err(Exception::InstructionAccessFault);
-            }
-            // TODO: Stop executing only if the operation is unimplemented.
-            Exception::Unimplemented => {
-                return Err(Exception::Unimplemented);
-            }
-            _ => Ok(()),
+            Exception::InstructionAddressMisaligned(s) => Err(Exception::InstructionAddressMisaligned(s.to_string())),
+            Exception::InstructionAccessFault => Err(Exception::InstructionAccessFault),
+            Exception::IllegalInstruction(s) => Err(Exception::IllegalInstruction(s.to_string())),
+            Exception::Breakpoint => Err(Exception::Breakpoint),
+            Exception::LoadAddressMisaligned => Err(Exception::LoadAddressMisaligned),
+            Exception::LoadAccessFault => Err(Exception::LoadAccessFault),
+            Exception::StoreAMOAddressMisaligned => Err(Exception::StoreAMOAddressMisaligned),
+            Exception::StoreAMOAccessFault => Err(Exception::StoreAMOAccessFault),
+            Exception::EnvironmentCallFromUMode =>Ok(()),
+            Exception::EnvironmentCallFromSMode => Ok(()),
+            Exception::EnvironmentCallFromMMode => Ok(()),
+            Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
+            Exception::LoadPageFault => Err(Exception::LoadPageFault),
+            Exception::StoreAMOPageFault => Err(Exception::StoreAMOPageFault),
         }
     }
 }
