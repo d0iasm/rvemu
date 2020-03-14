@@ -21,6 +21,7 @@ pub mod satp;
 pub mod sepc;
 pub mod sstatus;
 pub mod stvec;
+pub mod scause;
 pub mod uepc;
 
 use std::collections::HashMap;
@@ -45,6 +46,7 @@ use crate::csr::pmpaddr0::Pmpaddr0;
 use crate::csr::pmpcfg0::Pmpcfg0;
 use crate::csr::satp::Satp;
 use crate::csr::sepc::Sepc;
+use crate::csr::scause::Scause;
 use crate::csr::sstatus::Sstatus;
 use crate::csr::stvec::Stvec;
 use crate::csr::uepc::Uepc;
@@ -152,6 +154,7 @@ pub enum Csr {
     Sstatus(Sstatus),
     Stvec(Stvec),
     Sepc(Sepc),
+    Scause(Scause),
     Satp(Satp),
     // Machine-level CSRs.
     Mvendorid(Mvendorid),
@@ -185,7 +188,9 @@ impl State {
         // Supervisor-level CSRs.
         csrs.insert(SSTATUS, Csr::Sstatus(Sstatus::new(0)));
         csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
+
         csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
+        csrs.insert(SCAUSE, Csr::Scause(Scause::new(0)));
 
         csrs.insert(SATP, Csr::Satp(Satp::new(0)));
 
@@ -215,12 +220,8 @@ impl State {
         csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
         csrs.insert(FRB, Csr::RW(ReadWrite::new(0)));
 
-        csrs.insert(SCAUSE, Csr::RW(ReadWrite::new(0)));
-
         csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MSCRATCH, Csr::RW(ReadWrite::new(0)));
         csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MIP, Csr::RW(ReadWrite::new(0)));
         */
 
         Self { csrs }
@@ -246,6 +247,7 @@ impl State {
                 Csr::Sstatus(sstatus) => Ok(sstatus.read_value()),
                 Csr::Stvec(stvec) => Ok(stvec.read_value()),
                 Csr::Sepc(sepc) => Ok(sepc.read_value()),
+                Csr::Scause(scause) => Ok(scause.read_value()),
                 Csr::Satp(satp) => Ok(satp.read_value()),
                 Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
                 Csr::Marchid(marchid) => Ok(marchid.read_value()),
@@ -280,6 +282,7 @@ impl State {
                 Csr::Sstatus(sstatus) => sstatus.write_value(value),
                 Csr::Stvec(stvec) => stvec.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
+                Csr::Scause(scause) =>scause.write_value(value),
                 Csr::Satp(satp) => satp.write_value(value),
                 Csr::Mvendorid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
@@ -321,6 +324,7 @@ impl State {
             }
             Ok(())
         } else {
+            dbg!("csr_address {}", csr_address);
             Err(Exception::IllegalInstruction(String::from(
                 "failed to write a value to a csr",
             )))
@@ -336,6 +340,7 @@ impl State {
                 Csr::Sstatus(sstatus) => sstatus.reset(),
                 Csr::Stvec(stvec) => stvec.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
+                Csr::Scause(scause) =>scause.reset(),
                 Csr::Satp(satp) => satp.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),

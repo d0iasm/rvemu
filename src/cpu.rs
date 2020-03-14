@@ -228,6 +228,7 @@ impl Cpu {
         match satp.read_mode() {
             satp::Mode::Bare => Ok(addr),
             satp::Mode::Sv39 => {
+                dbg!("sv39!");
                 // 4.3.2 Virtual Address Translation Process
                 // (The RISC-V Instruction Set Manual Volume II-Privileged Architecture_20190608)
                 // A virtual address va is translated into a physical address pa as follows:
