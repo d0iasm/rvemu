@@ -55,10 +55,7 @@ fn main() -> io::Result<()> {
 
     emu.start();
 
-    {
-        let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
-        dump_registers(&cpu);
-    }
+    dump_registers(&emu.cpu);
 
     Ok(())
 }

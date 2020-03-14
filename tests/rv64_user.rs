@@ -27,14 +27,12 @@ macro_rules! add_test {
 
             emu.start();
 
-            let cpu = emu.cpu.lock().expect("failed to get a mutable CPU.");
-
             // Test result is stored at a0 (x10), a function argument and a return value.
             // The riscv-tests set a0 to 0 when all tests pass.
-            assert_eq!(0, cpu.xregs.read(10));
+            assert_eq!(0, emu.cpu.xregs.read(10));
 
             // All tests start the user mode and finish with  the instruction `ecall`, independently of it succeeds or fails.
-            assert_eq!(Mode::Machine, cpu.mode);
+            assert_eq!(Mode::Machine, emu.cpu.mode);
             Ok(())
         }
     };
