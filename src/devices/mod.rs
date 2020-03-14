@@ -1,6 +1,7 @@
 //! The devices module contains peripheral devices.
 
 pub mod clint;
+pub mod plic;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod uart_cli;
