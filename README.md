@@ -109,6 +109,12 @@ You need to install a Firefox browser, a Chrome browser, or a Safari browser to 
 $ make test-wasm
 ```
 
+## Analyzing with perf
+```
+$ perf record -F99 --call-graph dwarf ./target/release/rvemu-cli -k ./kernel.text
+$ perf report
+```
+
 ## Publish
 [The site](https://rvemu.app/) is hosted by a firebase.
 ```

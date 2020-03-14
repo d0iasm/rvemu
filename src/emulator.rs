@@ -74,10 +74,7 @@ impl Emulator {
                 // TODO: Take interrupts.
 
                 if result.is_err() {
-                    dbg!(format!(
-                        "pc: {}, result {:#?}",
-                        cpu.pc, result
-                    ));
+                    dbg!(format!("pc: {}, result {:#?}", cpu.pc, result));
                     return;
                 }
             }

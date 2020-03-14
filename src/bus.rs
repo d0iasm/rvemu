@@ -11,6 +11,9 @@ use crate::memory::Memory;
 /// Core-Local Interruptor (CLINT). The CLINT block holds memory-mapped control and status
 /// registers associated with software and timer interrupts.
 pub const CLINT_BASE: usize = 0x200_0000;
+/// Platform-Level Interrupt Controller (PLIC). The PLIC connects all external interrupts in the
+/// system to all hart contexts in the system, via the external interrupt source in each hart.
+pub const PLIC_BASE: usize = 0xc00_0000;
 /// The address which UART starts. QEMU puts UART registers here in physical memory.
 pub const UART_BASE: usize = 0x1000_0000;
 /// The address which DRAM starts.

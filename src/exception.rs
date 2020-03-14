@@ -173,7 +173,9 @@ impl Exception {
         }
 
         match self {
-            Exception::InstructionAddressMisaligned(s) => Err(Exception::InstructionAddressMisaligned(s.to_string())),
+            Exception::InstructionAddressMisaligned(s) => {
+                Err(Exception::InstructionAddressMisaligned(s.to_string()))
+            }
             Exception::InstructionAccessFault => Err(Exception::InstructionAccessFault),
             Exception::IllegalInstruction(s) => Err(Exception::IllegalInstruction(s.to_string())),
             Exception::Breakpoint => Err(Exception::Breakpoint),
@@ -181,7 +183,7 @@ impl Exception {
             Exception::LoadAccessFault => Err(Exception::LoadAccessFault),
             Exception::StoreAMOAddressMisaligned => Err(Exception::StoreAMOAddressMisaligned),
             Exception::StoreAMOAccessFault => Err(Exception::StoreAMOAccessFault),
-            Exception::EnvironmentCallFromUMode =>Ok(()),
+            Exception::EnvironmentCallFromUMode => Ok(()),
             Exception::EnvironmentCallFromSMode => Ok(()),
             Exception::EnvironmentCallFromMMode => Ok(()),
             Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
