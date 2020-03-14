@@ -58,12 +58,12 @@ $ npm start // at the public directory
 ## Build and run as a CLI tool
 The emulator can be executed as a CLI tool too. You can build it by `make rvemu-cli` command which is the alias of `cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml`.
 
-To execute the RISC-V ELF binary, XV6 in the folloing example, you can use `--kernel` or `-k` options to specify the kernel image. Note that `xv6-kernel.text` is an ELF file without header by the command `riscv64-unknown-elf-objcopy -O binary xv6-kernel.text kernel`
+To execute the RISC-V ELF binary, XV6 in the folloing example, you can use `--kernel` or `-k` options to specify the kernel image. Note that `xv6-kernel.text` is an ELF file without headers by the command `riscv64-unknown-elf-objcopy -O binary xv6-kernel.text kernel`
 ```
 $ ./target/release/rvemu-cli --kernel examples/xv6-kernel.text
 ```
 
-You can see the details of usage anytime by the `help` option.
+You can see the details of how to use by the `help` option.
 ```
 $ ./target/release/rvemu-cli --help
 rvemu: RISC-V emulator 0.0.1
