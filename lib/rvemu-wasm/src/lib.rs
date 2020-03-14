@@ -71,15 +71,14 @@ impl Emulator {
 
     /// Output current registers.
     pub fn dump_registers(&self) {
-        let cpu = self.emu.cpu.lock().expect("failed to get a CPU object");
-        stdout_log(&format!("{}", cpu.xregs));
+        stdout_log(&format!("{}", self.emu.cpu.xregs));
         stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        stdout_log(&format!("{}", cpu.fregs));
+        stdout_log(&format!("{}", self.emu.cpu.fregs));
         stdout_log(&format!(
             "---------------------------------------------------"
         ));
-        stdout_log(&format!("pc: {}", cpu.pc));
+        stdout_log(&format!("pc: {}", self.emu.cpu.pc));
     }
 }
