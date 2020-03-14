@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 
 use rvemu::{
-    bus::{Bus, DRAM_BASE},
+    bus::DRAM_BASE,
     cpu::Mode,
     emulator::Emulator,
 };

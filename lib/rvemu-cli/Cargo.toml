@@ -8,4 +8,5 @@ repository = "https://github.com/d0iasm/rvemu"
 license = "MIT"
 
 [dependencies]
+clap = "2.33.0"
 rvemu-core = { package="rvemu", path = "../../" }

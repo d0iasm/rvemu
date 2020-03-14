@@ -24,9 +24,8 @@ What to do next is:
    [memlayout.h](https://github.com/mit-pdos/xv6-riscv/blob/37df68e5dedbf2a26c2bf0bdae090b206ce78b48/kernel/memlayout.h) in xv6)
    1. keyboards
    2. timer
-   3. uart
-   4. virtio
-   5. block devices
+   3. virtio
+   4. block devices
 2. virtual memory
 
 # Usage
@@ -57,15 +56,29 @@ $ npm start // at the public directory
 ```
 
 ## Build and run as a CLI tool
-The emulator can be executed as a CLI tool.
+The emulator can be executed as a CLI tool too. You can build it by `make rvemu-cli` command which is the alias of `cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml`.
+
+To execute the RISC-V ELF binary, XV6 in the folloing example, you can use `--kernel` or `-k` options to specify the kernel image. Note that `xv6-kernel.text` is an ELF file without header by the command `riscv64-unknown-elf-objcopy -O binary xv6-kernel.text kernel`
 ```
-$ make rvemu-cli
-// This is the alias of `cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml`.
+$ ./target/release/rvemu-cli --kernel examples/xv6-kernel.text
 ```
 
-The binary file is generated in the target directory.
+You can see the details of usage anytime by the `help` option.
 ```
-$ ./target/release/rvemu-cli <binary-file-name>
+$ ./target/release/rvemu-cli --help
+rvemu: RISC-V emulator 0.0.1
+Asami Doi <@d0iasm>
+
+USAGE:
+    rvemu-cli [FLAGS] --kernel <kernel>
+
+FLAGS:
+    -d, --debug      Enables to output debug messages
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -k, --kernel <kernel>    A kernel ELF image without headers
 ```
 
 ## Build RISC-V binary

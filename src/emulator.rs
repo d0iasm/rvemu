@@ -1,14 +1,15 @@
 //! The emulator module represents an entire computer.
 
 use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time;
 
-use crate::{bus::DRAM_BASE, cpu::Cpu};
+use crate::cpu::Cpu;
 
 /// Emulator struct to holds a CPU.
 pub struct Emulator {
+    /// The CPU which is the core implementation of this emulator.
     pub cpu: Arc<Mutex<Cpu>>,
+    /// The debug flag. Output messages if it's true, otherwise output nothing.
+    is_debug: bool,
 }
 
 impl Emulator {
@@ -16,6 +17,7 @@ impl Emulator {
     pub fn new() -> Emulator {
         Self {
             cpu: Arc::new(Mutex::new(Cpu::new())),
+            is_debug: false,
         }
     }
 
@@ -23,6 +25,11 @@ impl Emulator {
     pub fn reset(&mut self) {
         let mut cpu = self.cpu.lock().expect("failed to get a CPU object");
         cpu.reset()
+    }
+
+    /// Enable the debug flag.
+    pub fn enable_debug(&mut self) {
+        self.is_debug = true;
     }
 
     /// Set binary data to the beginning of the DRAM from the emulator console of a browser.
@@ -40,27 +47,16 @@ impl Emulator {
     /// Start executing the emulator.
     pub fn start(&mut self) {
         let cpu = self.cpu.lock().expect("failed to get a CPU object");
-        let size = cpu.bus.dram_size();
         drop(cpu);
 
-        // TODO: delete `count` variable bacause it's for debug.
-        let mut count = 0;
-
         loop {
-            // TODO: Delete the following sleep function. This is for debug.
-            //thread::sleep(time::Duration::from_millis(500));
-
             if let Ok(mut cpu) = self.cpu.try_lock() {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
-                /*
-                dbg!(format!(
-                    "pc: {} , data: {:#?}",
-                    cpu.pc,
-                    &data_or_error,
-                ));
-                */
+                if self.is_debug {
+                    dbg!(format!("pc: {} , data: {:#?}", cpu.pc, &data_or_error));
+                }
 
                 // 2. Add 4 to the program counter.
                 cpu.pc += 4;
@@ -77,16 +73,13 @@ impl Emulator {
 
                 // TODO: Take interrupts.
 
-                // TODO: Delete this count because it's for debug.
-                count += 1;
-
-                // TODO: reconsider the termination condition.
-                //if result.is_err() | (cpu.pc >= size + DRAM_BASE + 0x1000) | (count > 1000000) {
                 if result.is_err() {
+                    if self.is_debug {
                     dbg!(format!(
-                        "pc: {}, count: {}, result {:#?}",
-                        cpu.pc, count, result
+                        "pc: {}, result {:#?}",
+                        cpu.pc, result
                     ));
+                    }
                     return;
                 }
             }

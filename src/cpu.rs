@@ -242,13 +242,13 @@ impl Cpu {
                 // 1. Let a be satp.ppn × PAGESIZE, and let i = LEVELS − 1. (For Sv32, PAGESIZE=212
                 //    and LEVELS=2.)
                 let mut a = satp.read_ppn() as usize * PAGE_SIZE;
-                let mut i = levels - 1;
+                let mut i: i32 = levels - 1;
                 let mut pte;
                 loop {
                     // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
                     //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
                     //    exception corresponding to the original access type.
-                    pte = self.bus.read64(a + vpn[i] * 8)?;
+                    pte = self.bus.read64(a + vpn[i as usize] * 8)?;
                     // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
                     //    exception corresponding to the original access type.
                     let v = pte & 1;

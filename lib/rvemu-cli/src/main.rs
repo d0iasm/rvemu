@@ -1,4 +1,4 @@
-use std::env;
+use clap::{App, Arg};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
@@ -18,18 +18,40 @@ fn dump_registers(cpu: &Cpu) {
 
 /// Main function of RISC-V emulator for the CLI version.
 fn main() -> io::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        panic!("Usage: ./rvemu-cli <binary-file-name>");
-    }
+    let matches = App::new("rvemu: RISC-V emulator")
+        .version("0.0.1")
+        .author("Asami Doi <@d0iasm>")
+        .arg(
+            Arg::with_name("kernel")
+                .short("k")
+                .long("kernel")
+                .takes_value(true)
+                .required(true)
+                .help("A kernel ELF image without headers"),
+        )
+        .arg(
+            Arg::with_name("debug")
+                .short("d")
+                .long("debug")
+                .help("Enables to output debug messages"),
+        )
+        .get_matches();
 
-    let mut file = File::open(&args[1])?;
+    let mut file = File::open(
+        &matches
+            .value_of("kernel")
+            .expect("failed to get a kernel file from a command option"),
+    )?;
     let mut data = Vec::new();
     file.read_to_end(&mut data)?;
 
     let mut emu = Emulator::new();
     emu.set_dram(data);
     emu.set_pc(DRAM_BASE);
+
+    if matches.occurrences_of("debug") == 1 {
+        emu.enable_debug();
+    }
 
     emu.start();
 

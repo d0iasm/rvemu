@@ -18,10 +18,10 @@ pub mod mvendorid;
 pub mod pmpaddr0;
 pub mod pmpcfg0;
 pub mod satp;
+pub mod scause;
 pub mod sepc;
 pub mod sstatus;
 pub mod stvec;
-pub mod scause;
 pub mod uepc;
 
 use std::collections::HashMap;
@@ -45,8 +45,8 @@ use crate::csr::mvendorid::Mvendorid;
 use crate::csr::pmpaddr0::Pmpaddr0;
 use crate::csr::pmpcfg0::Pmpcfg0;
 use crate::csr::satp::Satp;
-use crate::csr::sepc::Sepc;
 use crate::csr::scause::Scause;
+use crate::csr::sepc::Sepc;
 use crate::csr::sstatus::Sstatus;
 use crate::csr::stvec::Stvec;
 use crate::csr::uepc::Uepc;
@@ -282,7 +282,7 @@ impl State {
                 Csr::Sstatus(sstatus) => sstatus.write_value(value),
                 Csr::Stvec(stvec) => stvec.write_value(value),
                 Csr::Sepc(sepc) => sepc.write_value(value),
-                Csr::Scause(scause) =>scause.write_value(value),
+                Csr::Scause(scause) => scause.write_value(value),
                 Csr::Satp(satp) => satp.write_value(value),
                 Csr::Mvendorid(_) => {
                     return Err(Exception::IllegalInstruction(String::from(
@@ -340,7 +340,7 @@ impl State {
                 Csr::Sstatus(sstatus) => sstatus.reset(),
                 Csr::Stvec(stvec) => stvec.reset(),
                 Csr::Sepc(sepc) => sepc.reset(),
-                Csr::Scause(scause) =>scause.reset(),
+                Csr::Scause(scause) => scause.reset(),
                 Csr::Satp(satp) => satp.reset(),
                 Csr::Mvendorid(mvendorid) => mvendorid.reset(),
                 Csr::Marchid(marchid) => marchid.reset(),
