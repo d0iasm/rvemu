@@ -11,8 +11,8 @@ impl Memory {
     /// Create a new `memory` object with default memory size (1048KB).
     pub fn new() -> Memory {
         Self {
-            // Default memory size is 1GiB.
-            dram: vec![0; 1024 * 1024 * 1024],
+            // Default memory size is 128MiB.
+            dram: vec![0; 1024 * 1024 * 128],
             code_size: 0,
         }
     }
@@ -36,15 +36,15 @@ impl Memory {
     /// Write 2 bytes to the memory.
     pub fn write16(&mut self, addr: usize, val: u16) {
         self.dram[addr] = (val & 0xFF) as u8;
-        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
+        self.dram[addr + 1] = ((val >> 8) & 0xFF) as u8;
     }
 
     /// Write 4 bytes to the memory.
     pub fn write32(&mut self, addr: usize, val: u32) {
         self.dram[addr] = (val & 0xFF) as u8;
-        self.dram[addr + 1] = ((val & 0xFF00) >> 8) as u8;
-        self.dram[addr + 2] = ((val & 0xFF0000) >> 16) as u8;
-        self.dram[addr + 3] = ((val & 0xFF000000) >> 24) as u8;
+        self.dram[addr + 1] = ((val >> 8) & 0xFF) as u8;
+        self.dram[addr + 2] = ((val >> 16) & 0xFF) as u8;
+        self.dram[addr + 3] = ((val >> 24) & 0xFF) as u8;
     }
 
     /// Write 8 bytes to the memory.

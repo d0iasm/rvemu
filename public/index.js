@@ -52,21 +52,34 @@ const callback = function(mutationsList, observer) {
   }
 };
 
+let buffer_count = 0;
+
 // Callback function to execute when mutations are observed.
 const callback8 = function(mutationsList, observer) {
   for(let mutation of mutationsList) {
+    if (buffer_count == 0 && mutation.addedNodes.length > 0) {
+      term.write(deleteLine);
+    }
+
+    console.log(mutation);
     if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+      buffer_count++;
       const firstChild = mutation.addedNodes[0];
       let c = firstChild.innerText;
+      buffer8.removeChild(firstChild);
       if (c != "\n") {
         term.write(c);
       } else {
         term.writeln("");
       }
-      //if (c == "\n") {
-        //term.write("$ ");
-      //}
-      buffer8.removeChild(firstChild);
+    }
+
+    if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
+      buffer_count--;
+    }
+
+    if (buffer_count == 0 && mutation.removedNodes.length > 0) {
+      term.write("$ ");
     }
   }
 };

@@ -23,7 +23,6 @@ crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.59"
-wasm-bindgen-futures = "0.4.9"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3.36"
