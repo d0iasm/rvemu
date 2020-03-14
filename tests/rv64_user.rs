@@ -5,11 +5,7 @@ use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use rvemu::{
-    bus::DRAM_BASE,
-    cpu::Mode,
-    emulator::Emulator,
-};
+use rvemu::{bus::DRAM_BASE, cpu::Mode, emulator::Emulator};
 
 #[macro_export]
 macro_rules! add_test {
