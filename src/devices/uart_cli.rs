@@ -79,9 +79,9 @@ impl Uart {
             UART_RHR => {
                 cvar.notify_one();
                 uart[UART_LSR - UART_BASE] &= !1;
-                uart[index]
+                uart[index - UART_BASE]
             }
-            _ => uart[index],
+            _ => uart[index - UART_BASE],
         }
     }
 
@@ -89,13 +89,13 @@ impl Uart {
     pub fn write(&mut self, index: usize, value: u8) {
         let (uart, _cvar) = &*self.uart;
         let mut uart = uart.lock().expect("failed to get an UART object");
-        match index + UART_BASE {
+        match index {
             UART_THR => {
                 print!("{}", value as char);
                 io::stdout().flush().expect("failed to flush stdout");
             }
             _ => {
-                uart[index] = value;
+                uart[index - UART_BASE] = value;
             }
         }
     }

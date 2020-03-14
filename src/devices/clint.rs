@@ -2,6 +2,8 @@
 //! block holds memory-mapped control and status registers associated with
 //! software and timer interrupts.
 
+use crate::bus::CLINT_BASE;
+
 /// The size of CLINT.
 pub const CLINT_SIZE: usize = 0x10000;
 
@@ -19,17 +21,20 @@ impl Clint {
     }
 
     /// Read a byte from the CLINT.
-    pub fn read8(&self, index: usize) -> u8 {
+    pub fn read8(&self, addr: usize) -> u8 {
+        let index = addr - CLINT_BASE;
         self.clint[index]
     }
 
     /// Write a byte to the CLINT.
-    pub fn write8(&mut self, index: usize, val: u8) {
+    pub fn write8(&mut self, addr: usize, val: u8) {
+        let index = addr - CLINT_BASE;
         self.clint[index] = val
     }
 
     /// Read 8 bytes from the CLINT.
-    pub fn read64(&self, index: usize) -> u64 {
+    pub fn read64(&self, addr: usize) -> u64 {
+        let index = addr - CLINT_BASE;
         return (self.clint[index] as u64)
             | ((self.clint[index + 1] as u64) << 8)
             | ((self.clint[index + 2] as u64) << 16)
@@ -41,7 +46,8 @@ impl Clint {
     }
 
     /// Write 8 bytes from the CLINT.
-    pub fn write64(&mut self, index: usize, val: u64) {
+    pub fn write64(&mut self, addr: usize, val: u64) {
+        let index = addr - CLINT_BASE;
         self.clint[index] = (val & 0xFF) as u8;
         self.clint[index + 1] = ((val >> 8) & 0xFF) as u8;
         self.clint[index + 2] = ((val >> 16) & 0xFF) as u8;

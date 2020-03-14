@@ -46,9 +46,9 @@ impl Bus {
     pub fn write8(&mut self, addr: usize, val: u8) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.write8(addr - CLINT_BASE, val))
+            Ok(self.clint.write8(addr, val))
         } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            Ok(self.uart.write(addr - UART_BASE, val))
+            Ok(self.uart.write(addr, val))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.write8(addr - DRAM_BASE, val))
         } else {
@@ -78,7 +78,7 @@ impl Bus {
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: usize, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.write64(addr - CLINT_BASE, val))
+            Ok(self.clint.write64(addr, val))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.write64(addr - DRAM_BASE, val))
         } else {
@@ -89,9 +89,9 @@ impl Bus {
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.read8(addr - CLINT_BASE))
+            Ok(self.clint.read8(addr))
         } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            Ok(self.uart.read(addr - UART_BASE))
+            Ok(self.uart.read(addr))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.read8(addr - DRAM_BASE))
         } else {
@@ -120,7 +120,7 @@ impl Bus {
     /// Read 8 bytes from the system bus.
     pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.read64(addr - CLINT_BASE))
+            Ok(self.clint.read64(addr))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.read64(addr - DRAM_BASE))
         } else {
