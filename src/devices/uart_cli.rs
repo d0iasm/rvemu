@@ -61,6 +61,7 @@ impl Uart {
                     }
                     uart[0] = byte[0];
                     uart[UART_LSR - UART_BASE] |= 1;
+                    // TODO: interrupt.
                 }
                 Err(e) => {
                     println!("{}", e);

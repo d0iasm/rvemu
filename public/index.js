@@ -18,6 +18,9 @@ import init, { Emulator } from "./pkg/rvemu_wasm.js";
 const fileIn = document.getElementById("file");
 // The `buffer`, that will be observed for mutations, stores the output from Rust.
 const buffer = document.getElementById("buffer");
+// The `buffer8`, that will be observed for mutations, stores the 1 byte from
+// Rust.
+const buffer8 = document.getElementById("buffer8");
 // Options for the observer (which mutations to observe)
 const config = { childList: true, subtree: true };
 
@@ -49,8 +52,28 @@ const callback = function(mutationsList, observer) {
   }
 };
 
+// Callback function to execute when mutations are observed.
+const callback8 = function(mutationsList, observer) {
+  for(let mutation of mutationsList) {
+    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+      const firstChild = mutation.addedNodes[0];
+      let c = firstChild.innerText;
+      if (c != "\n") {
+        term.write(c);
+      } else {
+        term.writeln("");
+      }
+      //if (c == "\n") {
+        //term.write("$ ");
+      //}
+      buffer8.removeChild(firstChild);
+    }
+  }
+};
+
 // Create an observer instance linked to the callback function.
 const observer = new MutationObserver(callback);
+const observer8 = new MutationObserver(callback8);
 
 async function initialize() {
   // Load the wasm file.
@@ -63,6 +86,7 @@ async function initialize() {
   runTerminal();
 
   // Start observing the target node for configured mutations
+  observer8.observe(buffer8, config);
   observer.observe(buffer, config);
 
   fileReader.onloadend = e => {
@@ -171,6 +195,13 @@ function loadApps() {
     .then(response => response.blob())
     .then(blob => {
       const sampleFile = new File([blob], "echoback");
+      files.push(sampleFile);
+    });
+
+  fetch("./apps/xv6.text")
+    .then(response => response.blob())
+    .then(blob => {
+      const sampleFile = new File([blob], "xv6");
       files.push(sampleFile);
     });
 }

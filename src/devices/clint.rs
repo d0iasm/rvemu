@@ -1,6 +1,6 @@
 //! The clint modules contains the core-local interruptor (CLINT). The CLINT
 //! block holds memory-mapped control and status registers associated with
-//! software and timer interrupts.
+//! software and timer interrupts. It generates per-hart software interrupts and timer
 
 use crate::bus::CLINT_BASE;
 
@@ -45,7 +45,7 @@ impl Clint {
             | ((self.clint[index + 7] as u64) << 56);
     }
 
-    /// Write 8 bytes from the CLINT.
+    /// Write 8 bytes to the CLINT.
     pub fn write64(&mut self, addr: usize, val: u64) {
         let index = addr - CLINT_BASE;
         self.clint[index] = (val & 0xFF) as u8;
