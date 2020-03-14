@@ -24,6 +24,7 @@ pub const UART_FCR: usize = UART_BASE + 2;
 pub const UART_ISR: usize = UART_BASE + 2;
 /// Line control register.
 pub const UART_LCR: usize = UART_BASE + 3;
+/// Line status register.
 /// LSR BIT 1:
 /// 0 = no overrun error (normal)
 /// 1 = overrun error. A character arived before receive holding register was emptied or if FIFOs are enabled, an overrun error will occur only after the FIFO is full and the next character has been completely received in the shift register. Note that character in the shift register is overwritten, but it is not transferred to the FIFO.
@@ -78,9 +79,9 @@ impl Uart {
             UART_RHR => {
                 cvar.notify_one();
                 uart[UART_LSR - UART_BASE] &= !1;
-                uart[index - UART_BASE]
+                uart[index]
             }
-            _ => uart[index - UART_BASE],
+            _ => uart[index],
         }
     }
 

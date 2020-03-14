@@ -54,11 +54,13 @@ impl Emulator {
                 // 1. Fetch.
                 let data_or_error = cpu.fetch();
 
+                /*
                 dbg!(format!(
                     "pc: {} , data: {:#?}",
                     cpu.pc,
                     &data_or_error,
                 ));
+                */
 
                 // 2. Add 4 to the program counter.
                 cpu.pc += 4;
