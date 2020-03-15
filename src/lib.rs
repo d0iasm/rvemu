@@ -13,13 +13,18 @@
 //!         0x93, 0x0f, 0xa0, 0x02, // addi x31, x0, 42
 //!     ];
 //!
-//!     let mut emu = Emulator::new(); // Create an emulator object.
-//!     emu.set_dram(data); // Place the binary data in the beginning of DRAM.
-//!     emu.set_pc(DRAM_BASE); // Set the program counter to 0x8000_0000, which is the
-//!     address DRAM starts.
+//!     // Create an emulator object.
+//!     let mut emu = Emulator::new();
+//!     // Place the binary data in the beginning of DRAM.
+//!     emu.set_dram(data);
+//!     // Set the program counter to 0x8000_0000, which is the address DRAM starts.
+//!     emu.set_pc(DRAM_BASE);
+//!     // Start the emulator.
 //!     emu.start();
 //!
-//!     assert_eq!();
+//!     // `IllegalInstruction` is raised for now because of the termination condition of the emulator,
+//!     // but the register is successfully updated.
+//!     assert_eq!(42, emu.cpu.xregs.read(31));
 //! }
 //! ```
 //!
