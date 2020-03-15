@@ -1,4 +1,9 @@
-# RISC-V emulator core implementation.
+# RISC-V emulator core implementation
+[![Build Status](https://travis-ci.com/d0iasm/rvemu.svg?branch=master)](https://travis-ci.com/d0iasm/rvemu)
+[![Actions Status](https://github.com/d0iasm/rvemu/workflows/CI/badge.svg)](https://github.com/d0iasm/rvemu/actions)
+[![docs.rs](https://docs.rs/rvemu/badge.svg)](https://docs.rs/rvemu)
+[![crate.io](https://img.shields.io/crates/v/rvemu.svg)](https://crates.io/crates/rvemu)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/d0iasm/rvemu/master/LICENSE)
 
 *NOTE: This project is currently under intensely development. The source code
 might be changed dramatically.*
