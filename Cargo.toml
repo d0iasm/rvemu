@@ -1,14 +1,14 @@
 [package]
 name = "rvemu"
 description = "RISC-V emulator core implementation."
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Asami Doi <d0iasm.pub@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/d0iasm/rvemu"
 license = "MIT"
 keywords = ["riscv", "risc-v", "emulator"]
 categories = ["emulators", "simulation"]
-readme = "README.md"
+readme = "USAGE.md"
 include = [
   "Cargo.toml",
   "Cargo.lock",
@@ -16,6 +16,7 @@ include = [
   "LICENSE",
   "Makefile",
   "README.md",
+  "USAGE.md",
 ]
 
 [lib]
