@@ -11,6 +11,8 @@ use crate::bus::UART_BASE;
 
 /// The size of UART.
 pub const UART_SIZE: usize = 0x100;
+/// The interrupt request of UART.
+pub const UART_IRQ: usize = 10;
 
 /// Receive holding register (for input bytes).
 pub const UART_RHR: usize = UART_BASE + 0;

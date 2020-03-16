@@ -8,6 +8,8 @@ use crate::bus::UART_BASE;
 
 /// The size of UART.
 pub const UART_SIZE: usize = 0x100;
+/// The interrupt request of UART.
+pub const UART_IRQ: usize = 10;
 
 /// Receive holding register (for input bytes).
 pub const UART_RHR: usize = UART_BASE + 0;
@@ -21,6 +23,7 @@ pub const UART_FCR: usize = UART_BASE + 2;
 pub const UART_ISR: usize = UART_BASE + 2;
 /// Line control register.
 pub const UART_LCR: usize = UART_BASE + 3;
+/// Line status register.
 /// LSR BIT 1:
 /// 0 = no overrun error (normal)
 /// 1 = overrun error. A character arived before receive holding register was emptied or if FIFOs are enabled, an overrun error will occur only after the FIFO is full and the next character has been completely received in the shift register. Note that character in the shift register is overwritten, but it is not transferred to the FIFO.
