@@ -1,7 +1,7 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
-use crate::devices::{clint::Clint, plic::Plic, uart::Uart};
+use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
 use crate::exception::Exception;
 use crate::memory::Memory;
 
@@ -36,6 +36,7 @@ pub struct Bus {
     clint: Clint,
     plic: Plic,
     uart: Uart,
+    virtio: Virtio,
     pub dram: Memory,
 }
 
@@ -45,6 +46,7 @@ impl Bus {
             clint: Clint::new(),
             plic: Plic::new(),
             uart: Uart::new(),
+            virtio: Virtio::new(),
             dram: Memory::new(),
         }
     }
@@ -84,6 +86,9 @@ impl Bus {
     pub fn write32(&mut self, addr: usize, val: u32) -> Result<(), Exception> {
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.write(addr, val));
+        }
+        if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
+            return Ok(self.virtio.write(addr, val));
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write32(addr - DRAM_BASE, val));
@@ -125,6 +130,9 @@ impl Bus {
     pub fn read32(&self, addr: usize) -> Result<u32, Exception> {
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.read(addr));
+        }
+        if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
+            return Ok(self.virtio.read(addr));
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.read32(addr - DRAM_BASE));
