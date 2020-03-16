@@ -8,10 +8,11 @@ use crate::devices::{
 use crate::exception::Exception;
 use crate::memory::Memory;
 
-/// Core-Local Interruptor (CLINT). The CLINT block holds memory-mapped control and status
-/// registers associated with software and timer interrupts.
+/// The address which the core-local interruptor (CLINT) starts. It contains the timer and
+/// generates per-hart software interrupts and timer
+/// interrupts.
 pub const CLINT_BASE: usize = 0x200_0000;
-/// Platform-Level Interrupt Controller (PLIC). The PLIC connects all external interrupts in the
+/// The address which the platform-level interrupt controller (PLIC) starts. The PLIC connects all external interrupts in the
 /// system to all hart contexts in the system, via the external interrupt source in each hart.
 pub const PLIC_BASE: usize = 0xc00_0000;
 /// The address which UART starts. QEMU puts UART registers here in physical memory.
@@ -48,9 +49,7 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, addr: usize, val: u8) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.write8(addr, val))
-        } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
+        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             Ok(self.uart.write(addr, val))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.write8(addr - DRAM_BASE, val))
@@ -81,7 +80,7 @@ impl Bus {
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: usize, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.write64(addr, val))
+            Ok(self.clint.write(addr, val))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.write64(addr - DRAM_BASE, val))
         } else {
@@ -91,9 +90,7 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.read8(addr))
-        } else if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
+        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             Ok(self.uart.read(addr))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.read8(addr - DRAM_BASE))
@@ -123,7 +120,7 @@ impl Bus {
     /// Read 8 bytes from the system bus.
     pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            Ok(self.clint.read64(addr))
+            Ok(self.clint.read(addr))
         } else if DRAM_BASE <= addr {
             Ok(self.dram.read64(addr - DRAM_BASE))
         } else {
