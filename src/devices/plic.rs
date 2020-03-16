@@ -7,9 +7,6 @@
 use crate::bus::PLIC_BASE;
 use crate::devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ};
 
-/// The size of PLIC.
-pub const PLIC_SIZE: usize = 0x4000000;
-
 /// The address of interrupt pending bits.
 pub const PLIC_PENDING: usize = PLIC_BASE + 0x1000;
 /// The address of the regsiters to enable interrupts for M-mode.
@@ -25,11 +22,12 @@ pub const PLIC_MCLAIM: usize = PLIC_BASE + 0x200004;
 /// The address of the claim/complete registers for S-mode.
 pub const PLIC_SCLAIM: usize = PLIC_BASE + 0x201004;
 
+/// The platform-level-interrupt controller (PLIC).
 pub struct Plic {
     /// Priority register.
     /// The QEMU virt machine supports 7 levels of priority. A priority value of 0 is
     /// reserved to mean "never interrupt" and effectively disables the interrupt. Priority 1 is
-    /// the lowest active priority, and priority 7 is the highest. 
+    /// the lowest active priority, and priority 7 is the highest.
     /// The xv6 uses only 2 devices, uart and virtio, so the array contains 2 elements for now.
     priorities: [u32; 2],
     /// Interrupt pending bits. If bit 1 is set, a global interrupt 1 is pending.
@@ -61,7 +59,7 @@ impl Plic {
         }
     }
 
-    /// Read 4 bytes from the PLIC.
+    /// Read 4 bytes from the PLIC only if the address is valid. Otherwise, returns 0.
     pub fn read(&self, addr: usize) -> u32 {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {
@@ -91,7 +89,7 @@ impl Plic {
         0
     }
 
-    /// Write 4 bytes to the PLIC.
+    /// Write 4 bytes to the PLIC only if the address is valid.
     pub fn write(&mut self, addr: usize, val: u32) {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {

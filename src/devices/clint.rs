@@ -6,9 +6,6 @@
 
 use crate::bus::CLINT_BASE;
 
-/// The size of CLINT.
-pub const CLINT_SIZE: usize = 0x10000;
-
 /// The address of a mtimecmp register starts.
 pub const CLINT_MTIMECMP_BASE: usize = CLINT_BASE + 0x4000;
 /// The size of mtimecmp regsiters.

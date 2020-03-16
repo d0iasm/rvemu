@@ -7,10 +7,8 @@ use std::io::prelude::*;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 
-use crate::bus::UART_BASE;
+use crate::bus::{UART_BASE, UART_SIZE};
 
-/// The size of UART.
-pub const UART_SIZE: usize = 0x100;
 /// The interrupt request of UART.
 pub const UART_IRQ: usize = 10;
 
