@@ -41,29 +41,32 @@ impl Interrupt {
             .write32(PLIC_SCLAIM, claim as u32)
             .expect("failed to write an IRQ to the PLIC_SCLAIM");
 
-        /*
-        // TODO: handle mode?
-        cpu.pc = cpu.state.read_bits(MTVEC, 2..) as usize;
-        */
+        match cpu.state.read_bits(MTVEC, ..2) {
+            0 => {
+                // Direct mode.
+                let base = cpu.state.read_bits(MTVEC, 2..);
+                cpu.pc = base as usize;
+            }
+            1 => {
+                // Vectored mode.
+                let base = cpu.state.read_bits(MTVEC, 2..);
+                cpu.pc = (base + 4 * exception_code) as usize;
+            }
+            _ => {}
+        }
 
         match cpu.mode {
             Mode::Machine => {
                 cpu.state.write(MCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(MEPC, exception_pc);
-                // TODO: handle mode?
-                cpu.pc = cpu.state.read_bits(MTVEC, 2..) as usize;
             }
             Mode::Supervisor => {
                 cpu.state.write(SCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(SEPC, exception_pc);
-                // TODO: handle mode?
-                cpu.pc = cpu.state.read_bits(STVEC, 2..) as usize;
             }
             Mode::User => {
                 cpu.state.write(UCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(UEPC, exception_pc);
-                // TODO: handle mode?
-                cpu.pc = cpu.state.read_bits(UTVEC, 2..) as usize;
             }
             _ => {}
         }
