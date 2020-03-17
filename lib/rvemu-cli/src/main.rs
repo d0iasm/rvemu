@@ -30,6 +30,14 @@ fn main() -> io::Result<()> {
                 .help("A kernel ELF image without headers"),
         )
         .arg(
+            Arg::with_name("file")
+                .short("f")
+                .long("file")
+                .takes_value(true)
+                .required(true)
+                .help("A raw disk image"),
+        )
+        .arg(
             Arg::with_name("debug")
                 .short("d")
                 .long("debug")
@@ -37,16 +45,25 @@ fn main() -> io::Result<()> {
         )
         .get_matches();
 
-    let mut file = File::open(
+    let mut kernel_file = File::open(
         &matches
             .value_of("kernel")
             .expect("failed to get a kernel file from a command option"),
     )?;
-    let mut data = Vec::new();
-    file.read_to_end(&mut data)?;
+    let mut kernel_data = Vec::new();
+    kernel_file.read_to_end(&mut kernel_data)?;
+
+    let mut img_file = File::open(
+        &matches
+            .value_of("file")
+            .expect("failed to get a disk image file from a command option"),
+    )?;
+    let mut img_data = Vec::new();
+    img_file.read_to_end(&mut img_data)?;
 
     let mut emu = Emulator::new();
-    emu.set_dram(data);
+    emu.set_dram(kernel_data);
+    emu.set_disk(img_data);
     emu.set_pc(DRAM_BASE);
 
     if matches.occurrences_of("debug") == 1 {

@@ -41,6 +41,7 @@ pub struct Bus {
 }
 
 impl Bus {
+    /// Create a new bus object.
     pub fn new() -> Bus {
         Self {
             clint: Clint::new(),
@@ -59,6 +60,11 @@ impl Bus {
     /// Set the binary data to the memory.
     pub fn set_dram(&mut self, data: Vec<u8>) {
         self.dram.set_dram(data);
+    }
+
+    /// Set the binary data to the virtIO disk.
+    pub fn set_disk(&mut self, data: Vec<u8>) {
+        self.virtio.set_disk(data);
     }
 
     /// Write a byte to the system bus.

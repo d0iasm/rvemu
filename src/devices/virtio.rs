@@ -44,10 +44,12 @@ pub struct Virtio {
     queue_num: u32,
     queue_pfn: u32,
     status: u32,
+    disk: Vec<u8>,
     pub interrupting: bool,
 }
 
 impl Virtio {
+    /// Create a new virtIO object.
     pub fn new() -> Self {
         Self {
             driver_features: 0,
@@ -56,10 +58,17 @@ impl Virtio {
             queue_num: 0,
             queue_pfn: 0,
             status: 0,
+            disk: Vec::new(), 
             interrupting: false,
         }
     }
 
+    /// Set the binary in the virtIO disk.
+    pub fn set_disk(&mut self, binary: Vec<u8>) {
+        self.disk.extend(binary.iter().cloned());
+    }
+
+    /// Read 4 bytes from virtIO only if the address is valid. Otherwise, return 0.
     pub fn read(&self, addr: usize) -> u32 {
         match addr {
             VIRTIO_MAGIC => 0x74726976,
@@ -75,6 +84,7 @@ impl Virtio {
         }
     }
 
+    /// Write 4 bytes to virtIO only if the address is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: usize, val: u32) {
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
