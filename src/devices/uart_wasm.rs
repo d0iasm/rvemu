@@ -53,20 +53,23 @@ pub fn stdout8(byte: u8) {
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
     uart: [u8; UART_SIZE],
-    pub interrupting: bool,
 }
 
 #[wasm_bindgen]
 impl Uart {
+    /// Create a new UART object.
     pub fn new() -> Self {
         let mut uart = [0; UART_SIZE];
         uart[UART_LSR - UART_BASE] |= 1 << 5;
-        Self {
-            uart,
-            interrupting: false,
-        }
+        Self { uart }
     }
 
+    /// Return true if the byte buffer in UART is full.
+    pub fn is_interrupting(&self) -> bool {
+        (self.uart[UART_LSR - UART_BASE] & 1) == 1
+    }
+
+    /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: usize) -> u8 {
         match index {
             UART_RHR => {
@@ -77,6 +80,7 @@ impl Uart {
         }
     }
 
+    /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: usize, value: u8) {
         match index {
             UART_THR => {

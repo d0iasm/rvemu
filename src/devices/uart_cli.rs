@@ -36,10 +36,6 @@ pub const UART_LSR: usize = UART_BASE + 5;
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
     uart: Arc<(Mutex<[u8; UART_SIZE]>, Condvar)>,
-    /// `interrupting` field does nothing in this module. It exists to keep compatiblity with
-    /// the `uart_wasm` module.
-    #[allow(dead_code)]
-    pub interrupting: bool,
 }
 
 impl Uart {
@@ -72,10 +68,15 @@ impl Uart {
             }
         });
 
-        Self {
-            uart,
-            interrupting: false,
-        }
+        Self { uart }
+    }
+
+    /// Return true if the byte buffer in UART is full.
+    pub fn is_interrupting(&self) -> bool {
+        // TODO: avoid getting a lock too often.
+        let (uart, _cvar) = &*self.uart;
+        let uart = uart.lock().expect("failed to get an UART object");
+        (uart[UART_LSR - UART_BASE] & 1) == 1
     }
 
     /// Read a byte from the receive holding register.

@@ -10,6 +10,7 @@ use std::num::FpCategory;
 use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
+    devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ},
     exception::Exception,
     interrupt::Interrupt,
 };
@@ -221,11 +222,33 @@ impl Cpu {
 
     /// Check interrupt flags for all devices that can interrupt.
     pub fn check_interrupt(&mut self) -> Option<Interrupt> {
+        // Check if an interrupt register is enable. If it's disable, no interrupt occurs.
+        match self.mode {
+            Mode::Machine => {
+                if (self.state.read(MSTATUS) >> 3) & 1 == 0 {
+                    return None;
+                }
+            }
+            Mode::Supervisor => {
+                if (self.state.read(SSTATUS) >> 3) & 1 == 0 {
+                    return None;
+                }
+            }
+            Mode::User => {
+                if (self.state.read(USTATUS) >> 3) & 1 == 0 {
+                    return None;
+                }
+            }
+            _ => {}
+        }
+
+        let mut irq = 0;
         let mut interrupting = false;
-        if self.bus.uart.interrupting {
+        if self.bus.uart.is_interrupting() {
+            irq = UART_IRQ;
             interrupting = true;
-            self.bus.uart.interrupting = false;
         } else if self.bus.virtio.interrupting {
+            irq = VIRTIO_IRQ;
             interrupting = true;
             self.bus.virtio.interrupting = false;
         }
@@ -235,10 +258,10 @@ impl Cpu {
         }
 
         match self.mode {
-            Mode::Machine => Some(Interrupt::MachineExternalInterrupt),
-            Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt),
-            Mode::User => Some(Interrupt::UserExternalInterrupt),
-            _ => Some(Interrupt::MachineExternalInterrupt),
+            Mode::Machine => Some(Interrupt::MachineExternalInterrupt(irq)),
+            Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt(irq)),
+            Mode::User => Some(Interrupt::UserExternalInterrupt(irq)),
+            _ => Some(Interrupt::MachineExternalInterrupt(irq)),
         }
     }
 

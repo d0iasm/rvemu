@@ -12,6 +12,12 @@ pub const CSR_SIZE: usize = 4096;
 //////////////////////////////
 // User-level CSR addresses //
 //////////////////////////////
+// User trap setup.
+/// User status register.
+pub const USTATUS: CsrAddress = 0x000;
+/// User trap handler base address.
+pub const UTVEC: CsrAddress = 0x005;
+
 // User trap handling.
 /// User exception program counter.
 pub const UEPC: CsrAddress = 0x041;

@@ -46,11 +46,13 @@ impl Emulator {
 
     /// Start executing the emulator.
     pub fn start(&mut self) {
+        let mut count = 0;
         loop {
             // 1. Fetch.
             let data_or_error = self.cpu.fetch();
 
-            if self.is_debug {
+            count += 1;
+            if self.is_debug && count % 1000000 == 0 {
                 dbg!(format!("pc: {} , data: {:#?}", self.cpu.pc, &data_or_error));
             }
 
