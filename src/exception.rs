@@ -46,7 +46,7 @@ impl Exception {
                 // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
                 // the address of the ECALL or EBREAK instruction itself, not the address of the
                 // following instruction."
-                cpu.state.write(MEPC, exception_pc)?;
+                cpu.state.write(MEPC, exception_pc);
             }
             Exception::LoadAddressMisaligned => {
                 exception_code = 4;
@@ -68,26 +68,24 @@ impl Exception {
                 // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
                 // the address of the ECALL or EBREAK instruction itself, not the address of the
                 // following instruction."
-                cpu.state.write(MEPC, exception_pc)?;
+                cpu.state.write(MEPC, exception_pc);
 
-                match cpu.state.get(MTVEC)? {
-                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
-                        mtvec::Mode::Direct => {
-                            cpu.pc = mtvec.read_base() as usize;
-                        }
-                        mtvec::Mode::Vectored => {
-                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
-                        }
-                        _ => {
-                            return Err(Exception::IllegalInstruction(String::from(
-                                "illegal mode in mtvec",
-                            )))
-                        }
-                    },
+                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
+                match cpu.state.read_bits(MTVEC, ..2) {
+                    0 => {
+                        // Direct mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = base as usize;
+                    }
+                    1 => {
+                        // Vectored mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = (base + 4 * exception_code) as usize;
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction(String::from(
-                            "failed to get a mtvec csr",
-                        )))
+                            "illegal mode in mtvec",
+                        )));
                     }
                 }
             }
@@ -99,49 +97,45 @@ impl Exception {
                 // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
                 // the address of the ECALL or EBREAK instruction itself, not the address of the
                 // following instruction."
-                cpu.state.write(MEPC, exception_pc)?;
+                cpu.state.write(MEPC, exception_pc);
 
-                match cpu.state.get(MTVEC)? {
-                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
-                        mtvec::Mode::Direct => {
-                            cpu.pc = mtvec.read_base() as usize;
-                        }
-                        mtvec::Mode::Vectored => {
-                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
-                        }
-                        _ => {
-                            return Err(Exception::IllegalInstruction(String::from(
-                                "illegal mode in mtvec",
-                            )))
-                        }
-                    },
+                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
+                match cpu.state.read_bits(MTVEC, ..2) {
+                    0 => {
+                        // Direct mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = base as usize;
+                    }
+                    1 => {
+                        // Vectored mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = (base + 4 * exception_code) as usize;
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction(String::from(
-                            "failed to get a mtvec csr",
-                        )))
+                            "illegal mode in mtvec",
+                        )));
                     }
                 }
             }
             Exception::EnvironmentCallFromMMode => {
                 exception_code = 11;
-                match cpu.state.get(MTVEC)? {
-                    Csr::Mtvec(mtvec) => match mtvec.read_mode() {
-                        mtvec::Mode::Direct => {
-                            cpu.pc = mtvec.read_base() as usize;
-                        }
-                        mtvec::Mode::Vectored => {
-                            cpu.pc = (mtvec.read_base() + 4 * exception_code) as usize;
-                        }
-                        _ => {
-                            return Err(Exception::IllegalInstruction(String::from(
-                                "illegal mode in mtvec",
-                            )))
-                        }
-                    },
+                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
+                match cpu.state.read_bits(MTVEC, ..2) {
+                    0 => {
+                        // Direct mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = base as usize;
+                    }
+                    1 => {
+                        // Vectored mode.
+                        let base = cpu.state.read_bits(MTVEC, 2..);
+                        cpu.pc = (base + 4 * exception_code) as usize;
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction(String::from(
-                            "failed to get a mtvec csr",
-                        )))
+                            "illegal mode in mtvec",
+                        )));
                     }
                 }
             }
@@ -158,16 +152,16 @@ impl Exception {
 
         match cpu.mode {
             Mode::Machine => {
-                cpu.state.write(MCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(MEPC, exception_pc)?;
+                cpu.state.write(MCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(MEPC, exception_pc);
             }
             Mode::Supervisor => {
-                cpu.state.write(SCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(SEPC, exception_pc)?;
+                cpu.state.write(SCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(SEPC, exception_pc);
             }
             Mode::User => {
-                cpu.state.write(UCAUSE, 0 << 63 | exception_code)?;
-                cpu.state.write(UEPC, exception_pc)?;
+                cpu.state.write(UCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(UEPC, exception_pc);
             }
             _ => {}
         }

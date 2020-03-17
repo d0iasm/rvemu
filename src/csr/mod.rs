@@ -1,61 +1,13 @@
 //! The csr module contains all the control and status registers.
 
-pub mod fcsr;
-pub mod marchid;
-pub mod mcause;
-pub mod medeleg;
-pub mod mepc;
-pub mod mhartid;
-pub mod mideleg;
-pub mod mie;
-pub mod mimpid;
-pub mod mip;
-pub mod misa;
-pub mod mscratch;
-pub mod mstatus;
-pub mod mtvec;
-pub mod mvendorid;
-pub mod pmpaddr0;
-pub mod pmpcfg0;
-pub mod satp;
-pub mod scause;
-pub mod sepc;
-pub mod sstatus;
-pub mod stvec;
-pub mod uepc;
-
-use std::collections::HashMap;
 use std::ops::{Bound, Range, RangeBounds};
-
-use crate::csr::fcsr::Fcsr;
-use crate::csr::marchid::Marchid;
-use crate::csr::mcause::Mcause;
-use crate::csr::medeleg::Medeleg;
-use crate::csr::mepc::Mepc;
-use crate::csr::mhartid::Mhartid;
-use crate::csr::mideleg::Mideleg;
-use crate::csr::mie::Mie;
-use crate::csr::mimpid::Mimpid;
-use crate::csr::mip::Mip;
-use crate::csr::misa::Misa;
-use crate::csr::mscratch::Mscratch;
-use crate::csr::mstatus::Mstatus;
-use crate::csr::mtvec::Mtvec;
-use crate::csr::mvendorid::Mvendorid;
-use crate::csr::pmpaddr0::Pmpaddr0;
-use crate::csr::pmpcfg0::Pmpcfg0;
-use crate::csr::satp::Satp;
-use crate::csr::scause::Scause;
-use crate::csr::sepc::Sepc;
-use crate::csr::sstatus::Sstatus;
-use crate::csr::stvec::Stvec;
-use crate::csr::uepc::Uepc;
-use crate::exception::Exception;
 
 pub type CsrAddress = u16;
 pub type Mxlen = i64;
 
 pub const MXLEN: usize = 64;
+/// The number of CSRs. The field is 12 bits so the maximum kind of CSRs is 4096 (2**12).
+pub const CSR_SIZE: usize = 4096;
 
 //////////////////////////////
 // User-level CSR addresses //
@@ -142,286 +94,99 @@ pub const PMPADDR0: CsrAddress = 0x3b0;
 
 /// The state to contains all the CSRs.
 pub struct State {
-    csrs: HashMap<CsrAddress, Csr>,
-}
-
-/// All kinds of CSRs.
-pub enum Csr {
-    // User-level CSRs.
-    Uepc(Uepc),
-    Fcsr(Fcsr),
-    // Supervisor-level CSRs.
-    Sstatus(Sstatus),
-    Stvec(Stvec),
-    Sepc(Sepc),
-    Scause(Scause),
-    Satp(Satp),
-    // Machine-level CSRs.
-    Mvendorid(Mvendorid),
-    Marchid(Marchid),
-    Mimpid(Mimpid),
-    Mhartid(Mhartid),
-    Mstatus(Mstatus),
-    Misa(Misa),
-    Medeleg(Medeleg),
-    Mideleg(Mideleg),
-    Mie(Mie),
-    Mtvec(Mtvec),
-    Mscratch(Mscratch),
-    Mepc(Mepc),
-    Mcause(Mcause),
-    Mip(Mip),
-    Pmpcfg0(Pmpcfg0),
-    Pmpaddr0(Pmpaddr0),
+    csrs: [Mxlen; CSR_SIZE],
 }
 
 impl State {
     /// Create a new `state` object.
     pub fn new() -> Self {
-        let mut csrs = HashMap::new();
-
-        // User-level CSRs.
-        csrs.insert(UEPC, Csr::Uepc(Uepc::new(0)));
-
-        csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
-
-        // Supervisor-level CSRs.
-        csrs.insert(SSTATUS, Csr::Sstatus(Sstatus::new(0)));
-        csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
-
-        csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
-        csrs.insert(SCAUSE, Csr::Scause(Scause::new(0)));
-
-        csrs.insert(SATP, Csr::Satp(Satp::new(0)));
-
-        // Machine-level CSRs.
-        csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
-        csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
-        csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
-        csrs.insert(MHARTID, Csr::Mhartid(Mhartid::new(0)));
-
-        csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
-        csrs.insert(MISA, Csr::Misa(Misa::new(0)));
-        csrs.insert(MEDELEG, Csr::Medeleg(Medeleg::new(0)));
-        csrs.insert(MIDELEG, Csr::Mideleg(Mideleg::new(0)));
-        csrs.insert(MIE, Csr::Mie(Mie::new(0)));
-        csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
-
-        csrs.insert(MSCRATCH, Csr::Mscratch(Mscratch::new(0)));
-        csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
-        csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
-        csrs.insert(MIP, Csr::Mip(Mip::new(0)));
-
-        csrs.insert(PMPCFG0, Csr::Pmpcfg0(Pmpcfg0::new(0)));
-        csrs.insert(PMPADDR0, Csr::Pmpaddr0(Pmpaddr0::new(0)));
-
-        /*
-        csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(FRB, Csr::RW(ReadWrite::new(0)));
-
-        csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
-        csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
-        */
-
-        Self { csrs }
-    }
-
-    /// Get the CSR.
-    pub fn get(&mut self, csr_address: CsrAddress) -> Result<&mut Csr, Exception> {
-        if let Some(csr) = self.csrs.get_mut(&csr_address) {
-            Ok(csr)
-        } else {
-            Err(Exception::IllegalInstruction(String::from(
-                "failed to get a csr",
-            )))
+        Self {
+            csrs: [0; CSR_SIZE],
         }
     }
 
-    /// Read the value from the CSR.
-    pub fn read(&self, csr_address: CsrAddress) -> Result<Mxlen, Exception> {
-        if let Some(csr) = self.csrs.get(&csr_address) {
-            match csr {
-                Csr::Uepc(uepc) => Ok(uepc.read_value()),
-                Csr::Fcsr(fcsr) => Ok(fcsr.read_value()),
-                Csr::Sstatus(sstatus) => Ok(sstatus.read_value()),
-                Csr::Stvec(stvec) => Ok(stvec.read_value()),
-                Csr::Sepc(sepc) => Ok(sepc.read_value()),
-                Csr::Scause(scause) => Ok(scause.read_value()),
-                Csr::Satp(satp) => Ok(satp.read_value()),
-                Csr::Mvendorid(mvendorid) => Ok(mvendorid.read_value()),
-                Csr::Marchid(marchid) => Ok(marchid.read_value()),
-                Csr::Mimpid(mimpid) => Ok(mimpid.read_value()),
-                Csr::Mhartid(mhartid) => Ok(mhartid.read_value()),
-                Csr::Mstatus(mstatus) => Ok(mstatus.read_value()),
-                Csr::Misa(misa) => Ok(misa.read_value()),
-                Csr::Medeleg(medeleg) => Ok(medeleg.read_value()),
-                Csr::Mideleg(mideleg) => Ok(mideleg.read_value()),
-                Csr::Mie(mie) => Ok(mie.read_value()),
-                Csr::Mtvec(mtvec) => Ok(mtvec.read_value()),
-                Csr::Mscratch(mscratch) => Ok(mscratch.read_value()),
-                Csr::Mepc(mepc) => Ok(mepc.read_value()),
-                Csr::Mcause(mcause) => Ok(mcause.read_value()),
-                Csr::Mip(mip) => Ok(mip.read_value()),
-                Csr::Pmpcfg0(pmpcfg0) => Ok(pmpcfg0.read_value()),
-                Csr::Pmpaddr0(pmpaddr0) => Ok(pmpaddr0.read_value()),
-            }
-        } else {
-            Err(Exception::IllegalInstruction(String::from(
-                "failed to read a value from a csr",
-            )))
+    /*
+            let mut csrs = HashMap::new();
+
+            // User-level CSRs.
+            csrs.insert(UEPC, Csr::Uepc(Uepc::new(0)));
+
+            csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
+
+            // Supervisor-level CSRs.
+            csrs.insert(SSTATUS, Csr::Sstatus(Sstatus::new(0)));
+            csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
+
+            csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
+            csrs.insert(SCAUSE, Csr::Scause(Scause::new(0)));
+
+            csrs.insert(SATP, Csr::Satp(Satp::new(0)));
+
+            // Machine-level CSRs.
+            csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
+            csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
+            csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
+            csrs.insert(MHARTID, Csr::Mhartid(Mhartid::new(0)));
+
+            csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
+            csrs.insert(MISA, Csr::Misa(Misa::new(0)));
+            csrs.insert(MEDELEG, Csr::Medeleg(Medeleg::new(0)));
+            csrs.insert(MIDELEG, Csr::Mideleg(Mideleg::new(0)));
+            csrs.insert(MIE, Csr::Mie(Mie::new(0)));
+            csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
+
+            csrs.insert(MSCRATCH, Csr::Mscratch(Mscratch::new(0)));
+            csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
+            csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
+            csrs.insert(MIP, Csr::Mip(Mip::new(0)));
+
+            csrs.insert(PMPCFG0, Csr::Pmpcfg0(Pmpcfg0::new(0)));
+            csrs.insert(PMPADDR0, Csr::Pmpaddr0(Pmpaddr0::new(0)));
+
+            /*
+            csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
+            csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
+            csrs.insert(FRB, Csr::RW(ReadWrite::new(0)));
+
+            csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
+            csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
+            */
+
+            Self { csrs }
+        }
+    */
+
+    /// Read the val from the CSR.
+    pub fn read(&self, addr: CsrAddress) -> Mxlen {
+        match addr {
+            _ => self.csrs[addr as usize],
         }
     }
 
-    /// Write the value to the CSR.
-    pub fn write(&mut self, csr_address: CsrAddress, value: Mxlen) -> Result<(), Exception> {
-        if let Some(csr) = self.csrs.get_mut(&csr_address) {
-            match csr {
-                Csr::Uepc(uepc) => uepc.write_value(value),
-                Csr::Fcsr(fcsr) => fcsr.write_value(value),
-                Csr::Sstatus(sstatus) => sstatus.write_value(value),
-                Csr::Stvec(stvec) => stvec.write_value(value),
-                Csr::Sepc(sepc) => sepc.write_value(value),
-                Csr::Scause(scause) => scause.write_value(value),
-                Csr::Satp(satp) => satp.write_value(value),
-                Csr::Mvendorid(_) => {
-                    return Err(Exception::IllegalInstruction(String::from(
-                        "mvendorid is a read-only csr",
-                    )))
-                }
-                Csr::Marchid(_) => {
-                    return Err(Exception::IllegalInstruction(String::from(
-                        "marchid is a read-only csr",
-                    )))
-                }
-                Csr::Mimpid(_) => {
-                    return Err(Exception::IllegalInstruction(String::from(
-                        "mimpid is a read-only csr",
-                    )))
-                }
-                Csr::Mhartid(mhartid) => {
-                    // TODO: `mhartid` should be a read-only csr, but riscv/riscv-tests writes a
-                    // value to the `mhartid`.
-                    mhartid.write_value(value);
-                    /*
-                    return Err(Exception::IllegalInstruction(String::from(
-                        "mhartid is a read-only csr",
-                    )))
-                    */
-                }
-                Csr::Mstatus(mstatus) => mstatus.write_value(value),
-                Csr::Misa(misa) => misa.write_value(value),
-                Csr::Medeleg(medeleg) => medeleg.write_value(value),
-                Csr::Mideleg(mideleg) => mideleg.write_value(value),
-                Csr::Mie(mie) => mie.write_value(value),
-                Csr::Mtvec(mtvec) => mtvec.write_value(value),
-                Csr::Mscratch(mscratch) => mscratch.write_value(value),
-                Csr::Mepc(mepc) => mepc.write_value(value),
-                Csr::Mcause(mcause) => mcause.write_value(value),
-                Csr::Mip(mip) => mip.write_value(value),
-                Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.write_value(value),
-                Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.write_value(value),
-            }
-            Ok(())
-        } else {
-            dbg!("csr_address {}", csr_address);
-            Err(Exception::IllegalInstruction(String::from(
-                "failed to write a value to a csr",
-            )))
+    /// Write the val to the CSR.
+    pub fn write(&mut self, addr: CsrAddress, val: Mxlen) {
+        match addr {
+            MVENDORID => {}
+            MARCHID => {}
+            MIMPID => {}
+            MHARTID => {}
+            _ => self.csrs[addr as usize] = val,
         }
     }
 
-    /// Reset all the CSRs.
-    pub fn reset(&mut self) {
-        for csr in self.csrs.values_mut() {
-            match csr {
-                Csr::Uepc(uepc) => uepc.reset(),
-                Csr::Fcsr(fcsr) => fcsr.reset(),
-                Csr::Sstatus(sstatus) => sstatus.reset(),
-                Csr::Stvec(stvec) => stvec.reset(),
-                Csr::Sepc(sepc) => sepc.reset(),
-                Csr::Scause(scause) => scause.reset(),
-                Csr::Satp(satp) => satp.reset(),
-                Csr::Mvendorid(mvendorid) => mvendorid.reset(),
-                Csr::Marchid(marchid) => marchid.reset(),
-                Csr::Mimpid(mimpid) => mimpid.reset(),
-                Csr::Mhartid(mhartid) => mhartid.reset(),
-                Csr::Mstatus(mstatus) => mstatus.reset(),
-                Csr::Misa(misa) => misa.reset(),
-                Csr::Medeleg(medeleg) => medeleg.reset(),
-                Csr::Mideleg(mideleg) => mideleg.reset(),
-                Csr::Mie(mie) => mie.reset(),
-                Csr::Mtvec(mtvec) => mtvec.reset(),
-                Csr::Mscratch(mscratch) => mscratch.reset(),
-                Csr::Mepc(mepc) => mepc.reset(),
-                Csr::Mcause(mcause) => mcause.reset(),
-                Csr::Mip(mip) => mip.reset(),
-                Csr::Pmpcfg0(pmpcfg0) => pmpcfg0.reset(),
-                Csr::Pmpaddr0(pmpaddr0) => pmpaddr0.reset(),
-            }
-        }
-    }
-}
-
-pub trait CsrBase {
-    const BIT_LENGTH: usize = ::core::mem::size_of::<i64>() as usize * 8;
-
-    fn new(value: Mxlen) -> Self;
-    fn reset(&mut self);
-    fn write_value(&mut self, value: Mxlen);
-    fn read_value(&self) -> Mxlen;
-}
-
-/// The trait of writing the value which all CSRs should implement.
-pub trait Write: CsrBase {
-    /// Write a bit to the CSR.
-    fn write_bit(&mut self, bit: usize, value: bool) {
-        if bit >= Self::BIT_LENGTH {
-            // TODO: raise exception?
-        }
-
-        if value {
-            self.write_value(self.read_value() | 1 << bit);
-        } else {
-            self.write_value(self.read_value() & !(1 << bit));
-        }
-    }
-
-    /// Write a arbitrary length of bits to the CSR.
-    fn write_bits<T: RangeBounds<usize>>(&mut self, range: T, value: Mxlen) {
-        let range = to_range(&range, Self::BIT_LENGTH);
-
-        if (range.start >= Self::BIT_LENGTH)
-            | (range.end > Self::BIT_LENGTH)
-            | (range.start >= range.end)
-        {
-            // TODO: ranse exception?
-        }
-
-        let bitmask = (!0 << range.end) | !(!0 << range.start);
-        // Set bits.
-        self.write_value((self.read_value() & bitmask) | (value << range.start))
-    }
-}
-
-/// The trait of reading the value which all CSRs should implement.
-pub trait Read: CsrBase {
     /// Read a bit from the CSR.
-    fn read_bit(&self, bit: usize) -> bool {
-        if bit >= Self::BIT_LENGTH {
+    pub fn read_bit(&self, addr: CsrAddress, bit: usize) -> bool {
+        if bit >= MXLEN {
             // TODO: raise exception?
         }
-        (self.read_value() & (1 << bit)) != 0
+        (self.read(addr) & (1 << bit)) != 0
     }
 
     /// Read a arbitrary length of bits from the CSR.
-    fn read_bits<T: RangeBounds<usize>>(&self, range: T) -> i64 {
-        let range = to_range(&range, Self::BIT_LENGTH);
+    pub fn read_bits<T: RangeBounds<usize>>(&self, addr: CsrAddress, range: T) -> Mxlen {
+        let range = to_range(&range, MXLEN);
 
-        if (range.start >= Self::BIT_LENGTH)
-            | (range.end > Self::BIT_LENGTH)
-            | (range.start >= range.end)
-        {
+        if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {
             // TODO: ranse exception?
         }
 
@@ -432,20 +197,51 @@ pub trait Read: CsrBase {
         }
 
         // Shift away low bits.
-        ((self.read_value() as u64 & !bitmask) >> range.start) as i64
+        ((self.read(addr) as u64 & !bitmask) >> range.start) as i64
+    }
+
+    /// Write a bit to the CSR.
+    pub fn write_bit(&mut self, addr: CsrAddress, bit: usize, val: bool) {
+        if bit >= MXLEN {
+            // TODO: raise exception?
+        }
+
+        if val {
+            self.write(addr, self.read(addr) | 1 << bit);
+        } else {
+            self.write(addr, self.read(addr) & !(1 << bit));
+        }
+    }
+
+    /// Write an arbitrary length of bits to the CSR.
+    pub fn write_bits<T: RangeBounds<usize>>(&mut self, addr: CsrAddress, range: T, val: Mxlen) {
+        let range = to_range(&range, MXLEN);
+
+        if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {
+            // TODO: ranse exception?
+        }
+
+        let bitmask = (!0 << range.end) | !(!0 << range.start);
+        // Set bits.
+        self.write(addr, (self.read(addr) & bitmask) | (val << range.start))
+    }
+
+    /// Reset all the CSRs.
+    pub fn reset(&mut self) {
+        self.csrs = [0; CSR_SIZE];
     }
 }
 
-/// Convert the value implement `RangeBounds` to the `Range` struct.
+/// Convert the val implement `RangeBounds` to the `Range` struct.
 fn to_range<T: RangeBounds<usize>>(generic_range: &T, bit_length: usize) -> Range<usize> {
     let start = match generic_range.start_bound() {
-        Bound::Excluded(&value) => value + 1,
-        Bound::Included(&value) => value,
+        Bound::Excluded(&val) => val + 1,
+        Bound::Included(&val) => val,
         Bound::Unbounded => 0,
     };
     let end = match generic_range.end_bound() {
-        Bound::Excluded(&value) => value,
-        Bound::Included(&value) => value + 1,
+        Bound::Excluded(&val) => val,
+        Bound::Included(&val) => val + 1,
         Bound::Unbounded => bit_length,
     };
 

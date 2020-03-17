@@ -243,6 +243,7 @@ impl Cpu {
             // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
             //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
             //    exception corresponding to the original access type.
+
             pte = self.bus.read64(a + vpn[i as usize] * 8)?;
             // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
             //    exception corresponding to the original access type.
@@ -759,17 +760,8 @@ impl Cpu {
                             rd,
                             match self.xregs.read(rs2) {
                                 0 => {
-                                    match self.state.get(FCSR)? {
-                                        Csr::Fcsr(fcsr) => {
-                                            // Set DZ (Divide by Zero) flag to 1.
-                                            fcsr.write_dz(true);
-                                        }
-                                        _ => {
-                                            return Err(Exception::IllegalInstruction(
-                                                String::from("failed to get a fcsr"),
-                                            ))
-                                        }
-                                    }
+                                    // Set DZ (Divide by Zero) flag to 1.
+                                    self.state.write_bit(FCSR, 3, true);
                                     -1
                                 }
                                 _ => self.xregs.read(rs1).wrapping_div(self.xregs.read(rs2)),
@@ -785,17 +777,8 @@ impl Cpu {
                             rd,
                             match self.xregs.read(rs2) {
                                 0 => {
-                                    match self.state.get(FCSR)? {
-                                        Csr::Fcsr(fcsr) => {
-                                            // Set DZ (Divide by Zero) flag to 1.
-                                            fcsr.write_dz(true);
-                                        }
-                                        _ => {
-                                            return Err(Exception::IllegalInstruction(
-                                                String::from("failed to get a fcsr"),
-                                            ))
-                                        }
-                                    }
+                                    // Set DZ (Divide by Zero) flag to 1.
+                                    self.state.write_bit(FCSR, 3, true);
                                     -1
                                 }
                                 _ => {
@@ -881,17 +864,8 @@ impl Cpu {
                             rd,
                             match self.xregs.read(rs2) {
                                 0 => {
-                                    match self.state.get(FCSR)? {
-                                        Csr::Fcsr(fcsr) => {
-                                            // Set DZ (Divide by Zero) flag to 1.
-                                            fcsr.write_dz(true);
-                                        }
-                                        _ => {
-                                            return Err(Exception::IllegalInstruction(
-                                                String::from("failed to get a fcsr"),
-                                            ))
-                                        }
-                                    }
+                                    // Set DZ (Divide by Zero) flag to 1.
+                                    self.state.write_bit(FCSR, 3, true);
                                     -1
                                 }
                                 _ => {
@@ -911,17 +885,8 @@ impl Cpu {
                             rd,
                             match self.xregs.read(rs2) {
                                 0 => {
-                                    match self.state.get(FCSR)? {
-                                        Csr::Fcsr(fcsr) => {
-                                            // Set DZ (Divide by Zero) flag to 1.
-                                            fcsr.write_dz(true);
-                                        }
-                                        _ => {
-                                            return Err(Exception::IllegalInstruction(
-                                                String::from("failed to get a fcsr"),
-                                            ))
-                                        }
-                                    }
+                                    // Set DZ (Divide by Zero) flag to 1.
+                                    self.state.write_bit(FCSR, 3, true);
                                     -1
                                 }
                                 _ => {
@@ -1075,18 +1040,16 @@ impl Cpu {
                  */
 
                 // Check the frm field is valid.
-                match self.state.get(FCSR)? {
-                    Csr::Fcsr(fcsr) => {
-                        let frm = fcsr.read_frm();
-                        if frm == fcsr::RoundingMode::Invalid {
-                            return Err(Exception::IllegalInstruction(String::from(
-                                "frm is set to an invalid value (101–110)",
-                            )));
-                        }
-                    }
+                match self.state.read_bits(FCSR, 5..8) {
+                    0b000 => {}
+                    0b001 => {}
+                    0b010 => {}
+                    0b011 => {}
+                    0b100 => {}
+                    0b111 => {}
                     _ => {
                         return Err(Exception::IllegalInstruction(String::from(
-                            "failed to access fcsr",
+                            "frm is set to an invalid value (101–110)",
                         )));
                     }
                 }
@@ -1539,30 +1502,26 @@ impl Cpu {
                                 // the implementation in QEMU and Spike use `mstatus` instead of
                                 // `sstatus`.
                                 self.mode.require(Mode::Supervisor)?;
-                                match self.state.get(MSTATUS)? {
-                                    Csr::Mstatus(mstatus) => {
-                                        // TODO: Check TSR field
-                                        self.mode = mstatus.read_spp();
-                                        mstatus.write_sie(mstatus.read_spie());
-                                        mstatus.write_spie(true);
-                                        mstatus.write_spp(Mode::User);
-                                    }
-                                    _ => {
-                                        return Err(Exception::IllegalInstruction(String::from(
-                                            "failed to get a mstatus csr",
-                                        )))
-                                    }
-                                }
-                                match self.state.get(SEPC)? {
-                                    Csr::Sepc(sepc) => {
-                                        self.pc = sepc.read_value() as usize;
-                                    }
-                                    _ => {
-                                        return Err(Exception::IllegalInstruction(String::from(
-                                            "failed to get a sepc csr",
-                                        )))
-                                    }
-                                }
+
+                                // TODO: Check TSR field
+
+                                // Read a privious privilege mode for supervisor mode (SPP, 8).
+                                // or supervisor mode.
+                                self.mode = match self.state.read_bit(MSTATUS, 8) {
+                                    false => Mode::User,
+                                    true => Mode::Supervisor,
+                                };
+                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5) and write it to a global interrupt-enable bit for supervisor mode (SIE, 1).
+                                self.state
+                                    .write_bit(MSTATUS, 1, self.state.read_bit(MSTATUS, 5));
+
+                                // Write a privious interrupt-enable bit for supervisor mode (SPIE,
+                                // 5).
+                                self.state.write_bit(MSTATUS, 5, true);
+                                // Write a privious privilege mode for supervisor mode (SPP, 8).
+                                self.state.write_bit(MSTATUS, 8, false);
+
+                                self.pc = self.state.read(SEPC) as usize;
                             }
                             (0x2, 0x18) => {
                                 // mret
@@ -1571,29 +1530,26 @@ impl Cpu {
                                 // CSRs[mstatus].MPIE to 1; and, if user mode is supported, sets
                                 // CSRs[mstatus].MPP to 0.
                                 self.mode.require(Mode::Machine)?;
-                                match self.state.get(MSTATUS)? {
-                                    Csr::Mstatus(mstatus) => {
-                                        self.mode = mstatus.read_mpp();
-                                        mstatus.write_mie(mstatus.read_mpie());
-                                        mstatus.write_mpie(true);
-                                        mstatus.write_mpp(Mode::User);
-                                    }
-                                    _ => {
-                                        return Err(Exception::IllegalInstruction(String::from(
-                                            "failed to get a mstatus csr",
-                                        )))
-                                    }
-                                }
-                                match self.state.get(MEPC)? {
-                                    Csr::Mepc(mepc) => {
-                                        self.pc = mepc.read_value() as usize;
-                                    }
-                                    _ => {
-                                        return Err(Exception::IllegalInstruction(String::from(
-                                            "failed to get a mepc csr",
-                                        )))
-                                    }
-                                }
+
+                                // Read a privious privilege mode for machine mode (MPP, 11..13).
+                                self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+                                    0b00 => Mode::User,
+                                    0b01 => Mode::Supervisor,
+                                    0b11 => Mode::Machine,
+                                    _ => Mode::Debug,
+                                };
+
+                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7), and write a global interrupt-enable bit for machine mode (MIE, 3).
+                                self.state
+                                    .write_bit(MSTATUS, 3, self.state.read_bit(MSTATUS, 7));
+
+                                // Write a privious interrupt-enable bit for machine mode (MPIE, 7).
+                                self.state.write_bit(MSTATUS, 7, true);
+
+                                // Write a privious privilege mode for machine mode (MPP, 11..13);
+                                self.state.write_bits(MSTATUS, 11..13, 0b00);
+
+                                self.pc = self.state.read(MEPC) as usize;
                             }
                             (0x5, 0x8) => {} // wfi
                             (_, 0x9) => {}   // sfence.vma
@@ -1604,67 +1560,65 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        self.xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, self.xregs.read(rs1))?;
-                        match self.state.get(SATP)? {
-                            Csr::Satp(satp) => {
-                                self.page_table = satp.read_ppn() as usize * PAGE_SIZE;
-                                match satp.read_mode() {
-                                    satp::Mode::Sv39 => self.enable_paging = true,
-                                    _ => self.enable_paging = false,
-                                }
+                        self.xregs.write(rd, self.state.read(csr_address));
+                        self.state.write(csr_address, self.xregs.read(rs1));
+
+                        if csr_address == SATP {
+                            // Read the physical page number (PPN) of the root page table, i.e., its
+                            // supervisor physical address divided by 4 KiB.
+                            self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
+
+                            // Read the MODE field, which selects the current address-translation scheme.
+                            let mode = self.state.read_bits(SATP, 60..);
+                            // Enable the SV39 paging if the value of the mode field is 8.
+                            if mode == 8 {
+                                self.enable_paging = true;
                             }
-                            _ => {
-                                return Err(Exception::IllegalInstruction(String::from(
-                                    "failed to get a satp",
-                                )))
-                            }
-                        };
+                        }
                     }
                     0x2 => {
                         // csrrs
-                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address));
                         self.state
-                            .write(csr_address, self.xregs.read(rd) | self.xregs.read(rs1))?;
+                            .write(csr_address, self.xregs.read(rd) | self.xregs.read(rs1));
                     }
                     0x3 => {
                         // csrrc
-                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address));
                         self.state
-                            .write(csr_address, self.xregs.read(rd) & (!self.xregs.read(rs1)))?;
+                            .write(csr_address, self.xregs.read(rd) & (!self.xregs.read(rs1)));
                     }
                     0x5 => {
                         // csrrwi
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, uimm)?;
-                        match self.state.get(SATP)? {
-                            Csr::Satp(satp) => {
-                                self.page_table = satp.read_ppn() as usize * PAGE_SIZE;
-                                match satp.read_mode() {
-                                    satp::Mode::Sv39 => self.enable_paging = true,
-                                    _ => self.enable_paging = false,
-                                }
+                        self.xregs.write(rd, self.state.read(csr_address));
+                        self.state.write(csr_address, uimm);
+
+                        if csr_address == SATP {
+                            // Read the physical page number (PPN) of the root page table, i.e., its
+                            // supervisor physical address divided by 4 KiB.
+                            self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
+
+                            // Read the MODE field, which selects the current address-translation scheme.
+                            let mode = self.state.read_bits(SATP, 60..);
+                            // Enable the SV39 paging if the value of the mode field is 8.
+                            if mode == 8 {
+                                self.enable_paging = true;
                             }
-                            _ => {
-                                return Err(Exception::IllegalInstruction(String::from(
-                                    "failed to get a satp",
-                                )))
-                            }
-                        };
+                        }
                     }
                     0x6 => {
                         // csrrsi
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address)?);
-                        self.state.write(csr_address, self.xregs.read(rd) | uimm)?;
+                        self.xregs.write(rd, self.state.read(csr_address));
+                        self.state.write(csr_address, self.xregs.read(rd) | uimm);
                     }
                     0x7 => {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address)?);
+                        self.xregs.write(rd, self.state.read(csr_address));
                         self.state
-                            .write(csr_address, self.xregs.read(rd) & (!uimm))?;
+                            .write(csr_address, self.xregs.read(rd) & (!uimm));
                     }
                     _ => {}
                 }
