@@ -105,57 +105,6 @@ impl State {
         }
     }
 
-    /*
-            let mut csrs = HashMap::new();
-
-            // User-level CSRs.
-            csrs.insert(UEPC, Csr::Uepc(Uepc::new(0)));
-
-            csrs.insert(FCSR, Csr::Fcsr(Fcsr::new(0)));
-
-            // Supervisor-level CSRs.
-            csrs.insert(SSTATUS, Csr::Sstatus(Sstatus::new(0)));
-            csrs.insert(STVEC, Csr::Stvec(Stvec::new(0)));
-
-            csrs.insert(SEPC, Csr::Sepc(Sepc::new(0)));
-            csrs.insert(SCAUSE, Csr::Scause(Scause::new(0)));
-
-            csrs.insert(SATP, Csr::Satp(Satp::new(0)));
-
-            // Machine-level CSRs.
-            csrs.insert(MVENDORID, Csr::Mvendorid(Mvendorid::new(0)));
-            csrs.insert(MARCHID, Csr::Marchid(Marchid::new(0)));
-            csrs.insert(MIMPID, Csr::Mimpid(Mimpid::new(0)));
-            csrs.insert(MHARTID, Csr::Mhartid(Mhartid::new(0)));
-
-            csrs.insert(MSTATUS, Csr::Mstatus(Mstatus::new(0)));
-            csrs.insert(MISA, Csr::Misa(Misa::new(0)));
-            csrs.insert(MEDELEG, Csr::Medeleg(Medeleg::new(0)));
-            csrs.insert(MIDELEG, Csr::Mideleg(Mideleg::new(0)));
-            csrs.insert(MIE, Csr::Mie(Mie::new(0)));
-            csrs.insert(MTVEC, Csr::Mtvec(Mtvec::new(0)));
-
-            csrs.insert(MSCRATCH, Csr::Mscratch(Mscratch::new(0)));
-            csrs.insert(MEPC, Csr::Mepc(Mepc::new(0)));
-            csrs.insert(MCAUSE, Csr::Mcause(Mcause::new(0)));
-            csrs.insert(MIP, Csr::Mip(Mip::new(0)));
-
-            csrs.insert(PMPCFG0, Csr::Pmpcfg0(Pmpcfg0::new(0)));
-            csrs.insert(PMPADDR0, Csr::Pmpaddr0(Pmpaddr0::new(0)));
-
-            /*
-            csrs.insert(UCAUSE, Csr::RW(ReadWrite::new(0)));
-            csrs.insert(FFLAGS, Csr::RW(ReadWrite::new(0)));
-            csrs.insert(FRB, Csr::RW(ReadWrite::new(0)));
-
-            csrs.insert(MCOUNTEREN, Csr::RW(ReadWrite::new(0)));
-            csrs.insert(MTVAL, Csr::RW(ReadWrite::new(0)));
-            */
-
-            Self { csrs }
-        }
-    */
-
     /// Read the val from the CSR.
     pub fn read(&self, addr: CsrAddress) -> Mxlen {
         match addr {
