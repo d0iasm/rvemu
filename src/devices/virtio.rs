@@ -31,6 +31,8 @@ pub const VIRTIO_QUEUE_NUM_MAX: usize = VIRTIO_BASE + 0x034;
 pub const VIRTIO_QUEUE_NUM: usize = VIRTIO_BASE + 0x038;
 /// Physical page number for queue, read and write.
 pub const VIRTIO_QUEUE_PFN: usize = VIRTIO_BASE + 0x040;
+/// Notify the queue number, write-only.
+pub const VIRTIO_QUEUE_NOTIFY: usize = VIRTIO_BASE + 0x050;
 /// Device status, read and write. Reading from this register returns the current device status flags.
 /// Writing non-zero values to this register sets the status flags, indicating the OS/driver
 /// progress. Writing zero (0x0) to this register triggers a device reset.
@@ -43,6 +45,7 @@ pub struct Virtio {
     queue_sel: u32,
     queue_num: u32,
     queue_pfn: u32,
+    notify: u32,
     status: u32,
     disk: Vec<u8>,
     pub interrupting: bool,
@@ -57,8 +60,9 @@ impl Virtio {
             queue_sel: 0,
             queue_num: 0,
             queue_pfn: 0,
+            notify: 0,
             status: 0,
-            disk: Vec::new(), 
+            disk: Vec::new(),
             interrupting: false,
         }
     }
@@ -92,6 +96,7 @@ impl Virtio {
             VIRTIO_QUEUE_SEL => self.queue_sel = val,
             VIRTIO_QUEUE_NUM => self.queue_num = val,
             VIRTIO_QUEUE_PFN => self.queue_pfn = val,
+            VIRTIO_QUEUE_NOTIFY => self.notify = val,
             VIRTIO_STATUS => self.status = val,
             _ => {}
         }
