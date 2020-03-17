@@ -53,6 +53,7 @@ pub fn stdout8(byte: u8) {
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
     uart: [u8; UART_SIZE],
+    pub interrupting: bool,
 }
 
 #[wasm_bindgen]
@@ -60,7 +61,10 @@ impl Uart {
     pub fn new() -> Self {
         let mut uart = [0; UART_SIZE];
         uart[UART_LSR - UART_BASE] |= 1 << 5;
-        Self { uart }
+        Self {
+            uart,
+            interrupting: false,
+        }
     }
 
     pub fn read(&mut self, index: usize) -> u8 {

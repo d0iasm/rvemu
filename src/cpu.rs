@@ -11,6 +11,7 @@ use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
     exception::Exception,
+    interrupt::Interrupt,
 };
 
 /// The stack pointer.
@@ -216,6 +217,29 @@ impl Cpu {
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.translate(self.pc)?;
         self.bus.read32(pc)
+    }
+
+    /// Check interrupt flags for all devices that can interrupt.
+    pub fn check_interrupt(&mut self) -> Option<Interrupt> {
+        let mut interrupting = false;
+        if self.bus.uart.interrupting {
+            interrupting = true;
+            self.bus.uart.interrupting = false;
+        } else if self.bus.virtio.interrupting {
+            interrupting = true;
+            self.bus.virtio.interrupting = false;
+        }
+
+        if !interrupting {
+            return None;
+        }
+
+        match self.mode {
+            Mode::Machine => Some(Interrupt::MachineExternalInterrupt),
+            Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt),
+            Mode::User => Some(Interrupt::UserExternalInterrupt),
+            _ => Some(Interrupt::MachineExternalInterrupt),
+        }
     }
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
@@ -1617,8 +1641,7 @@ impl Cpu {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
                         self.xregs.write(rd, self.state.read(csr_address));
-                        self.state
-                            .write(csr_address, self.xregs.read(rd) & (!uimm));
+                        self.state.write(csr_address, self.xregs.read(rd) & (!uimm));
                     }
                     _ => {}
                 }

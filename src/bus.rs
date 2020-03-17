@@ -33,10 +33,10 @@ pub const DRAM_BASE: usize = 0x8000_0000;
 
 /// The system bus.
 pub struct Bus {
-    clint: Clint,
-    plic: Plic,
-    uart: Uart,
-    virtio: Virtio,
+    pub clint: Clint,
+    pub plic: Plic,
+    pub uart: Uart,
+    pub virtio: Virtio,
     pub dram: Memory,
 }
 

@@ -57,12 +57,15 @@ impl Emulator {
             let result = match data_or_error {
                 Ok(data) => match self.cpu.execute(data) {
                     Ok(_) => Ok(()),
-                    Err(error) => error.take_trap(&mut self.cpu),
+                    Err(exception) => exception.take_trap(&mut self.cpu),
                 },
-                Err(error) => error.take_trap(&mut self.cpu),
+                Err(exception) => exception.take_trap(&mut self.cpu),
             };
 
-            // TODO: Take interrupts.
+            match self.cpu.check_interrupt() {
+                Some(interrupt) => interrupt.take_trap(&mut self.cpu),
+                None => {}
+            }
 
             if result.is_err() {
                 dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));

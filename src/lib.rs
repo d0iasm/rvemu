@@ -37,4 +37,5 @@ pub mod csr;
 pub mod devices;
 pub mod emulator;
 pub mod exception;
+pub mod interrupt;
 pub mod memory;

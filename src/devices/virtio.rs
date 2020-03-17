@@ -29,24 +29,12 @@ pub const VIRTIO_QUEUE_SEL: usize = VIRTIO_BASE + 0x030;
 pub const VIRTIO_QUEUE_NUM_MAX: usize = VIRTIO_BASE + 0x034;
 /// Size of current queue, write-only.
 pub const VIRTIO_QUEUE_NUM: usize = VIRTIO_BASE + 0x038;
-/// Physical page number for queue, read/write.
+/// Physical page number for queue, read and write.
 pub const VIRTIO_QUEUE_PFN: usize = VIRTIO_BASE + 0x040;
-
+/// Device status, read and write. Reading from this register returns the current device status flags.
+/// Writing non-zero values to this register sets the status flags, indicating the OS/driver
+/// progress. Writing zero (0x0) to this register triggers a device reset.
 pub const VIRTIO_STATUS: usize = VIRTIO_BASE + 0x070;
-/*
-// used ring alignment, write-only
-pub const VIRTIO_QUEUE_ALIGN: usize = 0x03c;
-// ready bit
-pub const VIRTIO_QUEUE_READY: usize = 0x044;
-// write-only
-pub const VIRTIO_QUEUE_NOTIFY: usize = 0x050;
-// read-only
-pub const VIRTIO_INTERRUPT_STATUS: usize = 0x060;
-// write-only
-pub const VIRTIO_INTERRUPT_ACK: usize = 0x064;
-// read/write
-pub const VIRTIO_STATUS: usize = 0x070;
-*/
 
 /// Paravirtualized drivers for IO virtualization.
 pub struct Virtio {
@@ -56,6 +44,7 @@ pub struct Virtio {
     queue_num: u32,
     queue_pfn: u32,
     status: u32,
+    pub interrupting: bool,
 }
 
 impl Virtio {
@@ -67,6 +56,7 @@ impl Virtio {
             queue_num: 0,
             queue_pfn: 0,
             status: 0,
+            interrupting: false,
         }
     }
 
