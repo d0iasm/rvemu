@@ -230,12 +230,12 @@ impl Cpu {
                 }
             }
             Mode::Supervisor => {
-                if (self.state.read(SSTATUS) >> 3) & 1 == 0 {
+                if (self.state.read(SSTATUS) >> 1) & 1 == 0 {
                     return None;
                 }
             }
             Mode::User => {
-                if (self.state.read(USTATUS) >> 3) & 1 == 0 {
+                if (self.state.read(USTATUS) >> 1) & 1 == 0 {
                     return None;
                 }
             }
@@ -247,6 +247,7 @@ impl Cpu {
         if self.bus.uart.is_interrupting() {
             irq = UART_IRQ;
             interrupting = true;
+            self.bus.uart.clear_interrupting();
         } else if self.bus.virtio.interrupting {
             irq = VIRTIO_IRQ;
             interrupting = true;

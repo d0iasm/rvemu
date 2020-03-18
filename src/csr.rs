@@ -1,5 +1,6 @@
 //! The csr module contains all the control and status registers.
 
+use std::fmt;
 use std::ops::{Bound, Range, RangeBounds};
 
 pub type CsrAddress = u16;
@@ -101,6 +102,33 @@ pub const PMPADDR0: CsrAddress = 0x3b0;
 /// The state to contains all the CSRs.
 pub struct State {
     csrs: [Mxlen; CSR_SIZE],
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            format!(
+                "{}\n{}",
+                format!(
+                    "sstatus={:>#18x} stvec={:>#18x} sepc={:>#18x} scause={:>#18x} satp={:>#18x}",
+                    self.read(SSTATUS),
+                    self.read(STVEC),
+                    self.read(SEPC),
+                    self.read(SCAUSE),
+                    self.read(SATP),
+                ),
+                format!(
+                    "mstatus={:>#18x} mtvec={:>#18x} mepc={:>#18x} mcause={:>#18x}",
+                    self.read(MSTATUS),
+                    self.read(MTVEC),
+                    self.read(MEPC),
+                    self.read(MCAUSE),
+                ),
+            )
+        )
+    }
 }
 
 impl State {

@@ -41,34 +41,28 @@ impl Interrupt {
             .write32(PLIC_SCLAIM, claim as u32)
             .expect("failed to write an IRQ to the PLIC_SCLAIM");
 
-        match cpu.state.read_bits(MTVEC, ..2) {
-            0 => {
-                // Direct mode.
-                let base = cpu.state.read_bits(MTVEC, 2..);
-                cpu.pc = base as usize;
-            }
-            1 => {
-                // Vectored mode.
-                let base = cpu.state.read_bits(MTVEC, 2..);
-                cpu.pc = (base + 4 * exception_code) as usize;
-            }
-            _ => {}
-        }
-
         match cpu.mode {
             Mode::Machine => {
                 cpu.state.write(MCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(MEPC, exception_pc);
+                // TODO: handle mode? but xv6 seems not to care about mode.
+                cpu.pc = cpu.state.read(MTVEC) as usize;
             }
             Mode::Supervisor => {
                 cpu.state.write(SCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(SEPC, exception_pc);
+                // TODO: handle mode? but xv6 seems not to care about mode.
+                cpu.pc = cpu.state.read(STVEC) as usize;
             }
             Mode::User => {
                 cpu.state.write(UCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(UEPC, exception_pc);
+                // TODO: handle mode? but xv6 seems not to care about mode.
+                cpu.pc = cpu.state.read(UTVEC) as usize;
             }
             _ => {}
         }
+        dbg!("claim!!!!!!!! {}", cpu.bus.read32(PLIC_SCLAIM).unwrap());
+        dbg!("privious pc: {} new pc: {}", exception_pc, cpu.pc);
     }
 }

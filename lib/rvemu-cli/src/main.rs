@@ -9,11 +9,14 @@ use rvemu_core::emulator::Emulator;
 
 /// Output current registers to the console.
 fn dump_registers(cpu: &Cpu) {
+    println!("---------------------------------------------------");
     println!("{}", cpu.xregs);
     println!("---------------------------------------------------");
     println!("{}", cpu.fregs);
     println!("---------------------------------------------------");
     println!("pc: {}", cpu.pc);
+    println!("---------------------------------------------------");
+    println!("{}", cpu.state)
 }
 
 /// Main function of RISC-V emulator for the CLI version.
