@@ -264,22 +264,18 @@ impl Cpu {
         }
 
         // Device interrupts (external interrupt).
-        let mut irq = 0;
-        let mut interrupting = false;
+        let irq;
         if self.bus.uart.is_interrupting() {
             irq = UART_IRQ;
-            interrupting = true;
             self.bus.uart.clear_interrupting();
         } else if self.bus.virtio.interrupting {
             irq = VIRTIO_IRQ;
-            interrupting = true;
             self.bus.virtio.interrupting = false;
-        }
-
-        if !interrupting {
+        } else {
             return None;
         }
 
+        dbg!("irq {}", irq);
         match self.mode {
             Mode::Machine => Some(Interrupt::MachineExternalInterrupt(irq)),
             Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt(irq)),
