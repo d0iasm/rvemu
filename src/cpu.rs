@@ -1424,9 +1424,7 @@ impl Cpu {
                         if self.xregs.read(rs1) == self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1436,9 +1434,7 @@ impl Cpu {
                         if self.xregs.read(rs1) != self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1448,9 +1444,7 @@ impl Cpu {
                         if self.xregs.read(rs1) < self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1460,9 +1454,7 @@ impl Cpu {
                         if self.xregs.read(rs1) >= self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1472,9 +1464,7 @@ impl Cpu {
                         if (self.xregs.read(rs1) as u64) < (self.xregs.read(rs2) as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1484,9 +1474,7 @@ impl Cpu {
                         if (self.xregs.read(rs1) as u64) >= (self.xregs.read(rs2) as u64) {
                             let target = (self.pc as i64) + offset - 4;
                             if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned(String::from(
-                                    "must be aligned on a four-byte boundary",
-                                )));
+                                return Err(Exception::InstructionAddressMisaligned);
                             }
                             self.pc = target as usize;
                         }
@@ -1502,9 +1490,7 @@ impl Cpu {
                 let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
                 let target = (self.xregs.read(rs1).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned(String::from(
-                        "must be aligned on a four-byte boundary",
-                    )));
+                    return Err(Exception::InstructionAddressMisaligned);
                 }
 
                 self.pc = target as usize;
@@ -1524,9 +1510,7 @@ impl Cpu {
                         as i64;
                 let target = (self.pc as i64) + offset - 4;
                 if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned(String::from(
-                        "must be aligned on a four-byte boundary",
-                    )));
+                    return Err(Exception::InstructionAddressMisaligned);
                 }
                 self.pc = target as usize;
             }

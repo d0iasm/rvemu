@@ -8,7 +8,7 @@ use crate::{
 /// All the exception kinds.
 #[derive(Debug)]
 pub enum Exception {
-    InstructionAddressMisaligned(String),
+    InstructionAddressMisaligned,
     InstructionAccessFault,
     IllegalInstruction(String),
     Breakpoint,
@@ -27,7 +27,7 @@ pub enum Exception {
 impl Exception {
     fn exception_code(&self) -> i64 {
         match self {
-            Exception::InstructionAddressMisaligned(_s) => 0,
+            Exception::InstructionAddressMisaligned => 0,
             Exception::InstructionAccessFault => 1,
             Exception::IllegalInstruction(_s) => 2,
             Exception::Breakpoint => 3,
@@ -85,9 +85,7 @@ impl Exception {
         }
 
         match self {
-            Exception::InstructionAddressMisaligned(s) => {
-                Err(Exception::InstructionAddressMisaligned(s.to_string()))
-            }
+            Exception::InstructionAddressMisaligned => Err(Exception::InstructionAddressMisaligned),
             Exception::InstructionAccessFault => Err(Exception::InstructionAccessFault),
             Exception::IllegalInstruction(s) => Err(Exception::IllegalInstruction(s.to_string())),
             Exception::Breakpoint => Err(Exception::Breakpoint),
