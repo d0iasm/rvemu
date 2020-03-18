@@ -14,8 +14,18 @@ pub const CLINT_MTIMECMP_SIZE: usize = 0x28;
 pub const CLINT_MTIME: usize = CLINT_BASE + 0xbff8;
 
 /// The core-local interruptor (CLINT).
+/// 0x0000 msip hart 0
+/// 0x0004 msip hart 1
+/// 0x4000 mtimecmp hart 0 lo
+/// 0x4004 mtimecmp hart 0 hi
+/// 0x4008 mtimecmp hart 1 lo
+/// 0x400c mtimecmp hart 1 hi
+/// 0xbff8 mtime lo
+/// 0xbffc mtime hi
 pub struct Clint {
-    /// Mtimecmp registers mapped at 0x204000 to 0x204020.
+    /// 64-bit memory-mapped machine-mode timer compare registers (mtimecmp) mapped at 0x204000
+    /// to 0x204020, which causes a timer interrupt to be posted when the mtime register contains
+    /// a value greater than or equal to the value in the mtimecmp register.
     mtimecmps: [u64; 5],
     /// Timer register mapped at 0x20bff8.
     mtime: u64,
@@ -28,6 +38,22 @@ impl Clint {
             mtimecmps: [0; 5],
             mtime: 0,
         }
+    }
+
+    /// Increment the mtimer register.
+    pub fn increment(&mut self) {
+        self.mtime = self.mtime.wrapping_add(1);
+    }
+
+    /// Return true if an interrupt is pending.
+    pub fn is_interrupting(&self) -> bool {
+        // Assume hart is 0.
+        self.mtime >= self.mtimecmps[0]
+    }
+
+    /// Set the interrupt pending bit to 1, which means no interrupt is pending.
+    pub fn clear_interrupting(&mut self) {
+        self.mtime = 0;
     }
 
     /// Read the content of a register from the CLINT.

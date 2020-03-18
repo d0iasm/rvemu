@@ -220,28 +220,50 @@ impl Cpu {
         self.bus.read32(pc)
     }
 
+    /// Increment the mtimer register in CLINT.
+    pub fn timer_increment(&mut self) {
+        self.bus.clint.increment();
+    }
+
     /// Check interrupt flags for all devices that can interrupt.
     pub fn check_interrupt(&mut self) -> Option<Interrupt> {
         // Check if an interrupt register is enable. If it's disable, no interrupt occurs.
         match self.mode {
             Mode::Machine => {
+                // Check if the MIE bit is enabled.
                 if (self.state.read(MSTATUS) >> 3) & 1 == 0 {
                     return None;
                 }
             }
             Mode::Supervisor => {
+                // Check if the SIE bit is enabled.
                 if (self.state.read(SSTATUS) >> 1) & 1 == 0 {
                     return None;
                 }
             }
             Mode::User => {
-                if (self.state.read(USTATUS) >> 1) & 1 == 0 {
+                // Check if the UIE bit is enabled.
+                if self.state.read(USTATUS) & 1 == 0 {
                     return None;
                 }
             }
             _ => {}
         }
 
+        // Timer interrupt (software interrupt).
+        // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
+        // used for simplicity.
+        if self.bus.clint.is_interrupting() {
+            self.bus.clint.clear_interrupting();
+            match self.mode {
+                Mode::Machine => return Some(Interrupt::MachineSoftwareInterrupt),
+                Mode::Supervisor => return Some(Interrupt::SupervisorSoftwareInterrupt),
+                Mode::User => return Some(Interrupt::UserSoftwareInterrupt),
+                _ => return Some(Interrupt::MachineSoftwareInterrupt),
+            }
+        }
+
+        // Device interrupts (external interrupt).
         let mut irq = 0;
         let mut interrupting = false;
         if self.bus.uart.is_interrupting() {

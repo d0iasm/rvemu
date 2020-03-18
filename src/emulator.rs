@@ -74,6 +74,8 @@ impl Emulator {
                 None => {}
             }
 
+            self.cpu.timer_increment();
+
             if result.is_err() {
                 dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));
                 return;

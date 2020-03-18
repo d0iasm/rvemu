@@ -9,6 +9,9 @@ use crate::{
 /// All the interrupt kinds.
 #[derive(Debug)]
 pub enum Interrupt {
+    UserSoftwareInterrupt,
+    SupervisorSoftwareInterrupt,
+    MachineSoftwareInterrupt,
     UserExternalInterrupt(usize),
     SupervisorExternalInterrupt(usize),
     MachineExternalInterrupt(usize),
@@ -17,11 +20,20 @@ pub enum Interrupt {
 impl Interrupt {
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
-        let claim;
+        let mut claim = 0;
         let exception_code;
         let exception_pc = (cpu.pc as i64) - 4;
 
         match self {
+            Interrupt::UserSoftwareInterrupt => {
+                exception_code = 0;
+            }
+            Interrupt::SupervisorSoftwareInterrupt => {
+                exception_code = 1;
+            }
+            Interrupt::MachineSoftwareInterrupt => {
+                exception_code = 3;
+            }
             Interrupt::UserExternalInterrupt(irq) => {
                 claim = *irq;
                 exception_code = 8;
