@@ -53,7 +53,7 @@ impl Exception {
             }
             Exception::EnvironmentCallFromUMode => {
                 // Move to the more privileged mode.
-                cpu.mode = Mode::Supervisor;
+                cpu.mode = Mode::Machine;
             }
             Exception::EnvironmentCallFromSMode => {
                 // Move to the more privileged mode.
