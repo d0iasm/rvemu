@@ -22,7 +22,7 @@ impl Interrupt {
     pub fn take_trap(&self, cpu: &mut Cpu) {
         let mut claim = 0;
         let exception_code;
-        let exception_pc = (cpu.pc as i64) - 4;
+        let exception_pc = cpu.pc as i64;
 
         match self {
             Interrupt::UserSoftwareInterrupt => {
