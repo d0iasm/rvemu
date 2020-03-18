@@ -69,12 +69,12 @@ impl Emulator {
                 Err(exception) => exception.take_trap(&mut self.cpu),
             };
 
+            self.cpu.timer_increment();
+
             match self.cpu.check_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut self.cpu),
                 None => {}
             }
-
-            self.cpu.timer_increment();
 
             if result.is_err() {
                 dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));

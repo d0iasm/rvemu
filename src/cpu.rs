@@ -255,6 +255,7 @@ impl Cpu {
         // used for simplicity.
         if self.bus.clint.is_interrupting() {
             self.bus.clint.clear_interrupting();
+            //dbg!("virtual addr {} physical addr {}", self.pc, self.translate(self.pc).unwrap());
             match self.mode {
                 Mode::Machine => return Some(Interrupt::MachineSoftwareInterrupt),
                 Mode::Supervisor => return Some(Interrupt::SupervisorSoftwareInterrupt),
@@ -1575,7 +1576,7 @@ impl Cpu {
                                     false => Mode::User,
                                     true => Mode::Supervisor,
                                 };
-                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and Set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
+                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
                                 self.state
                                     .write_bit(SSTATUS, 1, self.state.read_bit(SSTATUS, 5));
 

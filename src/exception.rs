@@ -43,10 +43,6 @@ impl Exception {
             Exception::Breakpoint => {
                 exception_code = 3;
                 cpu.mode = Mode::Debug;
-                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
-                // the address of the ECALL or EBREAK instruction itself, not the address of the
-                // following instruction."
-                cpu.state.write(MEPC, exception_pc);
             }
             Exception::LoadAddressMisaligned => {
                 exception_code = 4;
@@ -65,79 +61,15 @@ impl Exception {
 
                 // Move to the more privileged mode.
                 cpu.mode = Mode::Machine;
-                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
-                // the address of the ECALL or EBREAK instruction itself, not the address of the
-                // following instruction."
-                cpu.state.write(MEPC, exception_pc);
-
-                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
-                match cpu.state.read_bits(MTVEC, ..2) {
-                    0 => {
-                        // Direct mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = base as usize;
-                    }
-                    1 => {
-                        // Vectored mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = (base + 4 * exception_code) as usize;
-                    }
-                    _ => {
-                        return Err(Exception::IllegalInstruction(String::from(
-                            "illegal mode in mtvec",
-                        )));
-                    }
-                }
             }
             Exception::EnvironmentCallFromSMode => {
                 exception_code = 9;
 
                 // Move to the more privileged mode.
                 cpu.mode = Mode::Machine;
-                // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to
-                // the address of the ECALL or EBREAK instruction itself, not the address of the
-                // following instruction."
-                cpu.state.write(MEPC, exception_pc);
-
-                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
-                match cpu.state.read_bits(MTVEC, ..2) {
-                    0 => {
-                        // Direct mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = base as usize;
-                    }
-                    1 => {
-                        // Vectored mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = (base + 4 * exception_code) as usize;
-                    }
-                    _ => {
-                        return Err(Exception::IllegalInstruction(String::from(
-                            "illegal mode in mtvec",
-                        )));
-                    }
-                }
             }
             Exception::EnvironmentCallFromMMode => {
                 exception_code = 11;
-                // Set the program counter to the machine trap-handler base address (mtvec) depending on the mode from mtvec.
-                match cpu.state.read_bits(MTVEC, ..2) {
-                    0 => {
-                        // Direct mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = base as usize;
-                    }
-                    1 => {
-                        // Vectored mode.
-                        let base = cpu.state.read_bits(MTVEC, 2..);
-                        cpu.pc = (base + 4 * exception_code) as usize;
-                    }
-                    _ => {
-                        return Err(Exception::IllegalInstruction(String::from(
-                            "illegal mode in mtvec",
-                        )));
-                    }
-                }
             }
             Exception::InstructionPageFault => {
                 exception_code = 12;
@@ -152,10 +84,16 @@ impl Exception {
 
         match cpu.mode {
             Mode::Machine => {
+                // Set the program counter to the machine trap-handler base address (mtvec).
+                cpu.pc = cpu.state.read_bits(MTVEC, 2..) as usize;
+
                 cpu.state.write(MCAUSE, 0 << 63 | exception_code);
                 cpu.state.write(MEPC, exception_pc);
             }
             Mode::Supervisor => {
+                // Set the program counter to the supervisor trap-handler base address (stvec).
+                cpu.pc = cpu.state.read_bits(STVEC, 2..) as usize;
+
                 cpu.state.write(SCAUSE, 0 << 63 | exception_code);
                 cpu.state.write(SEPC, exception_pc);
             }
