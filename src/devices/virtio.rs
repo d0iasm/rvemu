@@ -67,6 +67,11 @@ impl Virtio {
         }
     }
 
+    /// Return true if an interrupt is pending.
+    pub fn is_interrupting(&self) -> bool {
+        self.interrupting
+    }
+
     /// Set the binary in the virtIO disk.
     pub fn set_disk(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());

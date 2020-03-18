@@ -45,15 +45,16 @@ impl Clint {
         self.mtime = self.mtime.wrapping_add(1);
     }
 
-    /// Return true if an interrupt is pending.
-    pub fn is_interrupting(&self) -> bool {
+    /// Return true if an interrupt is pending and clear the `mtime` register if an interrupting
+    /// is enable.
+    pub fn is_interrupting(&mut self) -> bool {
         // Assume hart is 0.
-        self.mtime >= self.mtimecmps[0]
-    }
-
-    /// Set the interrupt pending bit to 1, which means no interrupt is pending.
-    pub fn clear_interrupting(&mut self) {
-        self.mtime = 0;
+        if self.mtime >= self.mtimecmps[0] {
+            self.mtime = 0;
+            true
+        } else {
+            false
+        }
     }
 
     /// Read the content of a register from the CLINT.

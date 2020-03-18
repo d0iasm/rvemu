@@ -254,7 +254,6 @@ impl Cpu {
         // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
         // used for simplicity.
         if self.bus.clint.is_interrupting() {
-            self.bus.clint.clear_interrupting();
             //dbg!("virtual addr {} physical addr {}", self.pc, self.translate(self.pc).unwrap());
             match self.mode {
                 Mode::Machine => return Some(Interrupt::MachineSoftwareInterrupt),
@@ -268,10 +267,8 @@ impl Cpu {
         let irq;
         if self.bus.uart.is_interrupting() {
             irq = UART_IRQ;
-            self.bus.uart.clear_interrupting();
-        } else if self.bus.virtio.interrupting {
+        } else if self.bus.virtio.is_interrupting() {
             irq = VIRTIO_IRQ;
-            self.bus.virtio.interrupting = false;
         } else {
             return None;
         }

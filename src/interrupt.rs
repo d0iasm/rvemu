@@ -60,6 +60,7 @@ impl Interrupt {
 
                 cpu.state.write(MCAUSE, 1 << 63 | self.exception_code());
                 cpu.state.write(MEPC, exception_pc);
+                cpu.state.write(MTVAL, exception_pc);
 
                 // Set a privious interrupt-enable bit for supervisor mode (MPIE, 7) to the value
                 // of a global interrupt-enable bit for supervisor mode (MIE, 3).
@@ -81,6 +82,7 @@ impl Interrupt {
 
                 cpu.state.write(SCAUSE, 1 << 63 | self.exception_code());
                 cpu.state.write(SEPC, exception_pc);
+                cpu.state.write(STVAL, exception_pc);
 
                 // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
                 // of a global interrupt-enable bit for supervisor mode (SIE, 1).

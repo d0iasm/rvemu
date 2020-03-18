@@ -47,6 +47,8 @@ pub const STVEC: CsrAddress = 0x105;
 pub const SEPC: CsrAddress = 0x141;
 /// Supervisor trap cause.
 pub const SCAUSE: CsrAddress = 0x142;
+/// Supervisor bad address or instruction.
+pub const STVAL: CsrAddress = 0x143;
 
 // Supervisor protection and translation.
 /// Supervisor address translation and protection.

@@ -4,11 +4,13 @@
 
 use std::io;
 use std::io::prelude::*;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Condvar, Mutex,
+};
 use std::thread;
 
 use crate::bus::{UART_BASE, UART_SIZE};
-
 /// The interrupt request of UART.
 pub const UART_IRQ: usize = 10;
 
@@ -40,21 +42,24 @@ pub const UART_LSR: usize = UART_BASE + 5;
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
     uart: Arc<(Mutex<[u8; UART_SIZE]>, Condvar)>,
+    interrupting: Arc<AtomicBool>,
 }
 
 impl Uart {
     /// Create a new UART object.
     pub fn new() -> Self {
         let uart = Arc::new((Mutex::new([0; UART_SIZE]), Condvar::new()));
+        let interrupting = Arc::new(AtomicBool::new(false));
         {
             let (uart, _cvar) = &*uart;
             let mut uart = uart.lock().expect("failed to get an UART object");
-            uart[UART_ISR - UART_BASE] |= 1;
+            //uart[UART_ISR - UART_BASE] |= 1;
             uart[UART_LSR - UART_BASE] |= 1 << 5;
         }
 
         let mut byte = [0; 1];
         let cloned_uart = uart.clone();
+        let cloned_interrupting = interrupting.clone();
         let _uart_thread = thread::spawn(move || loop {
             match io::stdin().read(&mut byte) {
                 Ok(_) => {
@@ -66,7 +71,8 @@ impl Uart {
                     }
                     uart[0] = byte[0];
                     // An interrupt is pending.
-                    uart[UART_ISR - UART_BASE] &= !1;
+                    //uart[UART_ISR - UART_BASE] &= !1;
+                    cloned_interrupting.store(true, Ordering::Release);
                     // Data has been receive.
                     uart[UART_LSR - UART_BASE] |= 1;
                 }
@@ -76,24 +82,12 @@ impl Uart {
             }
         });
 
-        Self { uart }
+        Self { uart, interrupting }
     }
 
-    /// Return true if an interrupt is pending.
+    /// Return true if an interrupt is pending. Clear the interrupting flag by swapping a value.
     pub fn is_interrupting(&self) -> bool {
-        // TODO: avoid getting a lock too often.
-        let (uart, _cvar) = &*self.uart;
-        let uart = uart.lock().expect("failed to get an UART object");
-        // Check if the bit 0 in ISR is 0.
-        (uart[UART_ISR - UART_BASE] & 1) == 0
-    }
-
-    /// Set the interrupt pending bit to 1, which means no interrupt is pending.
-    pub fn clear_interrupting(&mut self) {
-        let (uart, _cvar) = &*self.uart;
-        let mut uart = uart.lock().expect("failed to get an UART object");
-        // Set the bit 0 in ISR to 1.
-        uart[UART_ISR - UART_BASE] |= 1;
+        self.interrupting.swap(false, Ordering::Acquire)
     }
 
     /// Read a byte from the receive holding register.
