@@ -37,7 +37,6 @@ fn main() -> io::Result<()> {
                 .short("f")
                 .long("file")
                 .takes_value(true)
-                .required(true)
                 .help("A raw disk image"),
         )
         .arg(
@@ -56,13 +55,10 @@ fn main() -> io::Result<()> {
     let mut kernel_data = Vec::new();
     kernel_file.read_to_end(&mut kernel_data)?;
 
-    let mut img_file = File::open(
-        &matches
-            .value_of("file")
-            .expect("failed to get a disk image file from a command option"),
-    )?;
     let mut img_data = Vec::new();
-    img_file.read_to_end(&mut img_data)?;
+    if let Some(img_file) = matches.value_of("file") {
+        File::open(img_file)?.read_to_end(&mut img_data)?;
+    }
 
     let mut emu = Emulator::new();
     emu.set_dram(kernel_data);
