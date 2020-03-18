@@ -51,6 +51,12 @@ impl Interrupt {
             Mode::Supervisor => {
                 cpu.state.write(SCAUSE, 1 << 63 | exception_code);
                 cpu.state.write(SEPC, exception_pc);
+
+                // TODO: is it correct?
+                // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
+                cpu.state.write_bit(SSTATUS, 1, false);
+                // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
+                cpu.state.write_bit(SSTATUS, 8, true);
                 // TODO: handle mode? but xv6 seems not to care about mode.
                 cpu.pc = cpu.state.read(STVEC) as usize;
             }
@@ -62,7 +68,5 @@ impl Interrupt {
             }
             _ => {}
         }
-        dbg!("claim!!!!!!!! {}", cpu.bus.read32(PLIC_SCLAIM).unwrap());
-        dbg!("privious pc: {} new pc: {}", exception_pc, cpu.pc);
     }
 }

@@ -1541,7 +1541,6 @@ impl Cpu {
                             (0x2, 0x0) => {} // uret
                             (0x2, 0x8) => {
                                 // sret
-                                // TODO: Which is correct, mstatus or sstatus?
                                 // "The RISC-V Reader" book says:
                                 // "Returns from a supervisor-mode exception handler. Sets the pc to
                                 // CSRs[scpc], the privilege mode to CSRs[sstatus].SPP,
@@ -1553,33 +1552,33 @@ impl Cpu {
 
                                 // TODO: Check TSR field
 
-                                // Read a privious privilege mode for supervisor mode (SPP, 8).
-                                // or supervisor mode.
-                                self.mode = match self.state.read_bit(MSTATUS, 8) {
+                                // Set the current privileged mode depending on a privious privilege mode for supervisor mode (SPP, 8).
+                                self.mode = match self.state.read_bit(SSTATUS, 8) {
                                     false => Mode::User,
                                     true => Mode::Supervisor,
                                 };
-                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5) and write it to a global interrupt-enable bit for supervisor mode (SIE, 1).
+                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and Set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
                                 self.state
-                                    .write_bit(MSTATUS, 1, self.state.read_bit(MSTATUS, 5));
+                                    .write_bit(SSTATUS, 1, self.state.read_bit(SSTATUS, 5));
 
-                                // Write a privious interrupt-enable bit for supervisor mode (SPIE,
-                                // 5).
-                                self.state.write_bit(MSTATUS, 5, true);
-                                // Write a privious privilege mode for supervisor mode (SPP, 8).
-                                self.state.write_bit(MSTATUS, 8, false);
+                                // Set a privious interrupt-enable bit for supervisor mode (SPIE,
+                                // 5) to 1.
+                                self.state.write_bit(SSTATUS, 5, true);
+                                // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
+                                self.state.write_bit(SSTATUS, 8, false);
 
                                 self.pc = self.state.read(SEPC) as usize;
                             }
                             (0x2, 0x18) => {
                                 // mret
-                                // Returns from a machine-mode exception handler. Sets the pc to CSRs[mepc], the privilege mode to
+                                // "The RISC-V Reader" book says:
+                                // "Returns from a machine-mode exception handler. Sets the pc to CSRs[mepc], the privilege mode to
                                 // CSRs[mstatus].MPP, CSRs[mstatus].MIE to CSRs[mstatus].MPIE, and
                                 // CSRs[mstatus].MPIE to 1; and, if user mode is supported, sets
-                                // CSRs[mstatus].MPP to 0.
+                                // CSRs[mstatus].MPP to 0".
                                 self.mode.require(Mode::Machine)?;
 
-                                // Read a privious privilege mode for machine mode (MPP, 11..13).
+                                // Set the current privileged mode depending on a privious privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
                                     0b00 => Mode::User,
                                     0b01 => Mode::Supervisor,
@@ -1587,14 +1586,16 @@ impl Cpu {
                                     _ => Mode::Debug,
                                 };
 
-                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7), and write a global interrupt-enable bit for machine mode (MIE, 3).
+                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7), and set a global interrupt-enable bit for machine mode (MIE, 3) to it.
                                 self.state
                                     .write_bit(MSTATUS, 3, self.state.read_bit(MSTATUS, 7));
 
-                                // Write a privious interrupt-enable bit for machine mode (MPIE, 7).
+                                // Set a privious interrupt-enable bit for machine mode (MPIE, 7)
+                                // to 1.
                                 self.state.write_bit(MSTATUS, 7, true);
 
-                                // Write a privious privilege mode for machine mode (MPP, 11..13);
+                                // Set a privious privilege mode for machine mode (MPP, 11..13) to
+                                // 0.
                                 self.state.write_bits(MSTATUS, 11..13, 0b00);
 
                                 self.pc = self.state.read(MEPC) as usize;
