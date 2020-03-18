@@ -25,61 +25,41 @@ pub enum Exception {
 }
 
 impl Exception {
+    fn exception_code(&self) -> i64 {
+        match self {
+            Exception::InstructionAddressMisaligned(_s) => 0,
+            Exception::InstructionAccessFault => 1,
+            Exception::IllegalInstruction(_s) => 2,
+            Exception::Breakpoint => 3,
+            Exception::LoadAddressMisaligned => 4,
+            Exception::LoadAccessFault => 5,
+            Exception::StoreAMOAddressMisaligned => 6,
+            Exception::StoreAMOAccessFault => 7,
+            Exception::EnvironmentCallFromUMode => 8,
+            Exception::EnvironmentCallFromSMode => 9,
+            Exception::EnvironmentCallFromMMode => 11,
+            Exception::InstructionPageFault => 12,
+            Exception::LoadPageFault => 13,
+            Exception::StoreAMOPageFault => 15,
+        }
+    }
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
-        let exception_code;
         let exception_pc = (cpu.pc as i64) - 4;
 
         match self {
-            Exception::InstructionAddressMisaligned(_s) => {
-                exception_code = 0;
-            }
-            Exception::InstructionAccessFault => {
-                exception_code = 1;
-            }
-            Exception::IllegalInstruction(_s) => {
-                exception_code = 2;
-            }
             Exception::Breakpoint => {
-                exception_code = 3;
                 cpu.mode = Mode::Debug;
             }
-            Exception::LoadAddressMisaligned => {
-                exception_code = 4;
-            }
-            Exception::LoadAccessFault => {
-                exception_code = 5;
-            }
-            Exception::StoreAMOAddressMisaligned => {
-                exception_code = 6;
-            }
-            Exception::StoreAMOAccessFault => {
-                exception_code = 7;
-            }
             Exception::EnvironmentCallFromUMode => {
-                exception_code = 8;
-
                 // Move to the more privileged mode.
                 cpu.mode = Mode::Machine;
             }
             Exception::EnvironmentCallFromSMode => {
-                exception_code = 9;
-
                 // Move to the more privileged mode.
                 cpu.mode = Mode::Machine;
             }
-            Exception::EnvironmentCallFromMMode => {
-                exception_code = 11;
-            }
-            Exception::InstructionPageFault => {
-                exception_code = 12;
-            }
-            Exception::LoadPageFault => {
-                exception_code = 13;
-            }
-            Exception::StoreAMOPageFault => {
-                exception_code = 15;
-            }
+            _ => {}
         }
 
         match cpu.mode {
@@ -87,18 +67,18 @@ impl Exception {
                 // Set the program counter to the machine trap-handler base address (mtvec).
                 cpu.pc = cpu.state.read_bits(MTVEC, 2..) as usize;
 
-                cpu.state.write(MCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(MCAUSE, self.exception_code());
                 cpu.state.write(MEPC, exception_pc);
             }
             Mode::Supervisor => {
                 // Set the program counter to the supervisor trap-handler base address (stvec).
                 cpu.pc = cpu.state.read_bits(STVEC, 2..) as usize;
 
-                cpu.state.write(SCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(SCAUSE, self.exception_code());
                 cpu.state.write(SEPC, exception_pc);
             }
             Mode::User => {
-                cpu.state.write(UCAUSE, 0 << 63 | exception_code);
+                cpu.state.write(UCAUSE, self.exception_code());
                 cpu.state.write(UEPC, exception_pc);
             }
             _ => {}
