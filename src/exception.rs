@@ -45,41 +45,63 @@ impl Exception {
     }
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
+        dbg!(format!("exception {:?}", self));
         let exception_pc = (cpu.pc as i64) - 4;
 
-        match self {
-            Exception::Breakpoint => {
-                cpu.mode = Mode::Debug;
-            }
-            Exception::EnvironmentCallFromUMode => {
-                // Move to the more privileged mode.
-                cpu.mode = Mode::Machine;
-            }
-            Exception::EnvironmentCallFromSMode => {
-                // Move to the more privileged mode.
-                cpu.mode = Mode::Machine;
-            }
-            _ => {}
+        let medeleg = cpu.state.read(MEDELEG);
+        let sedeleg = cpu.state.read(SEDELEG);
+        let pos = self.exception_code() & 0xffff;
+        match ((medeleg >> pos) & 1) == 0 {
+            true => cpu.mode = Mode::Machine,
+            false => match ((sedeleg >> pos) & 1) == 0 {
+                true => cpu.mode = Mode::Supervisor,
+                false => cpu.mode = Mode::User,
+            },
         }
 
         match cpu.mode {
             Mode::Machine => {
                 // Set the program counter to the machine trap-handler base address (mtvec).
-                cpu.pc = cpu.state.read_bits(MTVEC, 2..) as usize;
+                cpu.pc = (cpu.state.read(MTVEC) & !1) as usize;
 
                 cpu.state.write(MCAUSE, self.exception_code());
                 cpu.state.write(MEPC, exception_pc);
+                cpu.state.write(MTVAL, exception_pc);
+
+                // Set a privious interrupt-enable bit for supervisor mode (MPIE, 7) to the value
+                // of a global interrupt-enable bit for supervisor mode (MIE, 3).
+                cpu.state
+                    .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
+                // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
+                cpu.state.write_bit(MSTATUS, 3, false);
+                // Set a privious privilege mode for supervisor mode (MPP, 11..13) to 0.
+                cpu.state.write_bits(MSTATUS, 11..13, 0b00);
             }
             Mode::Supervisor => {
                 // Set the program counter to the supervisor trap-handler base address (stvec).
-                cpu.pc = cpu.state.read_bits(STVEC, 2..) as usize;
+                cpu.pc = (cpu.state.read(STVEC) & !1) as usize;
 
                 cpu.state.write(SCAUSE, self.exception_code());
                 cpu.state.write(SEPC, exception_pc);
+                cpu.state.write(STVAL, exception_pc);
+
+                // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
+                // of a global interrupt-enable bit for supervisor mode (SIE, 1).
+                cpu.state
+                    .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
+                // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
+                cpu.state.write_bit(SSTATUS, 1, false);
+                // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
+                cpu.state.write_bit(SSTATUS, 8, true);
             }
             Mode::User => {
+                // Set the program counter to the user trap-handler base address (utvec).
+                cpu.pc = (cpu.state.read(UTVEC) & !1) as usize;
+
                 cpu.state.write(UCAUSE, self.exception_code());
                 cpu.state.write(UEPC, exception_pc);
+
+                // TODO: implement to update USTATUS
             }
             _ => {}
         }

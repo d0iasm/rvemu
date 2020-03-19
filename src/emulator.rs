@@ -52,12 +52,13 @@ impl Emulator {
             let data_or_error = self.cpu.fetch();
 
             count += 1;
-            if self.is_debug && count % 1000000 == 0 {
+            if self.is_debug && count % 10000000 == 0 {
                 dbg!(format!("pc: {} , data: {:#?}", self.cpu.pc, &data_or_error));
             }
 
             // 2. Add 4 to the program counter.
             self.cpu.pc += 4;
+            self.cpu.timer_increment();
 
             // 3. Decode.
             // 4. Execution.
@@ -68,8 +69,6 @@ impl Emulator {
                 },
                 Err(exception) => exception.take_trap(&mut self.cpu),
             };
-
-            self.cpu.timer_increment();
 
             match self.cpu.check_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut self.cpu),

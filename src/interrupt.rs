@@ -4,6 +4,7 @@ use crate::{
     cpu::{Cpu, Mode},
     csr::*,
     devices::plic::PLIC_SCLAIM,
+    devices::virtio::{Virtio, VIRTIO_IRQ},
 };
 
 /// All the interrupt kinds.
@@ -40,7 +41,19 @@ impl Interrupt {
 
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
+        dbg!(format!("interrupt {:?}", self));
         let exception_pc = cpu.pc as i64;
+
+        let mideleg = cpu.state.read(MIDELEG);
+        let sideleg = cpu.state.read(SIDELEG);
+        let pos = (self.exception_code() | 1 << 63) & 0xffff;
+        match ((mideleg >> pos) & 1) == 0 {
+            true => cpu.mode = Mode::Machine,
+            false => match ((sideleg >> pos) & 1) == 0 {
+                true => cpu.mode = Mode::Supervisor,
+                false => cpu.mode = Mode::User,
+            },
+        }
 
         // TODO: assume that hart is 0
         // TODO: write a value to MCLAIM if the mode is machine
@@ -72,7 +85,7 @@ impl Interrupt {
                 cpu.state.write_bits(MSTATUS, 11..13, 0b00);
             }
             Mode::Supervisor => {
-                // Set the program counter to the machine trap-handler base address (mtvec)
+                // Set the program counter to the machine trap-handler base address (stvec)
                 // depending on the mode.
                 let vector = match cpu.state.read_bit(STVEC, 0) {
                     true => 4 * self.exception_code(), // vectored mode
@@ -94,12 +107,26 @@ impl Interrupt {
                 cpu.state.write_bit(SSTATUS, 8, true);
             }
             Mode::User => {
+                // Set the program counter to the machine trap-handler base address (utvec)
+                // depending on the mode.
+                let vector = match cpu.state.read_bit(UTVEC, 0) {
+                    true => 4 * self.exception_code(), // vectored mode
+                    false => 0,                        // direct mode
+                };
+                cpu.pc = ((cpu.state.read(UTVEC) & !1) + vector) as usize;
+
                 cpu.state.write(UCAUSE, 1 << 63 | self.exception_code());
                 cpu.state.write(UEPC, exception_pc);
-                // TODO: handle mode? but xv6 seems not to care about mode.
-                cpu.pc = cpu.state.read(UTVEC) as usize;
+                cpu.state.write(UTVAL, exception_pc);
+
+                // TODO: implement to update USTATUS
             }
             _ => {}
+        }
+
+        if self.irq() as usize == VIRTIO_IRQ {
+            // TODO: move this.
+            Virtio::disk_access(cpu);
         }
     }
 }

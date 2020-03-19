@@ -217,6 +217,10 @@ impl Cpu {
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.translate(self.pc)?;
+        //if self.pc < crate::bus::DRAM_BASE {
+        //dbg!(format!("vaddr {:#x} paddr {:#x} inst {:#x}", self.pc, pc, self.bus.read32(pc).unwrap()));
+        //println!("{}", self.state);
+        //}
         self.bus.read32(pc)
     }
 
@@ -254,7 +258,6 @@ impl Cpu {
         // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
         // used for simplicity.
         if self.bus.clint.is_interrupting() {
-            //dbg!("virtual addr {} physical addr {}", self.pc, self.translate(self.pc).unwrap());
             match self.mode {
                 Mode::Machine => return Some(Interrupt::MachineSoftwareInterrupt),
                 Mode::Supervisor => return Some(Interrupt::SupervisorSoftwareInterrupt),
@@ -273,7 +276,6 @@ impl Cpu {
             return None;
         }
 
-        dbg!("irq {}", irq);
         match self.mode {
             Mode::Machine => Some(Interrupt::MachineExternalInterrupt(irq)),
             Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt(irq)),
@@ -1538,7 +1540,10 @@ impl Cpu {
                                 // exception.
                                 return Err(Exception::Breakpoint);
                             }
-                            (0x2, 0x0) => {} // uret
+                            (0x2, 0x0) => {
+                                // uret
+                                dbg!("uret! pc {}", self.pc);
+                            }
                             (0x2, 0x8) => {
                                 // sret
                                 // "The RISC-V Reader" book says:
@@ -1549,6 +1554,10 @@ impl Cpu {
                                 // the implementation in QEMU and Spike use `mstatus` instead of
                                 // `sstatus`.
                                 self.mode.require(Mode::Supervisor)?;
+
+                                // Set the program coutner to the supervisor exception program
+                                // counter (SEPC).
+                                self.pc = self.state.read(SEPC) as usize;
 
                                 // TODO: Check TSR field
 
@@ -1566,8 +1575,6 @@ impl Cpu {
                                 self.state.write_bit(SSTATUS, 5, true);
                                 // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
                                 self.state.write_bit(SSTATUS, 8, false);
-
-                                self.pc = self.state.read(SEPC) as usize;
                             }
                             (0x2, 0x18) => {
                                 // mret
@@ -1577,6 +1584,10 @@ impl Cpu {
                                 // CSRs[mstatus].MPIE to 1; and, if user mode is supported, sets
                                 // CSRs[mstatus].MPP to 0".
                                 self.mode.require(Mode::Machine)?;
+
+                                // Set the program coutner to the machine exception program
+                                // counter (MEPC).
+                                self.pc = self.state.read(MEPC) as usize;
 
                                 // Set the current privileged mode depending on a privious privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
@@ -1597,8 +1608,6 @@ impl Cpu {
                                 // Set a privious privilege mode for machine mode (MPP, 11..13) to
                                 // 0.
                                 self.state.write_bits(MSTATUS, 11..13, 0b00);
-
-                                self.pc = self.state.read(MEPC) as usize;
                             }
                             (0x5, 0x8) => {} // wfi
                             (_, 0x9) => {}   // sfence.vma
@@ -1672,6 +1681,7 @@ impl Cpu {
                 }
             }
             _ => {
+                dbg!(format!("data {:#x} {:#b}", data, data));
                 return Err(Exception::IllegalInstruction(String::from(
                     "instruction not found",
                 )));
