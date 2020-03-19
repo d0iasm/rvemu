@@ -218,13 +218,6 @@ impl Cpu {
 
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
-        /*
-        if self.pc < crate::bus::DRAM_BASE || self.debug {
-            self.debug = true;
-            println!("{}", self.xregs);
-            println!("{}", self.state);
-        }
-        */
         self.read32(self.pc)
     }
 

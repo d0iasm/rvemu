@@ -59,9 +59,6 @@ impl Exception {
             },
         }
 
-        dbg!(format!("EXCEPTION {:?} next mode {:#?}", self, cpu.mode));
-        println!("{}", cpu.state);
-
         match cpu.mode {
             Mode::Machine => {
                 // Set the program counter to the machine trap-handler base address (mtvec).
@@ -79,7 +76,7 @@ impl Exception {
                 // "When a trap is taken into M-mode, mcause is written with a code indicating
                 // the event that caused the trap. Otherwise, mcause is never written by the
                 // implementation, though it may be explicitly written by software."
-                cpu.state.write(MCAUSE, 1 << 63 | self.exception_code());
+                cpu.state.write(MCAUSE, self.exception_code());
 
                 // 3.1.17 Machine Trap Value (mtval) Register
                 // "When a trap is taken into M-mode, mtval is either set to zero or written with
@@ -118,7 +115,7 @@ impl Exception {
                 // "When a trap is taken into S-mode, scause is written with a code indicating
                 // the event that caused the trap.  Otherwise, scause is never written by the
                 // implementation, though it may be explicitly written by software."
-                cpu.state.write(SCAUSE, 1 << 63 | self.exception_code());
+                cpu.state.write(SCAUSE, self.exception_code());
 
                 // 4.1.11 Supervisor Trap Value (stval) Register
                 // "When a trap is taken into S-mode, stval is written with exception-specific
@@ -170,8 +167,7 @@ impl Exception {
             Exception::EnvironmentCallFromUMode => Ok(()),
             Exception::EnvironmentCallFromSMode => Ok(()),
             Exception::EnvironmentCallFromMMode => Ok(()),
-            //Exception::InstructionPageFault => Ok(()),
-            Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
+            Exception::InstructionPageFault => Ok(()),
             Exception::LoadPageFault => Err(Exception::LoadPageFault),
             Exception::StoreAMOPageFault => Err(Exception::StoreAMOPageFault),
         }

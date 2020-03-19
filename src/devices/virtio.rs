@@ -167,10 +167,6 @@ impl Virtio {
         let blk_reserved = cpu.bus.read32(addr0.wrapping_add(4) as usize).unwrap();
         let blk_sector = cpu.bus.read64(addr0.wrapping_add(8) as usize).expect("10");
 
-        println!("Blk type:{:X}", blk_type);
-        println!("Blk reserved:{:X}", blk_reserved);
-        println!("Blk sector:{:X}", blk_sector);
-
         match (flags1 & 2) == 0 {
             true => {
                 // write to disk

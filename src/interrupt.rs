@@ -55,8 +55,6 @@ impl Interrupt {
             },
         }
 
-        dbg!(format!("INTERRUPT {:?} next mode {:#?}", self, cpu.mode));
-
         // TODO: assume that hart is 0
         // TODO: write a value to MCLAIM if the mode is machine
         cpu.bus
