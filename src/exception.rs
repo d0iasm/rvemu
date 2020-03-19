@@ -46,6 +46,7 @@ impl Exception {
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
         let exception_pc = (cpu.pc as i64) - 4;
+        let prev_mode = cpu.mode;
 
         let medeleg = cpu.state.read(MEDELEG);
         let sedeleg = cpu.state.read(SEDELEG);
@@ -59,6 +60,7 @@ impl Exception {
         }
 
         dbg!(format!("EXCEPTION {:?} next mode {:#?}", self, cpu.mode));
+        println!("{}", cpu.state);
 
         match cpu.mode {
             Mode::Machine => {
@@ -135,8 +137,13 @@ impl Exception {
                     .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
                 // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
                 cpu.state.write_bit(SSTATUS, 1, false);
-                // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
-                cpu.state.write_bit(SSTATUS, 8, true);
+                // 4.1.1 Supervisor Status Register (sstatus)
+                // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
+                // 1 otherwise."
+                match prev_mode {
+                    Mode::User => cpu.state.write_bit(SSTATUS, 8, false),
+                    _ => cpu.state.write_bit(SSTATUS, 8, true),
+                }
             }
             Mode::User => {
                 // Set the program counter to the user trap-handler base address (utvec).

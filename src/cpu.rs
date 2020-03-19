@@ -22,7 +22,7 @@ const SP: usize = 2;
 const PAGE_SIZE: usize = 4096;
 
 /// The privileged mode.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Mode {
     User = 0b00,
     Supervisor = 0b01,
@@ -612,7 +612,10 @@ impl Cpu {
                     0x0 => self.write8(addr, self.xregs.read(rs2) as u8)?, // sb
                     0x1 => self.write16(addr, self.xregs.read(rs2) as u16)?, // sh
                     0x2 => self.write32(addr, self.xregs.read(rs2) as u32)?, // sw
-                    0x3 => self.write64(addr, self.xregs.read(rs2) as u64)?, // sd
+                    //0x3 => self.write64(addr, self.xregs.read(rs2) as u64)?, // sd
+                    0x3 => {
+                        self.write64(addr, self.xregs.read(rs2) as u64)?;
+                    }
                     _ => {}
                 }
             }
@@ -1694,8 +1697,9 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        self.xregs.write(rd, self.state.read(csr_address));
+                        let t = self.state.read(csr_address);
                         self.state.write(csr_address, self.xregs.read(rs1));
+                        self.xregs.write(rd, t);
 
                         if csr_address == SATP {
                             // Read the physical page number (PPN) of the root page table, i.e., its
