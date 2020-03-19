@@ -41,7 +41,6 @@ impl Interrupt {
 
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
-        dbg!(format!("interrupt {:?}", self));
         let exception_pc = cpu.pc as i64;
 
         let mideleg = cpu.state.read(MIDELEG);
@@ -54,6 +53,8 @@ impl Interrupt {
                 false => cpu.mode = Mode::User,
             },
         }
+
+        dbg!(format!("INTERRUPT {:?} next mode {:#?}", self, cpu.mode));
 
         // TODO: assume that hart is 0
         // TODO: write a value to MCLAIM if the mode is machine
@@ -71,9 +72,31 @@ impl Interrupt {
                 };
                 cpu.pc = ((cpu.state.read(MTVEC) & !1) + vector) as usize;
 
+                // 3.1.15 Machine Exception Program Counter (mepc)
+                // "The low bit of mepc (mepc[0]) is always zero."
+                // "When a trap is taken into M-mode, mepc is written with the virtual address of
+                // the instruction that was interrupted or that encountered the exception.
+                // Otherwise, mepc is never written by the implementation, though it may be
+                // explicitly written by software."
+                cpu.state.write(MEPC, exception_pc & !1);
+
+                // 3.1.16 Machine Cause Register (mcause)
+                // "When a trap is taken into M-mode, mcause is written with a code indicating
+                // the event that caused the trap. Otherwise, mcause is never written by the
+                // implementation, though it may be explicitly written by software."
                 cpu.state.write(MCAUSE, 1 << 63 | self.exception_code());
-                cpu.state.write(MEPC, exception_pc);
-                cpu.state.write(MTVAL, exception_pc);
+
+                // 3.1.17 Machine Trap Value (mtval) Register
+                // "When a trap is taken into M-mode, mtval is either set to zero or written with
+                // exception-specific information to assist software in handling the trap.
+                // Otherwise, mtval is never written by the implementation, though it may be
+                // explicitly written by software."
+                // "When a hardware breakpoint is triggered, or an instruction-fetch, load, or
+                // store address-misaligned, access, or page-fault exception occurs, mtval is
+                // written with the faulting virtual address. On an illegal instruction trap,
+                // mtval may be written with the first XLEN or ILEN bits of the faulting
+                // instruction as described below. For other traps, mtval is set to zero."
+                cpu.state.write(MTVAL, 0);
 
                 // Set a privious interrupt-enable bit for supervisor mode (MPIE, 7) to the value
                 // of a global interrupt-enable bit for supervisor mode (MIE, 3).
@@ -93,9 +116,30 @@ impl Interrupt {
                 };
                 cpu.pc = ((cpu.state.read(STVEC) & !1) + vector) as usize;
 
+                // 4.1.9 Supervisor Exception Program Counter (sepc)
+                // "The low bit of sepc (sepc[0]) is always zero."
+                // "When a trap is taken into S-mode, sepc is written with the virtual address of
+                // the instruction that was interrupted or that encountered the exception.
+                // Otherwise, sepc is never written by the implementation, though it may be
+                // explicitly written by software."
+                cpu.state.write(SEPC, exception_pc & !1);
+
+                // 4.1.10 Supervisor Cause Register (scause)
+                // "When a trap is taken into S-mode, scause is written with a code indicating
+                // the event that caused the trap.  Otherwise, scause is never written by the
+                // implementation, though it may be explicitly written by software."
                 cpu.state.write(SCAUSE, 1 << 63 | self.exception_code());
-                cpu.state.write(SEPC, exception_pc);
-                cpu.state.write(STVAL, exception_pc);
+
+                // 4.1.11 Supervisor Trap Value (stval) Register
+                // "When a trap is taken into S-mode, stval is written with exception-specific
+                // information to assist software in handling the trap. Otherwise, stval is never
+                // written by the implementation, though it may be explicitly written by software."
+                // "When a hardware breakpoint is triggered, or an instruction-fetch, load, or
+                // store address-misaligned, access, or page-fault exception occurs, stval is
+                // written with the faulting virtual address. On an illegal instruction trap,
+                // stval may be written with the first XLEN or ILEN bits of the faulting
+                // instruction as described below. For other exceptions, stval is set to zero."
+                cpu.state.write(STVAL, 0);
 
                 // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
                 // of a global interrupt-enable bit for supervisor mode (SIE, 1).

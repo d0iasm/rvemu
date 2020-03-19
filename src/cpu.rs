@@ -105,7 +105,7 @@ impl fmt::Display for XRegisters {
                 "{}\n{}",
                 output,
                 format!(
-                    "x{:02}={:>8x} x{:02}={:>8x} x{:02}={:>8x} x{:02}={:>8x}",
+                    "x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x}",
                     i,
                     self.read(i),
                     i + 1,
@@ -165,8 +165,8 @@ impl fmt::Display for FRegisters {
                     self.read(i + 2),
                     i + 3,
                     self.read(i + 3),
-                    width=8,
-                    prec=3,
+                    width=18,
+                    prec=8,
                 )
             );
         }
@@ -186,6 +186,7 @@ pub struct Cpu {
     pub bus: Bus,
     pub enable_paging: bool,
     pub page_table: usize,
+    pub debug: bool,
 }
 
 impl Cpu {
@@ -200,6 +201,7 @@ impl Cpu {
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
+            debug: false,
         }
     }
 
@@ -217,10 +219,18 @@ impl Cpu {
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.translate(self.pc)?;
-        //if self.pc < crate::bus::DRAM_BASE {
-        //dbg!(format!("vaddr {:#x} paddr {:#x} inst {:#x}", self.pc, pc, self.bus.read32(pc).unwrap()));
-        //println!("{}", self.state);
-        //}
+        /*
+        if self.pc < crate::bus::DRAM_BASE || self.debug {
+            self.debug = true;
+            dbg!(format!(
+                "vaddr {:#x} paddr {:#x} inst {:#x}",
+                self.pc,
+                pc,
+                self.bus.read32(pc).unwrap()
+            ));
+            println!("{}", self.state);
+        }
+        */
         self.bus.read32(pc)
     }
 
@@ -1522,14 +1532,16 @@ impl Cpu {
                             (0x0, 0x0) => {
                                 // ecall
                                 // Makes a request of the execution environment by raising an
-                                // Environment Call exception.
+                                // environment call exception.
                                 match self.mode {
-                                    Mode::User => return Err(Exception::EnvironmentCallFromUMode),
+                                    Mode::User => {
+                                        return Err(Exception::EnvironmentCallFromUMode);
+                                    }
                                     Mode::Supervisor => {
-                                        return Err(Exception::EnvironmentCallFromSMode)
+                                        return Err(Exception::EnvironmentCallFromSMode);
                                     }
                                     Mode::Machine => {
-                                        return Err(Exception::EnvironmentCallFromMMode)
+                                        return Err(Exception::EnvironmentCallFromMMode);
                                     }
                                     _ => {}
                                 }
@@ -1542,7 +1554,7 @@ impl Cpu {
                             }
                             (0x2, 0x0) => {
                                 // uret
-                                dbg!("uret! pc {}", self.pc);
+                                dbg!("uret: not implemented yet. pc {}", self.pc);
                             }
                             (0x2, 0x8) => {
                                 // sret
@@ -1681,7 +1693,6 @@ impl Cpu {
                 }
             }
             _ => {
-                dbg!(format!("data {:#x} {:#b}", data, data));
                 return Err(Exception::IllegalInstruction(String::from(
                     "instruction not found",
                 )));
