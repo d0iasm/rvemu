@@ -163,6 +163,7 @@ impl Exception {
             Exception::EnvironmentCallFromUMode => Ok(()),
             Exception::EnvironmentCallFromSMode => Ok(()),
             Exception::EnvironmentCallFromMMode => Ok(()),
+            //Exception::InstructionPageFault => Ok(()),
             Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
             Exception::LoadPageFault => Err(Exception::LoadPageFault),
             Exception::StoreAMOPageFault => Err(Exception::StoreAMOPageFault),

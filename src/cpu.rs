@@ -218,20 +218,14 @@ impl Cpu {
 
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch(&mut self) -> Result<u32, Exception> {
-        let pc = self.translate(self.pc)?;
         /*
         if self.pc < crate::bus::DRAM_BASE || self.debug {
             self.debug = true;
-            dbg!(format!(
-                "vaddr {:#x} paddr {:#x} inst {:#x}",
-                self.pc,
-                pc,
-                self.bus.read32(pc).unwrap()
-            ));
+            println!("{}", self.xregs);
             println!("{}", self.state);
         }
         */
-        self.bus.read32(pc)
+        self.read32(self.pc)
     }
 
     /// Increment the mtimer register in CLINT.
@@ -319,7 +313,6 @@ impl Cpu {
             // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
             //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
             //    exception corresponding to the original access type.
-
             pte = self.bus.read64(a + vpn[i as usize] * 8)?;
             // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
             //    exception corresponding to the original access type.
@@ -389,6 +382,46 @@ impl Cpu {
         });
     }
 
+    pub fn read8(&mut self, v_addr: usize) -> Result<u8, Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.read8(p_addr)
+    }
+
+    pub fn write8(&mut self, v_addr: usize, val: u8) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write8(p_addr, val)
+    }
+
+    pub fn read16(&mut self, v_addr: usize) -> Result<u16, Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.read16(p_addr)
+    }
+
+    pub fn write16(&mut self, v_addr: usize, val: u16) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write16(p_addr, val)
+    }
+
+    pub fn read32(&mut self, v_addr: usize) -> Result<u32, Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.read32(p_addr)
+    }
+
+    pub fn write32(&mut self, v_addr: usize, val: u32) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write32(p_addr, val)
+    }
+
+    pub fn read64(&mut self, v_addr: usize) -> Result<u64, Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.read64(p_addr)
+    }
+
+    pub fn write64(&mut self, v_addr: usize, val: u64) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write64(p_addr, val)
+    }
+
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
     pub fn execute(&mut self, data: u32) -> Result<(), Exception> {
@@ -407,33 +440,61 @@ impl Cpu {
                     0x80000000 => 0xfffff800, // offset[:11] = data[31]
                     _ => 0,
                 } | ((data >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = data[30:20]
-                let v_addr = self.xregs.read(rs1).wrapping_add(offset) as usize;
-                let addr = self.translate(v_addr)?;
+                let addr = self.xregs.read(rs1).wrapping_add(offset) as usize;
                 match funct3 {
-                    0x0 => self.xregs.write(rd, (self.bus.read8(addr)? as i8) as i64), // lb
-                    0x1 => self.xregs.write(rd, (self.bus.read16(addr)? as i16) as i64), // lh
-                    0x2 => self.xregs.write(rd, (self.bus.read32(addr)? as i32) as i64), // lw
-                    0x3 => self.xregs.write(rd, self.bus.read64(addr)? as i64),        // ld
-                    0x4 => self.xregs.write(rd, (self.bus.read8(addr)? as i64) & 0xff), // lbu
-                    0x5 => self
-                        .xregs
-                        .write(rd, (self.bus.read16(addr)? as i64) & 0xffff), // lhu
-                    0x6 => self
-                        .xregs
-                        .write(rd, (self.bus.read32(addr)? as i64) & 0xffffffff), // lwu
+                    0x0 => {
+                        // lb
+                        let val = (self.read8(addr)? as i8) as i64;
+                        self.xregs.write(rd, val);
+                    }
+                    0x1 => {
+                        // lh
+                        let val = (self.read16(addr)? as i16) as i64;
+                        self.xregs.write(rd, val);
+                    }
+                    0x2 => {
+                        // lw
+                        let val = (self.read32(addr)? as i32) as i64;
+                        self.xregs.write(rd, val);
+                    }
+                    0x3 => {
+                        // ld
+                        let val = self.read64(addr)? as i64;
+                        self.xregs.write(rd, val);
+                    }
+                    0x4 => {
+                        // lbu
+                        let val = (self.read8(addr)? as i64) & 0xff;
+                        self.xregs.write(rd, val);
+                    }
+                    0x5 => {
+                        // lhu
+                        let val = (self.read16(addr)? as i64) & 0xffff;
+                        self.xregs.write(rd, val);
+                    }
+                    0x6 => {
+                        // lwu
+                        let val = (self.read32(addr)? as i64) & 0xffffffff;
+                        self.xregs.write(rd, val);
+                    }
                     _ => {}
                 }
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
                 let offset = ((data & 0xfff00000) as u64) >> 20;
-                let v_addr = (self.xregs.read(rs1) + offset as i64) as usize;
-                let addr = self.translate(v_addr)?;
+                let addr = (self.xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
-                    0x2 => self
-                        .fregs
-                        .write(rd, f64::from_bits(self.bus.read32(addr)? as u64)), // flw
-                    0x3 => self.fregs.write(rd, f64::from_bits(self.bus.read64(addr)?)), // fld
+                    0x2 => {
+                        // flw
+                        let val = f64::from_bits(self.read64(addr)? as u64);
+                        self.fregs.write(rd, val);
+                    }
+                    0x3 => {
+                        // fld
+                        let val = f64::from_bits(self.read64(addr)?);
+                        self.fregs.write(rd, val);
+                    }
                     _ => {}
                 }
             }
@@ -546,13 +607,12 @@ impl Cpu {
                     ((data & 0x00000f80) >> 7)
                     // offset[4:0]= data[11:7]
                 ) as i32 as i64;
-                let v_addr = (self.xregs.read(rs1) + offset) as usize;
-                let addr = self.translate(v_addr)?;
+                let addr = (self.xregs.read(rs1) + offset) as usize;
                 match funct3 {
-                    0x0 => self.bus.write8(addr, self.xregs.read(rs2) as u8)?, // sb
-                    0x1 => self.bus.write16(addr, self.xregs.read(rs2) as u16)?, // sh
-                    0x2 => self.bus.write32(addr, self.xregs.read(rs2) as u32)?, // sw
-                    0x3 => self.bus.write64(addr, self.xregs.read(rs2) as u64)?, // sd
+                    0x0 => self.write8(addr, self.xregs.read(rs2) as u8)?, // sb
+                    0x1 => self.write16(addr, self.xregs.read(rs2) as u16)?, // sh
+                    0x2 => self.write32(addr, self.xregs.read(rs2) as u32)?, // sw
+                    0x3 => self.write64(addr, self.xregs.read(rs2) as u64)?, // sd
                     _ => {}
                 }
             }
@@ -561,13 +621,12 @@ impl Cpu {
                 let imm11_5 = (((data & 0xfe000000) as i32) as i64) >> 25;
                 let imm4_0 = ((data & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
-                let v_addr = (self.xregs.read(rs1) + offset) as usize;
-                let addr = self.translate(v_addr)?;
+                let addr = (self.xregs.read(rs1) + offset) as usize;
                 match funct3 {
                     0x2 => self
                         .bus
                         .write32(addr, (self.fregs.read(rs2) as f32).to_bits())?, // fsw
-                    0x3 => self.bus.write64(addr, self.fregs.read(rs2).to_bits())?, // fsd
+                    0x3 => self.write64(addr, self.fregs.read(rs2).to_bits())?, // fsd
                     _ => {}
                 }
             }
@@ -581,8 +640,8 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             (t.wrapping_add(self.xregs.read(rs2) as i32)) as u32,
                         )?;
@@ -590,8 +649,8 @@ impl Cpu {
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             t.wrapping_add(self.xregs.read(rs2)) as u64,
                         )?;
@@ -599,43 +658,48 @@ impl Cpu {
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
                         self.bus
                             .write32(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u32)?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
                         self.bus
                             .write64(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, t);
                     }
-                    (0x2, 0x02) => self.xregs.write(
-                        rd,
-                        (self.bus.read32(self.xregs.read(rs1) as usize)? as i32) as i64,
-                    ), // lr.w
-                    (0x3, 0x02) => self
-                        .xregs
-                        .write(rd, self.bus.read64(self.xregs.read(rs1) as usize)? as i64), // lr.d
+                    (0x2, 0x02) => {
+                        // lr.w
+                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        self.xregs.write(rd, addr as i32 as i64);
+                    }
+                    (0x3, 0x02) => {
+                        // lr.d
+                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        self.xregs.write(rd, addr as i64);
+                    }
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
+                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        let src = self.read32(self.xregs.read(rs2) as usize)?;
                         self.xregs.write(rd, 0);
-                        self.bus
-                            .write32(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u32)?;
+                        self.bus.write32(addr as usize, src as u32)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
+                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        let src = self.read32(self.xregs.read(rs2) as usize)?;
                         self.xregs.write(rd, 0);
-                        self.bus
-                            .write64(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u64)?;
+                        self.bus.write64(addr as usize, src as u64)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             (t ^ (self.xregs.read(rs2) as i32)) as u32,
                         )?;
@@ -643,8 +707,8 @@ impl Cpu {
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             (t ^ self.xregs.read(rs2)) as u64,
                         )?;
@@ -652,8 +716,8 @@ impl Cpu {
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             (t | (self.xregs.read(rs2) as i32)) as u32,
                         )?;
@@ -661,8 +725,8 @@ impl Cpu {
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             (t | self.xregs.read(rs2)) as u64,
                         )?;
@@ -670,8 +734,8 @@ impl Cpu {
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             (t & (self.xregs.read(rs2) as i32)) as u32,
                         )?;
@@ -679,8 +743,8 @@ impl Cpu {
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             (t & self.xregs.read(rs1)) as u64,
                         )?;
@@ -688,8 +752,8 @@ impl Cpu {
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             cmp::min(t, self.xregs.read(rs2) as i32) as u32,
                         )?;
@@ -697,8 +761,8 @@ impl Cpu {
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             cmp::min(t, self.xregs.read(rs2)) as u64,
                         )?;
@@ -706,8 +770,8 @@ impl Cpu {
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)? as i32;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             cmp::max(t, self.xregs.read(rs2) as i32) as u32,
                         )?;
@@ -715,8 +779,8 @@ impl Cpu {
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)? as i64;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             cmp::max(t, self.xregs.read(rs2)) as u64,
                         )?;
@@ -724,8 +788,8 @@ impl Cpu {
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)?;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)?;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             cmp::min(t, self.xregs.read(rs2) as u32),
                         )?;
@@ -733,8 +797,8 @@ impl Cpu {
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)?;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)?;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             cmp::min(t, self.xregs.read(rs2) as u64),
                         )?;
@@ -742,8 +806,8 @@ impl Cpu {
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = self.bus.read32(self.xregs.read(rs1) as usize)?;
-                        self.bus.write32(
+                        let t = self.read32(self.xregs.read(rs1) as usize)?;
+                        self.write32(
                             self.xregs.read(rs1) as usize,
                             cmp::max(t, self.xregs.read(rs2) as u32),
                         )?;
@@ -751,8 +815,8 @@ impl Cpu {
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = self.bus.read64(self.xregs.read(rs1) as usize)?;
-                        self.bus.write64(
+                        let t = self.read64(self.xregs.read(rs1) as usize)?;
+                        self.write64(
                             self.xregs.read(rs1) as usize,
                             cmp::max(t, self.xregs.read(rs2) as u64),
                         )?;
@@ -1643,6 +1707,8 @@ impl Cpu {
                             // Enable the SV39 paging if the value of the mode field is 8.
                             if mode == 8 {
                                 self.enable_paging = true;
+                            } else {
+                                self.enable_paging = false;
                             }
                         }
                     }
@@ -1674,6 +1740,8 @@ impl Cpu {
                             // Enable the SV39 paging if the value of the mode field is 8.
                             if mode == 8 {
                                 self.enable_paging = true;
+                            } else {
+                                self.enable_paging = false;
                             }
                         }
                     }
