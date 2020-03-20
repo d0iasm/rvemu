@@ -71,7 +71,8 @@ impl Uart {
 
     /// Return true if the byte buffer in UART is full.
     pub fn is_interrupting(&self) -> bool {
-        (self.uart[UART_ISR - UART_BASE] & 1) == 0
+        false
+        //(self.uart[UART_ISR - UART_BASE] & 1) == 0
     }
 
     /// Set the interrupt pending bit to 1, which means no interrupt is pending.

@@ -63,6 +63,11 @@ impl Emulator {
         self.emu.set_dram(data);
     }
 
+    /// Set binary data to the virtio disk from the emulator console.
+    pub fn set_disk(&mut self, data: Vec<u8>) {
+        self.emu.set_disk(data);
+    }
+
     /// Start executing.
     pub fn start(&mut self) {
         self.emu.set_pc(DRAM_BASE);
@@ -73,11 +78,15 @@ impl Emulator {
     pub fn dump_registers(&self) {
         stdout_log(&format!("{}", self.emu.cpu.xregs));
         stdout_log(&format!(
-            "---------------------------------------------------"
+            "-------------------------------------------------------------------------------------------"
         ));
         stdout_log(&format!("{}", self.emu.cpu.fregs));
         stdout_log(&format!(
-            "---------------------------------------------------"
+            "-------------------------------------------------------------------------------------------"
+        ));
+        stdout_log(&format!("{}", self.emu.cpu.state));
+        stdout_log(&format!(
+            "-------------------------------------------------------------------------------------------"
         ));
         stdout_log(&format!("pc: {}", self.emu.cpu.pc));
     }

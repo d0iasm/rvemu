@@ -1,18 +1,3 @@
-/*
-      ___                         ___           ___           ___ 
-     /\  \          ___          /\__\         /\  \         /\  \    
-    /::\  \        /\  \        /:/ _/_       |::\  \        \:\  \   
-   /:/\:\__\       \:\  \      /:/ /\__\      |:|:\  \        \:\  \  
-  /:/ /:/  /        \:\  \    /:/ /:/ _/_   __|:|\:\  \   ___  \:\  \ 
- /:/_/:/__/___  ___  \:\__\  /:/_/:/ /\__\ /::::|_\:\__\ /\  \  \:\__\
- \:\/:::::/  / /\  \ |:|  |  \:\/:/ /:/  / \:\~~\  \/__/ \:\  \ /:/  /
-  \::/~~/~~~~  \:\  \|:|  |   \::/_/:/  /   \:\  \        \:\  /:/  / 
-   \:\~~\       \:\__|:|__|    \:\/:/  /     \:\  \        \:\/:/  /  
-    \:\__\       \::::/__/      \::/  /       \:\__\        \::/  /   
-     \/__/        ~~~~           \/__/         \/__/         \/__/    
-
-*/
-
 import init, { Emulator } from "./pkg/rvemu_wasm.js";
 
 const fileIn = document.getElementById("file");
@@ -61,7 +46,6 @@ const callback8 = function(mutationsList, observer) {
       term.write(deleteLine);
     }
 
-    console.log(mutation);
     if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
       buffer_count++;
       const firstChild = mutation.addedNodes[0];

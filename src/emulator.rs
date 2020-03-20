@@ -34,7 +34,7 @@ impl Emulator {
         self.cpu.bus.set_dram(data);
     }
 
-    /// Set binary data to the virtIO disk from the emulator console.
+    /// Set binary data to the virtio disk from the emulator console.
     pub fn set_disk(&mut self, data: Vec<u8>) {
         self.cpu.bus.set_disk(data);
     }
