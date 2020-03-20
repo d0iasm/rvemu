@@ -42,8 +42,11 @@ See the example usage in
 ## Features
 Now, supports the following features (will be added in the future):
 - RV64G ISAs
-- Previleged ISAs
-- Previleged mode
-- CSRs
-- Exceptions
-- Devices (DRAM, UART, CLINT)
+- Privileged ISAs
+- Control and status registers (CSRs)
+- Virtual memory system (Sv39)
+- Devices
+  - UART: universal asynchronous receiver-transmitter
+  - CLINT: core local interruptor
+  - PLIC: platform level interrupt controller
+  - Virtio
