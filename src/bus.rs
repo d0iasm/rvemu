@@ -23,9 +23,9 @@ pub const UART_BASE: usize = 0x1000_0000;
 /// The size of UART.
 pub const UART_SIZE: usize = 0x100;
 
-/// The address which virtIO starts.
+/// The address which virtio starts.
 pub const VIRTIO_BASE: usize = 0x1000_1000;
-/// The size of virtIO.
+/// The size of virtio.
 pub const VIRTIO_SIZE: usize = 0x1000;
 
 /// The address which DRAM starts.
@@ -65,6 +65,50 @@ impl Bus {
     /// Set the binary data to the virtIO disk.
     pub fn set_disk(&mut self, data: Vec<u8>) {
         self.virtio.set_disk(data);
+    }
+
+    /// Read a byte from the system bus.
+    pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
+        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
+            return Ok(self.uart.read(addr));
+        }
+        if DRAM_BASE <= addr {
+            return Ok(self.dram.read8(addr - DRAM_BASE));
+        }
+        Err(Exception::InstructionAccessFault)
+    }
+
+    /// Read 2 bytes from the system bus.
+    pub fn read16(&self, addr: usize) -> Result<u16, Exception> {
+        if DRAM_BASE <= addr {
+            return Ok(self.dram.read16(addr - DRAM_BASE));
+        }
+        Err(Exception::InstructionAccessFault)
+    }
+
+    /// Read 4 bytes from the system bus.
+    pub fn read32(&self, addr: usize) -> Result<u32, Exception> {
+        if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
+            return Ok(self.plic.read(addr));
+        }
+        if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
+            return Ok(self.virtio.read(addr));
+        }
+        if DRAM_BASE <= addr {
+            return Ok(self.dram.read32(addr - DRAM_BASE));
+        }
+        Err(Exception::InstructionAccessFault)
+    }
+
+    /// Read 8 bytes from the system bus.
+    pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            return Ok(self.clint.read(addr));
+        }
+        if DRAM_BASE <= addr {
+            return Ok(self.dram.read64(addr - DRAM_BASE));
+        }
+        Err(Exception::InstructionAccessFault)
     }
 
     /// Write a byte to the system bus.
@@ -109,50 +153,6 @@ impl Bus {
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write64(addr - DRAM_BASE, val));
-        }
-        Err(Exception::InstructionAccessFault)
-    }
-
-    /// Read a byte from the system bus.
-    pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
-        if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            return Ok(self.uart.read(addr));
-        }
-        if DRAM_BASE <= addr {
-            return Ok(self.dram.read8(addr - DRAM_BASE));
-        }
-        Err(Exception::InstructionAccessFault)
-    }
-
-    /// Read 2 bytes from the system bus.
-    pub fn read16(&self, addr: usize) -> Result<u16, Exception> {
-        if DRAM_BASE <= addr {
-            return Ok(self.dram.read16(addr - DRAM_BASE));
-        }
-        Err(Exception::InstructionAccessFault)
-    }
-
-    /// Read 4 bytes from the system bus.
-    pub fn read32(&self, addr: usize) -> Result<u32, Exception> {
-        if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.read(addr));
-        }
-        if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
-            return Ok(self.virtio.read(addr));
-        }
-        if DRAM_BASE <= addr {
-            return Ok(self.dram.read32(addr - DRAM_BASE));
-        }
-        Err(Exception::InstructionAccessFault)
-    }
-
-    /// Read 8 bytes from the system bus.
-    pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(self.clint.read(addr));
-        }
-        if DRAM_BASE <= addr {
-            return Ok(self.dram.read64(addr - DRAM_BASE));
         }
         Err(Exception::InstructionAccessFault)
     }

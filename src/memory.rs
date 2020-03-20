@@ -1,5 +1,8 @@
 //! The memory module contains the memory structure and implementation to read/write the memory.
 
+/// Default memory size (128MiB).
+pub const MEMORY_SIZE: usize = 1024 * 1024 * 128;
+
 /// The memory used by the emulator.
 #[derive(Debug)]
 pub struct Memory {
@@ -11,8 +14,7 @@ impl Memory {
     /// Create a new `memory` object with default memory size (1048KB).
     pub fn new() -> Memory {
         Self {
-            // Default memory size is 128MiB.
-            dram: vec![0; 1024 * 1024 * 128],
+            dram: vec![0; MEMORY_SIZE],
             code_size: 0,
         }
     }

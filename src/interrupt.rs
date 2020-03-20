@@ -4,7 +4,6 @@ use crate::{
     cpu::{Cpu, Mode},
     csr::*,
     devices::plic::PLIC_SCLAIM,
-    devices::virtio::{Virtio, VIRTIO_IRQ},
 };
 
 /// All the interrupt kinds.
@@ -170,11 +169,6 @@ impl Interrupt {
                 // TODO: implement to update USTATUS
             }
             _ => {}
-        }
-
-        if self.irq() as usize == VIRTIO_IRQ {
-            // TODO: move this.
-            Virtio::disk_access(cpu);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::cpu::Cpu;
 
-/// Emulator struct to holds a CPU.
+/// The emulator to hold a CPU.
 pub struct Emulator {
     /// The CPU which is the core implementation of this emulator.
     pub cpu: Cpu,
@@ -46,13 +46,11 @@ impl Emulator {
 
     /// Start executing the emulator.
     pub fn start(&mut self) {
-        let mut count = 0;
         loop {
             // 1. Fetch.
             let data_or_error = self.cpu.fetch();
 
-            count += 1;
-            if self.is_debug && count % 10000000 == 0 {
+            if self.is_debug {
                 dbg!(format!("pc: {} , data: {:#?}", self.cpu.pc, &data_or_error));
             }
 
@@ -70,13 +68,16 @@ impl Emulator {
                 Err(exception) => exception.take_trap(&mut self.cpu),
             };
 
+            // Take an interrupt.
             match self.cpu.check_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut self.cpu),
                 None => {}
             }
 
             if result.is_err() {
-                dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));
+                if self.is_debug {
+                    dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));
+                }
                 return;
             }
         }

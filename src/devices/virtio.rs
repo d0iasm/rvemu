@@ -53,7 +53,7 @@ pub struct Virtio {
 }
 
 impl Virtio {
-    /// Create a new virtIO object.
+    /// Create a new virtio object.
     pub fn new() -> Self {
         Self {
             id: 0,
@@ -77,12 +77,12 @@ impl Virtio {
         false
     }
 
-    /// Set the binary in the virtIO disk.
+    /// Set the binary in the virtio disk.
     pub fn set_disk(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());
     }
 
-    /// Read 4 bytes from virtIO only if the address is valid. Otherwise, return 0.
+    /// Read 4 bytes from virtio only if the address is valid. Otherwise, return 0.
     pub fn read(&self, addr: usize) -> u32 {
         match addr {
             VIRTIO_MAGIC => 0x74726976,
@@ -98,7 +98,7 @@ impl Virtio {
         }
     }
 
-    /// Write 4 bytes to virtIO only if the address is valid. Otherwise, does nothing.
+    /// Write 4 bytes to virtio only if the address is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: usize, val: u32) {
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
@@ -134,7 +134,7 @@ impl Virtio {
         self.disk[address as usize] = value
     }
 
-    /// Access the disk via virtIO.
+    /// Access the disk via virtio.
     pub fn disk_access(cpu: &mut Cpu) {
         let avail_address = cpu.bus.virtio.page_address() + 0x40;
         let base_desc_address = cpu.bus.virtio.page_address();

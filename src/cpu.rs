@@ -10,9 +10,13 @@ use std::num::FpCategory;
 use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
-    devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ},
+    devices::{
+        uart::UART_IRQ,
+        virtio::{Virtio, VIRTIO_IRQ},
+    },
     exception::Exception,
     interrupt::Interrupt,
+    memory::MEMORY_SIZE,
 };
 
 /// The stack pointer.
@@ -79,8 +83,8 @@ impl XRegisters {
     /// Create a new `XRegisters` object.
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
-        // Default maximum mamory size + the start address of dram.
-        xregs[SP] = 1048 * 1000 + DRAM_BASE as i64;
+        // The stack pointer is set in the default maximum mamory size + the start address of dram.
+        xregs[SP] = MEMORY_SIZE as i64 + DRAM_BASE as i64;
         Self { xregs }
     }
 
@@ -91,6 +95,7 @@ impl XRegisters {
 
     /// Write the value to a register.
     pub fn write(&mut self, index: usize, value: i64) {
+        // Register x0 is hardwired with all bits equal to 0.
         if index != 0 {
             self.xregs[index] = value;
         }
@@ -216,12 +221,7 @@ impl Cpu {
         }
     }
 
-    /// Fetch the next instruction from the memory at the current program counter.
-    pub fn fetch(&mut self) -> Result<u32, Exception> {
-        self.read32(self.pc)
-    }
-
-    /// Increment the mtimer register in CLINT.
+    /// Increment the timer register (mtimer) in CLINT.
     pub fn timer_increment(&mut self) {
         self.bus.clint.increment();
     }
@@ -251,7 +251,7 @@ impl Cpu {
             _ => {}
         }
 
-        // Timer interrupt (software interrupt).
+        // Software interrupt for timer (CLINT).
         // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
         // used for simplicity.
         if self.bus.clint.is_interrupting() {
@@ -263,11 +263,14 @@ impl Cpu {
             }
         }
 
-        // Device interrupts (external interrupt).
+        // External interrupt for UART and virtio.
         let irq;
         if self.bus.uart.is_interrupting() {
             irq = UART_IRQ;
         } else if self.bus.virtio.is_interrupting() {
+            // Access disk by direct memory access (DMA). An interrupt is raised after a disk
+            // access is done.
+            Virtio::disk_access(self);
             irq = VIRTIO_IRQ;
         } else {
             return None;
@@ -286,6 +289,8 @@ impl Cpu {
         if !self.enable_paging {
             return Ok(addr);
         }
+
+        // TODO: Support only Sv39
 
         // 4.3.2 Virtual Address Translation Process
         // (The RISC-V Instruction Set Manual Volume II-Privileged Architecture_20190608)
@@ -375,64 +380,85 @@ impl Cpu {
         });
     }
 
+    /// Read a byte from the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
     pub fn read8(&mut self, v_addr: usize) -> Result<u8, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read8(p_addr)
     }
 
-    pub fn write8(&mut self, v_addr: usize, val: u8) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
-        self.bus.write8(p_addr, val)
-    }
-
+    /// Read 2 bytes from the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
     pub fn read16(&mut self, v_addr: usize) -> Result<u16, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read16(p_addr)
     }
 
-    pub fn write16(&mut self, v_addr: usize, val: u16) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
-        self.bus.write16(p_addr, val)
-    }
-
+    /// Read 4 bytes from the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
     pub fn read32(&mut self, v_addr: usize) -> Result<u32, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read32(p_addr)
     }
 
-    pub fn write32(&mut self, v_addr: usize, val: u32) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
-        self.bus.write32(p_addr, val)
-    }
-
+    /// Read 8 bytes from the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
     pub fn read64(&mut self, v_addr: usize) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read64(p_addr)
     }
 
+    /// Write a byte to the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
+    pub fn write8(&mut self, v_addr: usize, val: u8) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write8(p_addr, val)
+    }
+
+    /// Write 2 bytes to the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
+    pub fn write16(&mut self, v_addr: usize, val: u16) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write16(p_addr, val)
+    }
+
+    /// Write 4 bytes to the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
+    pub fn write32(&mut self, v_addr: usize, val: u32) -> Result<(), Exception> {
+        let p_addr = self.translate(v_addr)?;
+        self.bus.write32(p_addr, val)
+    }
+
+    /// Write 8 bytes to the system bus with the translation a virtual address to a physical address
+    /// if it is enabled.
     pub fn write64(&mut self, v_addr: usize, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.write64(p_addr, val)
     }
 
+    /// Fetch the next instruction from the memory at the current program counter.
+    pub fn fetch(&mut self) -> Result<u32, Exception> {
+        self.read32(self.pc)
+    }
+
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
-    pub fn execute(&mut self, data: u32) -> Result<(), Exception> {
-        let opcode = data & 0x0000007f;
-        let rd = ((data & 0x00000f80) >> 7) as usize;
-        let rs1 = ((data & 0x000f8000) >> 15) as usize;
-        let rs2 = ((data & 0x01f00000) >> 20) as usize;
-        let funct3 = (data & 0x00007000) >> 12;
-        let funct7 = (data & 0xfe000000) >> 25;
+    pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {
+        let opcode = inst & 0x0000007f;
+        let rd = ((inst & 0x00000f80) >> 7) as usize;
+        let rs1 = ((inst & 0x000f8000) >> 15) as usize;
+        let rs2 = ((inst & 0x01f00000) >> 20) as usize;
+        let funct3 = (inst & 0x00007000) >> 12;
+        let funct7 = (inst & 0xfe000000) >> 25;
 
         match opcode {
             0x03 => {
                 // I-type
-                let offset = (match data & 0x80000000 {
+                let offset = (match inst & 0x80000000 {
                     // Extend the most significant bit.
-                    0x80000000 => 0xfffff800, // offset[:11] = data[31]
+                    0x80000000 => 0xfffff800, // offset[:11] = inst[31]
                     _ => 0,
-                } | ((data >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = data[30:20]
+                } | ((inst >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = inst[30:20]
                 let addr = self.xregs.read(rs1).wrapping_add(offset) as usize;
                 match funct3 {
                     0x0 => {
@@ -475,7 +501,7 @@ impl Cpu {
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                let offset = ((data & 0xfff00000) as u64) >> 20;
+                let offset = ((inst & 0xfff00000) as u64) >> 20;
                 let addr = (self.xregs.read(rs1) + offset as i64) as usize;
                 match funct3 {
                     0x2 => {
@@ -494,7 +520,7 @@ impl Cpu {
             0x0F => {
                 // I-type
                 // fence instructions are not supportted yet because this emulator executes a
-                // data sequentially on a single thread.
+                // inst sequentially on a single thread.
                 // fence i is a part of the Zifencei extension.
                 match funct3 {
                     0x0 => {} // fence
@@ -504,10 +530,10 @@ impl Cpu {
             }
             0x13 => {
                 // I-type
-                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
-                // let shamt = (data & 0x01F00000) >> 20; // This is for RV32I
-                let shamt = (data & 0x03f00000) >> 20;
+                // let shamt = (inst & 0x01F00000) >> 20; // This is for RV32I
+                let shamt = (inst & 0x03f00000) >> 20;
                 let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => self.xregs.write(rd, self.xregs.read(rs1).wrapping_add(imm)), // addi
@@ -547,13 +573,13 @@ impl Cpu {
                 // U-type
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
-                let imm = ((data & 0xfffff000) as i32) as i64;
+                let imm = ((inst & 0xfffff000) as i32) as i64;
                 // auipc
                 self.xregs.write(rd, (self.pc as i64) + imm - 4);
             }
             0x1B => {
                 // I-type (RV64I only)
-                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
                 // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
                 let shamt = imm & 0x1f;
                 match funct3 {
@@ -590,15 +616,15 @@ impl Cpu {
             0x23 => {
                 // S-type
                 let offset = (
-                    match data & 0x80000000 {
+                    match inst & 0x80000000 {
                         // Extend the most significant bit.
-                        // offset[:12] = data[31]
+                        // offset[:12] = inst[31]
                         0x80000000 => 0xfffff800,
                         _ => 0
                     } |
-                    ((data & 0xfe000000) >> 20) | // offset[10:5] = data[30:25],
-                    ((data & 0x00000f80) >> 7)
-                    // offset[4:0]= data[11:7]
+                    ((inst & 0xfe000000) >> 20) | // offset[10:5] = inst[30:25],
+                    ((inst & 0x00000f80) >> 7)
+                    // offset[4:0]= inst[11:7]
                 ) as i32 as i64;
                 let addr = (self.xregs.read(rs1) + offset) as usize;
                 match funct3 {
@@ -614,8 +640,8 @@ impl Cpu {
             }
             0x27 => {
                 // S-type (RV32F and RV64F)
-                let imm11_5 = (((data & 0xfe000000) as i32) as i64) >> 25;
-                let imm4_0 = ((data & 0x00000f80) >> 7) as u64;
+                let imm11_5 = (((inst & 0xfe000000) as i32) as i64) >> 25;
+                let imm4_0 = ((inst & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
                 let addr = (self.xregs.read(rs1) + offset) as usize;
                 match funct3 {
@@ -961,7 +987,7 @@ impl Cpu {
                 // U-type
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
-                self.xregs.write(rd, ((data & 0xfffff000) as i32) as i64); // lui
+                self.xregs.write(rd, ((inst & 0xfffff000) as i32) as i64); // lui
             }
             0x3B => {
                 // R-type (RV64I and RV64M)
@@ -1070,8 +1096,8 @@ impl Cpu {
             0x43 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((data & 0xf8000000) >> 27) as usize;
-                let funct2 = (data & 0x03000000) >> 25;
+                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmadd.s
@@ -1094,8 +1120,8 @@ impl Cpu {
             0x47 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((data & 0xf8000000) >> 27) as usize;
-                let funct2 = (data & 0x03000000) >> 25;
+                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmsub.s
@@ -1118,8 +1144,8 @@ impl Cpu {
             0x4B => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((data & 0xf8000000) >> 27) as usize;
-                let funct2 = (data & 0x03000000) >> 25;
+                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmadd.s
@@ -1140,8 +1166,8 @@ impl Cpu {
             0x4F => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((data & 0xf8000000) >> 27) as usize;
-                let funct2 = (data & 0x03000000) >> 25;
+                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmsub.s
@@ -1481,10 +1507,10 @@ impl Cpu {
             }
             0x63 => {
                 // B-type
-                let imm12 = (((data & 0x80000000) as i32) as i64) >> 31;
-                let imm10_5 = ((data & 0x7e000000) >> 25) as u64;
-                let imm4_1 = ((data & 0x00000f00) >> 8) as u64;
-                let imm11 = ((data & 0x00000080) >> 7) as u64;
+                let imm12 = (((inst & 0x80000000) as i32) as i64) >> 31;
+                let imm10_5 = ((inst & 0x7e000000) >> 25) as u64;
+                let imm4_1 = ((inst & 0x00000f00) >> 8) as u64;
+                let imm11 = ((inst & 0x00000080) >> 7) as u64;
                 let offset =
                     ((imm12 << 12) as u64 | (imm11 << 11) | (imm10_5 << 5) | (imm4_1 << 1)) as i64;
                 match funct3 {
@@ -1556,7 +1582,7 @@ impl Cpu {
                 // jalr
                 let t = self.pc as i64;
 
-                let imm = (((data & 0xfff00000) as i32) as i64) >> 20;
+                let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
                 let target = (self.xregs.read(rs1).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned);
@@ -1570,10 +1596,10 @@ impl Cpu {
                 // jal
                 self.xregs.write(rd, self.pc as i64);
 
-                let imm20 = (((data & 0x80000000) as i32) as i64) >> 31;
-                let imm10_1 = ((data & 0x7fe00000) >> 21) as u64;
-                let imm11 = ((data & 0x100000) >> 20) as u64;
-                let imm19_12 = ((data & 0xff000) >> 12) as u64;
+                let imm20 = (((inst & 0x80000000) as i32) as i64) >> 31;
+                let imm10_1 = ((inst & 0x7fe00000) >> 21) as u64;
+                let imm11 = ((inst & 0x100000) >> 20) as u64;
+                let imm19_12 = ((inst & 0xff000) >> 12) as u64;
                 let offset =
                     ((imm20 << 20) as u64 | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1))
                         as i64;
@@ -1585,7 +1611,7 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let csr_address = ((data & 0xfff00000) >> 20) as u16;
+                let csr_address = ((inst & 0xfff00000) >> 20) as u16;
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {
