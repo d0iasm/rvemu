@@ -82,7 +82,7 @@ impl Virtio {
         self.disk.extend(binary.iter().cloned());
     }
 
-    /// Read 4 bytes from virtio only if the address is valid. Otherwise, return 0.
+    /// Read 4 bytes from virtio only if the addr is valid. Otherwise, return 0.
     pub fn read(&self, addr: usize) -> u32 {
         match addr {
             VIRTIO_MAGIC => 0x74726976,
@@ -98,7 +98,7 @@ impl Virtio {
         }
     }
 
-    /// Write 4 bytes to virtio only if the address is valid. Otherwise, does nothing.
+    /// Write 4 bytes to virtio only if the addr is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: usize, val: u32) {
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
@@ -122,46 +122,43 @@ impl Virtio {
         self.id
     }
 
-    fn page_address(&self) -> u64 {
+    fn page_addr(&self) -> u64 {
         self.queue_pfn as u64 * self.page_size as u64
     }
 
-    fn read_disk(&self, address: u64) -> u8 {
-        self.disk[address as usize]
+    fn read_disk(&self, addr: u64) -> u8 {
+        self.disk[addr as usize]
     }
 
-    fn write_disk(&mut self, address: u64, value: u8) {
-        self.disk[address as usize] = value
+    fn write_disk(&mut self, addr: u64, value: u8) {
+        self.disk[addr as usize] = value
     }
 
-    /// Access the disk via virtio.
+    /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
+    /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) {
-        let avail_address = cpu.bus.virtio.page_address() + 0x40;
-        let base_desc_address = cpu.bus.virtio.page_address();
-        let base_used_address = cpu.bus.virtio.page_address() + 4096;
+        let avail_addr = cpu.bus.virtio.page_addr() + 0x40;
+        let base_desc_addr = cpu.bus.virtio.page_addr();
+        let base_used_addr = cpu.bus.virtio.page_addr() + 4096;
 
         let offset = cpu
             .bus
-            .read16(avail_address.wrapping_add(1) as usize)
-            .expect("failed to read avail_address");
+            .read16(avail_addr.wrapping_add(1) as usize)
+            .expect("failed to read avail_addr");
         let index = cpu
             .bus
-            .read16(
-                avail_address
-                    .wrapping_add(offset as u64 % 8)
-                    .wrapping_add(2) as usize,
-            )
+            .read16(avail_addr.wrapping_add(offset as u64 % 8).wrapping_add(2) as usize)
             .expect("2");
         let desc_size = 16;
 
-        let desc_address0 = (base_desc_address + desc_size * index as u64) as usize;
-        let addr0 = cpu.bus.read64(desc_address0).expect("3");
-        let next0 = cpu.bus.read16(desc_address0.wrapping_add(14)).expect("6");
+        let desc_addr0 = (base_desc_addr + desc_size * index as u64) as usize;
+        let addr0 = cpu.bus.read64(desc_addr0).expect("3");
+        let next0 = cpu.bus.read16(desc_addr0.wrapping_add(14)).expect("6");
 
-        let desc_address1 = (base_desc_address + desc_size * next0 as u64) as usize;
-        let addr1 = cpu.bus.read64(desc_address1).expect("7");
-        let len1 = cpu.bus.read32(desc_address1.wrapping_add(8)).expect("8");
-        let flags1 = cpu.bus.read16(desc_address1.wrapping_add(12)).expect("9");
+        let desc_addr1 = (base_desc_addr + desc_size * next0 as u64) as usize;
+        let addr1 = cpu.bus.read64(desc_addr1).expect("7");
+        let len1 = cpu.bus.read32(desc_addr1.wrapping_add(8)).expect("8");
+        let flags1 = cpu.bus.read16(desc_addr1.wrapping_add(12)).expect("9");
 
         let blk_type = cpu.bus.read32(addr0 as usize).unwrap();
         let blk_reserved = cpu.bus.read32(addr0.wrapping_add(4) as usize).unwrap();
@@ -188,7 +185,7 @@ impl Virtio {
 
         let new_id = cpu.bus.virtio.get_new_id() as u16;
         cpu.bus
-            .write16(base_used_address.wrapping_add(2) as usize, new_id % 8)
+            .write16(base_used_addr.wrapping_add(2) as usize, new_id % 8)
             .expect("13");
     }
 }

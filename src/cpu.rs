@@ -1611,7 +1611,7 @@ impl Cpu {
             }
             0x73 => {
                 // I-type
-                let csr_address = ((inst & 0xfff00000) >> 20) as u16;
+                let csr_addr = ((inst & 0xfff00000) >> 20) as u16;
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {
@@ -1716,11 +1716,11 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
-                        let t = self.state.read(csr_address);
-                        self.state.write(csr_address, self.xregs.read(rs1));
+                        let t = self.state.read(csr_addr);
+                        self.state.write(csr_addr, self.xregs.read(rs1));
                         self.xregs.write(rd, t);
 
-                        if csr_address == SATP {
+                        if csr_addr == SATP {
                             // Read the physical page number (PPN) of the root page table, i.e., its
                             // supervisor physical address divided by 4 KiB.
                             self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
@@ -1737,23 +1737,23 @@ impl Cpu {
                     }
                     0x2 => {
                         // csrrs
-                        self.xregs.write(rd, self.state.read(csr_address));
+                        self.xregs.write(rd, self.state.read(csr_addr));
                         self.state
-                            .write(csr_address, self.xregs.read(rd) | self.xregs.read(rs1));
+                            .write(csr_addr, self.xregs.read(rd) | self.xregs.read(rs1));
                     }
                     0x3 => {
                         // csrrc
-                        self.xregs.write(rd, self.state.read(csr_address));
+                        self.xregs.write(rd, self.state.read(csr_addr));
                         self.state
-                            .write(csr_address, self.xregs.read(rd) & (!self.xregs.read(rs1)));
+                            .write(csr_addr, self.xregs.read(rd) & (!self.xregs.read(rs1)));
                     }
                     0x5 => {
                         // csrrwi
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address));
-                        self.state.write(csr_address, uimm);
+                        self.xregs.write(rd, self.state.read(csr_addr));
+                        self.state.write(csr_addr, uimm);
 
-                        if csr_address == SATP {
+                        if csr_addr == SATP {
                             // Read the physical page number (PPN) of the root page table, i.e., its
                             // supervisor physical address divided by 4 KiB.
                             self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
@@ -1771,14 +1771,14 @@ impl Cpu {
                     0x6 => {
                         // csrrsi
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address));
-                        self.state.write(csr_address, self.xregs.read(rd) | uimm);
+                        self.xregs.write(rd, self.state.read(csr_addr));
+                        self.state.write(csr_addr, self.xregs.read(rd) | uimm);
                     }
                     0x7 => {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
-                        self.xregs.write(rd, self.state.read(csr_address));
-                        self.state.write(csr_address, self.xregs.read(rd) & (!uimm));
+                        self.xregs.write(rd, self.state.read(csr_addr));
+                        self.state.write(csr_addr, self.xregs.read(rd) & (!uimm));
                     }
                     _ => {}
                 }
