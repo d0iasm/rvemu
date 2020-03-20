@@ -10,6 +10,19 @@ use crate::cpu::Cpu;
 /// The interrupt request of virtio.
 pub const VIRTIO_IRQ: usize = 1;
 
+/// The size of `VRingDesc` struct in xv6.
+/// ```c
+/// struct VRingDesc {
+///   uint64 addr;
+///   uint32 len;
+///   uint16 flags;
+///   uint16 next;
+/// };
+/// ```
+const VRING_DESC_SIZE: usize = 16;
+/// The number of virtio descriptors. It must be a power of two.
+const DESC_NUM: usize = 8;
+
 /// Always return 0x74726976.
 pub const VIRTIO_MAGIC: usize = VIRTIO_BASE + 0x000;
 /// The version. 1 is legacy.
@@ -106,12 +119,7 @@ impl Virtio {
             VIRTIO_QUEUE_SEL => self.queue_sel = val,
             VIRTIO_QUEUE_NUM => self.queue_num = val,
             VIRTIO_QUEUE_PFN => self.queue_pfn = val,
-            VIRTIO_QUEUE_NOTIFY => {
-                self.queue_notify = val;
-                // TODO: call disk_access here.
-                //disk_access()
-                //interrupt = true;
-            }
+            VIRTIO_QUEUE_NOTIFY => self.queue_notify = val,
             VIRTIO_STATUS => self.status = val,
             _ => {}
         }
@@ -122,7 +130,7 @@ impl Virtio {
         self.id
     }
 
-    fn page_addr(&self) -> u64 {
+    fn desc_addr(&self) -> u64 {
         self.queue_pfn as u64 * self.page_size as u64
     }
 
@@ -137,55 +145,110 @@ impl Virtio {
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) {
-        let avail_addr = cpu.bus.virtio.page_addr() + 0x40;
-        let base_desc_addr = cpu.bus.virtio.page_addr();
-        let base_used_addr = cpu.bus.virtio.page_addr() + 4096;
+        // See more information in
+        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
 
+        // the spec says that legacy block operations use three
+        // descriptors: one for type/reserved/sector, one for
+        // the data, one for a 1-byte status result.
+
+        // desc = pages -- num * VRingDesc
+        // avail = pages + 0x40 -- 2 * uint16, then num * uint16
+        // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+        let desc_addr = cpu.bus.virtio.desc_addr() as usize;
+        let avail_addr = (cpu.bus.virtio.desc_addr() + 0x40) as usize;
+        let used_addr = (cpu.bus.virtio.desc_addr() + 4096) as usize;
+
+        // avail[0] is flags
+        // avail[1] tells the device how far to look in avail[2...].
         let offset = cpu
             .bus
-            .read16(avail_addr.wrapping_add(1) as usize)
-            .expect("failed to read avail_addr");
+            .read16(avail_addr.wrapping_add(1))
+            .expect("failed to read offset") as usize;
+        // avail[2...] are desc[] indices the device should process.
+        // we only tell device the first index in our chain of descriptors.
         let index = cpu
             .bus
-            .read16(avail_addr.wrapping_add(offset as u64 % 8).wrapping_add(2) as usize)
-            .expect("2");
-        let desc_size = 16;
+            .read16(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2))
+            .expect("failed to read index");
 
-        let desc_addr0 = (base_desc_addr + desc_size * index as u64) as usize;
-        let addr0 = cpu.bus.read64(desc_addr0).expect("3");
-        let next0 = cpu.bus.read16(desc_addr0.wrapping_add(14)).expect("6");
+        // Read `VRingDesc`, virtio descriptors.
+        let desc_addr0 = desc_addr + VRING_DESC_SIZE * index as usize;
+        let addr0 = cpu
+            .bus
+            .read64(desc_addr0)
+            .expect("failed to read an address field in a descriptor");
+        // Add 14 because of `VRingDesc` structure.
+        // struct VRingDesc {
+        //   uint64 addr;
+        //   uint32 len;
+        //   uint16 flags;
+        //   uint16 next
+        // };
+        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
+        let next0 = cpu
+            .bus
+            .read16(desc_addr0.wrapping_add(14))
+            .expect("failed to read a next field in a descripor");
 
-        let desc_addr1 = (base_desc_addr + desc_size * next0 as u64) as usize;
-        let addr1 = cpu.bus.read64(desc_addr1).expect("7");
-        let len1 = cpu.bus.read32(desc_addr1.wrapping_add(8)).expect("8");
-        let flags1 = cpu.bus.read16(desc_addr1.wrapping_add(12)).expect("9");
+        // Read `VRingDesc` again, virtio descriptors.
+        let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0 as usize;
+        let addr1 = cpu
+            .bus
+            .read64(desc_addr1)
+            .expect("failed to read an address field in a descriptor");
+        let len1 = cpu
+            .bus
+            .read32(desc_addr1.wrapping_add(8))
+            .expect("failed to read a length field in a descriptor");
+        let flags1 = cpu
+            .bus
+            .read16(desc_addr1.wrapping_add(12))
+            .expect("failed to read a flags field in a descriptor");
 
-        let blk_type = cpu.bus.read32(addr0 as usize).unwrap();
-        let blk_reserved = cpu.bus.read32(addr0.wrapping_add(4) as usize).unwrap();
-        let blk_sector = cpu.bus.read64(addr0.wrapping_add(8) as usize).expect("10");
+        // Read `virtio_blk_outhdr`. Add 8 because of its structure.
+        // struct virtio_blk_outhdr {
+        //   uint32 type;
+        //   uint32 reserved;
+        //   uint64 sector;
+        // } buf0;
+        let blk_sector = cpu
+            .bus
+            .read64(addr0.wrapping_add(8) as usize)
+            .expect("failed to read a sector field in a virtio_blk_outhdr");
 
+        // Write to a device if the second bit `flag1` is set.
         match (flags1 & 2) == 0 {
             true => {
-                // write to disk
+                // Read memory data and write it to a disk directly (DMA).
                 for i in 0..len1 as u64 {
-                    // DMA
-                    let data = cpu.bus.read8((addr1 + i) as usize).expect("11");
+                    let data = cpu
+                        .bus
+                        .read8((addr1 + i) as usize)
+                        .expect("failed to read from memory");
                     cpu.bus.virtio.write_disk(blk_sector * 512 + i, data);
                 }
             }
             false => {
-                // read from disk
+                // Read disk data and write it to memory directly (DMA).
                 for i in 0..len1 as u64 {
-                    // DMA
                     let data = cpu.bus.virtio.read_disk(blk_sector * 512 + i);
-                    cpu.bus.write8((addr1 + i) as usize, data).expect("12");
+                    cpu.bus
+                        .write8((addr1 + i) as usize, data)
+                        .expect("failed to write to memory");
                 }
             }
         };
 
+        // Write id to `UsedArea`. Add 2 because of its structure.
+        // struct UsedArea {
+        //   uint16 flags;
+        //   uint16 id;
+        //   struct VRingUsedElem elems[NUM];
+        // };
         let new_id = cpu.bus.virtio.get_new_id() as u16;
         cpu.bus
-            .write16(base_used_addr.wrapping_add(2) as usize, new_id % 8)
-            .expect("13");
+            .write16(used_addr.wrapping_add(2) as usize, new_id % 8)
+            .expect("failed to write to memory");
     }
 }

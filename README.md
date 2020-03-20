@@ -30,9 +30,9 @@ Supports the following features:
   - [ ] User-level CSRs
 - [x] Virtual memory system (Sv39)
 - [x] Devices
-  - [x] UART
-  - [x] CLINT
-  - [x] PLIC
+  - [x] UART: universal asynchronous receiver-transmitter
+  - [x] CLINT: core local interruptor
+  - [x] PLIC: platform level interrupt controller
   - [x] Virtio
 
 # Usage
