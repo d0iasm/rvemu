@@ -8,8 +8,6 @@ let fsImgData = null;
 
 let emu = null;
 
-console.log("worker!!!!!!!1");
-
 function loadFiles() {
   fetch("./apps/fs.img")
     .then(response => response.blob())
@@ -51,8 +49,6 @@ async function initEmulator() {
     try {
       emu.start();
     } catch(err) {
-      console.log(deleteLine);
-      console.log(err.message);
       console.log(err);
     } finally {
       //emu.dump_registers();

@@ -9,6 +9,7 @@ use crate::bus::{UART_BASE, UART_SIZE};
 #[wasm_bindgen(module = "/public/input.js")]
 extern "C" {
     fn check_input() -> u8;
+    fn write_to_buffer(byte: u8);
 }
 
 #[wasm_bindgen]
@@ -94,7 +95,7 @@ impl Uart {
 
     /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: u64) -> u8 {
-        log(&format!("uart read {:#x}", index));
+        //log(&format!("uart read {:#x}", index));
         match index {
             UART_RHR => {
                 self.uart[(UART_LSR - UART_BASE) as usize] &= !1;
@@ -107,10 +108,11 @@ impl Uart {
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: u64, value: u8) {
-        log(&format!("uart write {:#x} {}", index, value));
+        //log(&format!("uart write {:#x} {}", index, value));
         match index {
             UART_THR => {
-                stdout8(value);
+                write_to_buffer(value);
+                //stdout8(value);
             }
             _ => {
                 self.uart[(index - UART_BASE) as usize] = value;
