@@ -6,11 +6,6 @@ export function check_input() {
 }
 
 export function write_to_buffer(b) {
-  /*
-  const span = document.createElement('span');
-  span.textContent = String.fromCharCode(b);
-  buffer8.appendChild(span);
-  console.log(span);
-  */
+  postMessage(String.fromCharCode(b));
   console.log(String.fromCharCode(b));
 }

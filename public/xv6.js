@@ -98,5 +98,5 @@ function initTerminal() {
 initTerminal();
 
 if (window.Worker) {
-  const emulator = new Worker('xv6-worker.js', {type: 'module'});
+  const emulator = new Worker('worker.js', {type: 'module'});
 }

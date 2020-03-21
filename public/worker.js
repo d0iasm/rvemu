@@ -58,3 +58,9 @@ async function initEmulator() {
 }
 
 initEmulator();
+
+const inputWorker = new Worker('input.js', {type: 'module'});
+inputWorker.onmessage = e => {
+  console.log("come!!!", e);
+};
+
