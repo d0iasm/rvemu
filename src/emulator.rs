@@ -59,7 +59,10 @@ impl Emulator {
             */
 
             if self.is_debug {
-                dbg!(format!("pc: {} , data: {:#?}", self.cpu.pc, &data_or_error));
+                dbg!(format!(
+                    "pc: {:#x} , data: {:#?}",
+                    self.cpu.pc, &data_or_error
+                ));
             }
 
             // 2. Add 4 to the program counter.

@@ -1573,12 +1573,12 @@ impl Cpu {
                 let t = self.pc;
 
                 let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
-                let target = (self.xregs.read(rs1).wrapping_add(imm as u64)) & !1;
+                let target = ((self.xregs.read(rs1) as i64).wrapping_add(imm)) & !1;
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned);
                 }
 
-                self.pc = target;
+                self.pc = target as u64;
                 self.xregs.write(rd, t);
             }
             0x6F => {
@@ -1590,7 +1590,7 @@ impl Cpu {
                 let imm11 = (inst & 0x100000) >> 20;
                 let imm19_12 = (inst & 0xff000) >> 12;
                 let mut offset = (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1);
-                if (inst & 0x80000000) == 1 {
+                if (inst & 0x80000000) != 0 {
                     // Set bits if imm[20] is set.
                     offset |= 0xffffffff_fff00000;
                 }
