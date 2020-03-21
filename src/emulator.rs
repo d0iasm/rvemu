@@ -40,15 +40,23 @@ impl Emulator {
     }
 
     /// Set the program counter to the CPU field.
-    pub fn set_pc(&mut self, pc: usize) {
+    pub fn set_pc(&mut self, pc: u64) {
         self.cpu.pc = pc;
     }
 
     /// Start executing the emulator.
     pub fn start(&mut self) {
+        let mut count = 0;
         loop {
             // 1. Fetch.
             let data_or_error = self.cpu.fetch();
+
+            count += 1;
+            /*
+            if count > 500000000 {
+                return;
+            }
+            */
 
             if self.is_debug {
                 dbg!(format!("pc: {} , data: {:#?}", self.cpu.pc, &data_or_error));

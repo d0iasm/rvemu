@@ -8,19 +8,19 @@ use crate::bus::PLIC_BASE;
 use crate::devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ};
 
 /// The address of interrupt pending bits.
-pub const PLIC_PENDING: usize = PLIC_BASE + 0x1000;
+pub const PLIC_PENDING: u64 = PLIC_BASE + 0x1000;
 /// The address of the regsiters to enable interrupts for M-mode.
-pub const PLIC_MENABLE: usize = PLIC_BASE + 0x2000;
+pub const PLIC_MENABLE: u64 = PLIC_BASE + 0x2000;
 /// The address of the regsiters to enable interrupts for S-mode.
-pub const PLIC_SENABLE: usize = PLIC_BASE + 0x2080;
+pub const PLIC_SENABLE: u64 = PLIC_BASE + 0x2080;
 /// The address of the registers to set a priority for M-mode.
-pub const PLIC_MPRIORITY: usize = PLIC_BASE + 0x200000;
+pub const PLIC_MPRIORITY: u64 = PLIC_BASE + 0x200000;
 /// The address of the registers to set a priority for S-mode.
-pub const PLIC_SPRIORITY: usize = PLIC_BASE + 0x201000;
+pub const PLIC_SPRIORITY: u64 = PLIC_BASE + 0x201000;
 /// The address of the claim/complete registers for M-mode.
-pub const PLIC_MCLAIM: usize = PLIC_BASE + 0x200004;
+pub const PLIC_MCLAIM: u64 = PLIC_BASE + 0x200004;
 /// The address of the claim/complete registers for S-mode.
-pub const PLIC_SCLAIM: usize = PLIC_BASE + 0x201004;
+pub const PLIC_SCLAIM: u64 = PLIC_BASE + 0x201004;
 
 /// The platform-level-interrupt controller (PLIC).
 pub struct Plic {
@@ -60,7 +60,7 @@ impl Plic {
     }
 
     /// Read 4 bytes from the PLIC only if the address is valid. Otherwise, returns 0.
-    pub fn read(&self, addr: usize) -> u32 {
+    pub fn read(&self, addr: u64) -> u32 {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {
             if addr == PLIC_BASE + UART_IRQ * 4 {
@@ -73,24 +73,25 @@ impl Plic {
         if addr == PLIC_PENDING {
             return self.pending;
         }
-        if PLIC_SENABLE <= addr && addr <= PLIC_SENABLE + 0x100 * self.senables.len() {
+        if PLIC_SENABLE <= addr && addr <= PLIC_SENABLE + 0x100 * self.senables.len() as u64 {
             let index = (addr - PLIC_SENABLE) / 0x100;
 
-            return self.senables[index];
+            return self.senables[index as usize];
         }
-        if PLIC_SPRIORITY <= addr && addr <= PLIC_SPRIORITY + 0x2000 * self.spriorities.len() {
+        if PLIC_SPRIORITY <= addr && addr <= PLIC_SPRIORITY + 0x2000 * self.spriorities.len() as u64
+        {
             let index = (addr - PLIC_SPRIORITY) / 0x2000;
-            return self.spriorities[index];
+            return self.spriorities[index as usize];
         }
-        if PLIC_SCLAIM <= addr && addr <= PLIC_SCLAIM + 0x2000 * self.sclaims.len() {
+        if PLIC_SCLAIM <= addr && addr <= PLIC_SCLAIM + 0x2000 * self.sclaims.len() as u64 {
             let index = (addr - PLIC_SCLAIM) / 0x2000;
-            return self.sclaims[index];
+            return self.sclaims[index as usize];
         }
         0
     }
 
     /// Write 4 bytes to the PLIC only if the address is valid.
-    pub fn write(&mut self, addr: usize, val: u32) {
+    pub fn write(&mut self, addr: u64, val: u32) {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {
             if addr == PLIC_BASE + UART_IRQ * 4 {
@@ -106,20 +107,21 @@ impl Plic {
             self.pending = val;
             return;
         }
-        if PLIC_SENABLE <= addr && addr <= PLIC_SENABLE + 0x100 * self.senables.len() {
+        if PLIC_SENABLE <= addr && addr <= PLIC_SENABLE + 0x100 * self.senables.len() as u64 {
             let index = (addr - PLIC_SENABLE) / 0x100;
 
-            self.senables[index] = val;
+            self.senables[index as usize] = val;
             return;
         }
-        if PLIC_SPRIORITY <= addr && addr <= PLIC_SPRIORITY + 0x2000 * self.spriorities.len() {
+        if PLIC_SPRIORITY <= addr && addr <= PLIC_SPRIORITY + 0x2000 * self.spriorities.len() as u64
+        {
             let index = (addr - PLIC_SPRIORITY) / 0x2000;
-            self.spriorities[index] = val;
+            self.spriorities[index as usize] = val;
             return;
         }
-        if PLIC_SCLAIM <= addr && addr <= PLIC_SCLAIM + 0x2000 * self.sclaims.len() {
+        if PLIC_SCLAIM <= addr && addr <= PLIC_SCLAIM + 0x2000 * self.sclaims.len() as u64 {
             let index = (addr - PLIC_SCLAIM) / 0x2000;
-            self.sclaims[index] = val;
+            self.sclaims[index as usize] = val;
             return;
         }
     }

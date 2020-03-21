@@ -4,7 +4,6 @@ use std::fmt;
 use std::ops::{Bound, Range, RangeBounds};
 
 pub type CsrAddress = u16;
-pub type Mxlen = i64;
 
 pub const MXLEN: usize = 64;
 /// The number of CSRs. The field is 12 bits so the maximum kind of CSRs is 4096 (2**12).
@@ -109,7 +108,7 @@ pub const PMPADDR0: CsrAddress = 0x3b0;
 
 /// The state to contains all the CSRs.
 pub struct State {
-    csrs: [Mxlen; CSR_SIZE],
+    csrs: [i64; CSR_SIZE],
 }
 
 impl fmt::Display for State {
@@ -157,20 +156,20 @@ impl State {
     }
 
     /// Read the val from the CSR.
-    pub fn read(&self, addr: CsrAddress) -> Mxlen {
+    pub fn read(&self, addr: CsrAddress) -> i64 {
         match addr {
             _ => self.csrs[addr as usize],
         }
     }
 
     /// Write the val to the CSR.
-    pub fn write(&mut self, addr: CsrAddress, val: Mxlen) {
+    pub fn write(&mut self, addr: CsrAddress, val: i64) {
         match addr {
             MVENDORID => {}
             MARCHID => {}
             MIMPID => {}
             MHARTID => {}
-            _ => self.csrs[addr as usize] = val,
+            _ => self.csrs[addr as usize] = val as i64,
         }
     }
 
@@ -183,7 +182,7 @@ impl State {
     }
 
     /// Read a arbitrary length of bits from the CSR.
-    pub fn read_bits<T: RangeBounds<usize>>(&self, addr: CsrAddress, range: T) -> Mxlen {
+    pub fn read_bits<T: RangeBounds<usize>>(&self, addr: CsrAddress, range: T) -> i64 {
         let range = to_range(&range, MXLEN);
 
         if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {
@@ -214,7 +213,7 @@ impl State {
     }
 
     /// Write an arbitrary length of bits to the CSR.
-    pub fn write_bits<T: RangeBounds<usize>>(&mut self, addr: CsrAddress, range: T, val: Mxlen) {
+    pub fn write_bits<T: RangeBounds<usize>>(&mut self, addr: CsrAddress, range: T, val: i64) {
         let range = to_range(&range, MXLEN);
 
         if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {

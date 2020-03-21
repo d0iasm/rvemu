@@ -7,11 +7,11 @@
 use crate::bus::CLINT_BASE;
 
 /// The address of a mtimecmp register starts.
-pub const CLINT_MTIMECMP_BASE: usize = CLINT_BASE + 0x4000;
+pub const CLINT_MTIMECMP_BASE: u64 = CLINT_BASE + 0x4000;
 /// The size of mtimecmp regsiters.
-pub const CLINT_MTIMECMP_SIZE: usize = 0x28;
+pub const CLINT_MTIMECMP_SIZE: u64 = 0x28;
 /// The address of a timer register.
-pub const CLINT_MTIME: usize = CLINT_BASE + 0xbff8;
+pub const CLINT_MTIME: u64 = CLINT_BASE + 0xbff8;
 
 /// The core-local interruptor (CLINT).
 /// 0x0000 msip hart 0
@@ -58,10 +58,10 @@ impl Clint {
     }
 
     /// Read the content of a register from the CLINT.
-    pub fn read(&self, addr: usize) -> u64 {
+    pub fn read(&self, addr: u64) -> u64 {
         if CLINT_MTIMECMP_BASE <= addr && addr < CLINT_MTIMECMP_BASE + CLINT_MTIMECMP_SIZE {
             let index = (addr - CLINT_MTIMECMP_BASE) / 8;
-            return self.mtimecmps[index];
+            return self.mtimecmps[index as usize];
         } else if addr == CLINT_MTIME {
             return self.mtime;
         }
@@ -69,10 +69,10 @@ impl Clint {
     }
 
     /// Write the content of a register from the CLINT.
-    pub fn write(&mut self, addr: usize, val: u64) {
+    pub fn write(&mut self, addr: u64, val: u64) {
         if CLINT_MTIMECMP_BASE <= addr && addr < CLINT_MTIMECMP_BASE + CLINT_MTIMECMP_SIZE {
             let index = (addr - CLINT_MTIMECMP_BASE) / 8;
-            self.mtimecmps[index] = val;
+            self.mtimecmps[index as usize] = val;
         } else if addr == CLINT_MTIME {
             self.mtime = val;
         }

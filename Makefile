@@ -3,7 +3,7 @@ ROOT_DIR := $(shell pwd)
 rvemu: rvemu-wasm rvemu-cli
 
 rvemu-wasm:
-	wasm-pack build lib/rvemu-wasm --out-dir $(ROOT_DIR)/public/pkg --target web
+	wasm-pack build lib/rvemu-wasm --out-dir $(ROOT_DIR)/public/pkg --target web --no-typescript
 
 rvemu-cli:
 	cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml

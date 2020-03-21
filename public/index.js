@@ -20,6 +20,9 @@ let emu = null;
 
 const fileReader = new FileReader();
 let files = [];
+// This is the image file `fs.img` for xv6.
+const fsImgReader = new FileReader();
+let fsImg = null;
 
 // Callback function to execute when mutations are observed.
 const callback = function(mutationsList, observer) {
@@ -88,8 +91,15 @@ async function initialize() {
 
   fileReader.onloadend = e => {
     emu = Emulator.new();
-    const bin = new Uint8Array(fileReader.result);
-    emu.set_dram(bin);
+    const data = new Uint8Array(fileReader.result);
+    emu.set_dram(data);
+
+    // Set up fs.img for xv6.
+    if (e.target.fileName == "xv6") {
+      emu.set_disk(fsImg);
+      console.log("xv6 is executing...");
+    }
+
     try {
       emu.start();
     } catch(err) {
@@ -101,6 +111,11 @@ async function initialize() {
       emu.dump_registers();
       emu = null;
     }
+  };
+
+  fsImgReader.onloadend = e => {
+    fsImg = new Uint8Array(fsImgReader.result);
+    console.log("set fs.img for xv6", fsImg);
   };
 
   fileIn.onchange = e => {
@@ -137,6 +152,7 @@ function upload() {
 function run(filename) {
   for (let i=0; i<files.length; i++) {
     if (filename == files[i].name) {
+      fileReader.fileName = filename;
       fileReader.readAsArrayBuffer(files[i]);
       return;
     }
@@ -184,22 +200,23 @@ function loadApps() {
   fetch("./apps/fib.text")
     .then(response => response.blob())
     .then(blob => {
-      const sampleFile = new File([blob], "fib");
-      files.push(sampleFile);
-    });
-
-  fetch("./apps/echoback.text")
-    .then(response => response.blob())
-    .then(blob => {
-      const sampleFile = new File([blob], "echoback");
-      files.push(sampleFile);
+      const sampleApp = new File([blob], "fib");
+      files.push(sampleApp);
     });
 
   fetch("./apps/xv6.text")
     .then(response => response.blob())
     .then(blob => {
-      const sampleFile = new File([blob], "xv6");
-      files.push(sampleFile);
+      const sampleApp = new File([blob], "xv6");
+      files.push(sampleApp);
+    });
+
+  fetch("./apps/fs.img")
+    .then(response => response.blob())
+    .then(blob => {
+      const fsImg = new File([blob], "fs.img");
+      fsImgReader.fileName = "fs.img";
+      fsImgReader.readAsArrayBuffer(fsImg);
     });
 }
 

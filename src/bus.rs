@@ -8,28 +8,28 @@ use crate::memory::Memory;
 /// The address which the core-local interruptor (CLINT) starts. It contains the timer and
 /// generates per-hart software interrupts and timer
 /// interrupts.
-pub const CLINT_BASE: usize = 0x200_0000;
+pub const CLINT_BASE: u64 = 0x200_0000;
 /// The size of CLINT.
-pub const CLINT_SIZE: usize = 0x10000;
+pub const CLINT_SIZE: u64 = 0x10000;
 
 /// The address which the platform-level interrupt controller (PLIC) starts. The PLIC connects all external interrupts in the
 /// system to all hart contexts in the system, via the external interrupt source in each hart.
-pub const PLIC_BASE: usize = 0xc00_0000;
+pub const PLIC_BASE: u64 = 0xc00_0000;
 /// The size of PLIC.
-pub const PLIC_SIZE: usize = 0x4000000;
+pub const PLIC_SIZE: u64 = 0x4000000;
 
 /// The address which UART starts. QEMU puts UART registers here in physical memory.
-pub const UART_BASE: usize = 0x1000_0000;
+pub const UART_BASE: u64 = 0x1000_0000;
 /// The size of UART.
-pub const UART_SIZE: usize = 0x100;
+pub const UART_SIZE: u64 = 0x100;
 
 /// The address which virtio starts.
-pub const VIRTIO_BASE: usize = 0x1000_1000;
+pub const VIRTIO_BASE: u64 = 0x1000_1000;
 /// The size of virtio.
-pub const VIRTIO_SIZE: usize = 0x1000;
+pub const VIRTIO_SIZE: u64 = 0x1000;
 
 /// The address which DRAM starts.
-pub const DRAM_BASE: usize = 0x8000_0000;
+pub const DRAM_BASE: u64 = 0x8000_0000;
 
 /// The system bus.
 pub struct Bus {
@@ -53,7 +53,7 @@ impl Bus {
     }
 
     /// Return the size of source code in the dram.
-    pub fn dram_size(&self) -> usize {
+    pub fn dram_size(&self) -> u64 {
         self.dram.size()
     }
 
@@ -68,9 +68,9 @@ impl Bus {
     }
 
     /// Read a byte from the system bus.
-    pub fn read8(&mut self, addr: usize) -> Result<u8, Exception> {
+    pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            return Ok(self.uart.read(addr));
+            return Ok(self.uart.read(addr) as u64);
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.read8(addr - DRAM_BASE));
@@ -79,7 +79,7 @@ impl Bus {
     }
 
     /// Read 2 bytes from the system bus.
-    pub fn read16(&self, addr: usize) -> Result<u16, Exception> {
+    pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
         if DRAM_BASE <= addr {
             return Ok(self.dram.read16(addr - DRAM_BASE));
         }
@@ -87,12 +87,12 @@ impl Bus {
     }
 
     /// Read 4 bytes from the system bus.
-    pub fn read32(&self, addr: usize) -> Result<u32, Exception> {
+    pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.read(addr));
+            return Ok(self.plic.read(addr) as u64);
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
-            return Ok(self.virtio.read(addr));
+            return Ok(self.virtio.read(addr) as u64);
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.read32(addr - DRAM_BASE));
@@ -101,7 +101,7 @@ impl Bus {
     }
 
     /// Read 8 bytes from the system bus.
-    pub fn read64(&self, addr: usize) -> Result<u64, Exception> {
+    pub fn read64(&self, addr: u64) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
             return Ok(self.clint.read(addr));
         }
@@ -112,10 +112,10 @@ impl Bus {
     }
 
     /// Write a byte to the system bus.
-    pub fn write8(&mut self, addr: usize, val: u8) -> Result<(), Exception> {
+    pub fn write8(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
-            return Ok(self.uart.write(addr, val));
+            return Ok(self.uart.write(addr, val as u8));
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write8(addr - DRAM_BASE, val));
@@ -125,7 +125,7 @@ impl Bus {
     }
 
     /// Write 2 bytes to the system bus.
-    pub fn write16(&mut self, addr: usize, val: u16) -> Result<(), Exception> {
+    pub fn write16(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if DRAM_BASE <= addr {
             return Ok(self.dram.write16(addr - DRAM_BASE, val));
         }
@@ -133,12 +133,12 @@ impl Bus {
     }
 
     /// Write 4 bytes to the system bus.
-    pub fn write32(&mut self, addr: usize, val: u32) -> Result<(), Exception> {
+    pub fn write32(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.write(addr, val));
+            return Ok(self.plic.write(addr, val as u32));
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
-            return Ok(self.virtio.write(addr, val));
+            return Ok(self.virtio.write(addr, val as u32));
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write32(addr - DRAM_BASE, val));
@@ -147,7 +147,7 @@ impl Bus {
     }
 
     /// Write 8 bytes to the system bus.
-    pub fn write64(&mut self, addr: usize, val: u64) -> Result<(), Exception> {
+    pub fn write64(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
             return Ok(self.clint.write(addr, val));
         }

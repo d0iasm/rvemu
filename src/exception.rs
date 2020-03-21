@@ -62,7 +62,7 @@ impl Exception {
         match cpu.mode {
             Mode::Machine => {
                 // Set the program counter to the machine trap-handler base address (mtvec).
-                cpu.pc = (cpu.state.read(MTVEC) & !1) as usize;
+                cpu.pc = (cpu.state.read(MTVEC) & !1) as u64;
 
                 // 3.1.15 Machine Exception Program Counter (mepc)
                 // "The low bit of mepc (mepc[0]) is always zero."
@@ -101,7 +101,7 @@ impl Exception {
             }
             Mode::Supervisor => {
                 // Set the program counter to the supervisor trap-handler base address (stvec).
-                cpu.pc = (cpu.state.read(STVEC) & !1) as usize;
+                cpu.pc = (cpu.state.read(STVEC) & !1) as u64;
 
                 // 4.1.9 Supervisor Exception Program Counter (sepc)
                 // "The low bit of sepc (sepc[0]) is always zero."
@@ -144,7 +144,7 @@ impl Exception {
             }
             Mode::User => {
                 // Set the program counter to the user trap-handler base address (utvec).
-                cpu.pc = (cpu.state.read(UTVEC) & !1) as usize;
+                cpu.pc = (cpu.state.read(UTVEC) & !1) as u64;
 
                 cpu.state.write(UCAUSE, self.exception_code());
                 cpu.state.write(UEPC, exception_pc);
@@ -167,7 +167,8 @@ impl Exception {
             Exception::EnvironmentCallFromUMode => Ok(()),
             Exception::EnvironmentCallFromSMode => Ok(()),
             Exception::EnvironmentCallFromMMode => Ok(()),
-            Exception::InstructionPageFault => Ok(()),
+            //Exception::InstructionPageFault => Ok(()),
+            Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
             Exception::LoadPageFault => Err(Exception::LoadPageFault),
             Exception::StoreAMOPageFault => Err(Exception::StoreAMOPageFault),
         }

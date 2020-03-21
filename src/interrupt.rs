@@ -12,9 +12,9 @@ pub enum Interrupt {
     UserSoftwareInterrupt,
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,
-    UserExternalInterrupt(usize),
-    SupervisorExternalInterrupt(usize),
-    MachineExternalInterrupt(usize),
+    UserExternalInterrupt(u64),
+    SupervisorExternalInterrupt(u64),
+    MachineExternalInterrupt(u64),
 }
 
 impl Interrupt {
@@ -29,11 +29,11 @@ impl Interrupt {
         }
     }
 
-    fn irq(&self) -> u32 {
+    fn irq(&self) -> u64 {
         match self {
-            Interrupt::UserExternalInterrupt(irq) => *irq as u32,
-            Interrupt::SupervisorExternalInterrupt(irq) => *irq as u32,
-            Interrupt::MachineExternalInterrupt(irq) => *irq as u32,
+            Interrupt::UserExternalInterrupt(irq) => *irq,
+            Interrupt::SupervisorExternalInterrupt(irq) => *irq,
+            Interrupt::MachineExternalInterrupt(irq) => *irq,
             _ => 0,
         }
     }
@@ -68,7 +68,7 @@ impl Interrupt {
                     true => 4 * self.exception_code(), // vectored mode
                     false => 0,                        // direct mode
                 };
-                cpu.pc = ((cpu.state.read(MTVEC) & !1) + vector) as usize;
+                cpu.pc = ((cpu.state.read(MTVEC) & !1) + vector) as u64;
 
                 // 3.1.15 Machine Exception Program Counter (mepc)
                 // "The low bit of mepc (mepc[0]) is always zero."
@@ -112,7 +112,7 @@ impl Interrupt {
                     true => 4 * self.exception_code(), // vectored mode
                     false => 0,                        // direct mode
                 };
-                cpu.pc = ((cpu.state.read(STVEC) & !1) + vector) as usize;
+                cpu.pc = ((cpu.state.read(STVEC) & !1) + vector) as u64;
 
                 // 4.1.9 Supervisor Exception Program Counter (sepc)
                 // "The low bit of sepc (sepc[0]) is always zero."
@@ -160,7 +160,7 @@ impl Interrupt {
                     true => 4 * self.exception_code(), // vectored mode
                     false => 0,                        // direct mode
                 };
-                cpu.pc = ((cpu.state.read(UTVEC) & !1) + vector) as usize;
+                cpu.pc = ((cpu.state.read(UTVEC) & !1) + vector) as u64;
 
                 cpu.state.write(UCAUSE, 1 << 63 | self.exception_code());
                 cpu.state.write(UEPC, exception_pc);

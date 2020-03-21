@@ -20,10 +20,10 @@ use crate::{
 };
 
 /// The stack pointer.
-const SP: usize = 2;
+const SP: u64 = 2;
 
 /// The page size (4 KiB) for the virtual memory system.
-const PAGE_SIZE: usize = 4096;
+const PAGE_SIZE: u64 = 4096;
 
 /// The privileged mode.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -35,7 +35,7 @@ pub enum Mode {
 }
 
 impl Mode {
-    /// Check that the current privileged meets the required mode.
+    /// Check that the current privilege mode meets the required mode.
     pub fn require(&self, require: Mode) -> Result<(), Exception> {
         match require {
             Mode::User => {
@@ -73,7 +73,7 @@ impl Mode {
     }
 }
 
-/// The integer eregisters.
+/// The integer registers.
 #[derive(Debug)]
 pub struct XRegisters {
     xregs: [i64; REGISTERS_COUNT],
@@ -84,20 +84,20 @@ impl XRegisters {
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
         // The stack pointer is set in the default maximum mamory size + the start address of dram.
-        xregs[SP] = MEMORY_SIZE as i64 + DRAM_BASE as i64;
+        xregs[SP as usize] = MEMORY_SIZE as i64 + DRAM_BASE as i64;
         Self { xregs }
     }
 
     /// Read the value from a register.
-    pub fn read(&self, index: usize) -> i64 {
-        self.xregs[index]
+    pub fn read(&self, index: u64) -> i64 {
+        self.xregs[index as usize]
     }
 
     /// Write the value to a register.
-    pub fn write(&mut self, index: usize, value: i64) {
+    pub fn write(&mut self, index: u64, value: i64) {
         // Register x0 is hardwired with all bits equal to 0.
         if index != 0 {
-            self.xregs[index] = value;
+            self.xregs[index as usize] = value;
         }
     }
 }
@@ -112,13 +112,13 @@ impl fmt::Display for XRegisters {
                 format!(
                     "x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x}",
                     i,
-                    self.read(i),
+                    self.read(i as u64),
                     i + 1,
-                    self.read(i + 1),
+                    self.read(i as u64 + 1),
                     i + 2,
-                    self.read(i + 2),
+                    self.read(i as u64 + 2),
                     i + 3,
-                    self.read(i + 3)
+                    self.read(i as u64 + 3)
                 )
             );
         }
@@ -143,13 +143,13 @@ impl FRegisters {
     }
 
     /// Read the value from a regsiter.
-    pub fn read(&self, index: usize) -> f64 {
-        self.fregs[index]
+    pub fn read(&self, index: u64) -> f64 {
+        self.fregs[index as usize]
     }
 
     /// Write the value to a regsiter.
-    pub fn write(&mut self, index: usize, value: f64) {
-        self.fregs[index] = value;
+    pub fn write(&mut self, index: u64, value: f64) {
+        self.fregs[index as usize] = value;
     }
 }
 
@@ -163,13 +163,13 @@ impl fmt::Display for FRegisters {
                 format!(
                     "f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$}",
                     i,
-                    self.read(i),
+                    self.read(i as u64),
                     i + 1,
-                    self.read(i + 1),
+                    self.read(i as u64 + 1),
                     i + 2,
-                    self.read(i + 2),
+                    self.read(i  as u64+ 2),
                     i + 3,
-                    self.read(i + 3),
+                    self.read(i as u64 + 3),
                     width=18,
                     prec=8,
                 )
@@ -185,12 +185,12 @@ impl fmt::Display for FRegisters {
 pub struct Cpu {
     pub xregs: XRegisters,
     pub fregs: FRegisters,
-    pub pc: usize,
+    pub pc: u64,
     pub state: State,
     pub mode: Mode,
     pub bus: Bus,
     pub enable_paging: bool,
-    pub page_table: usize,
+    pub page_table: u64,
     pub debug: bool,
 }
 
@@ -216,8 +216,8 @@ impl Cpu {
         self.state.reset();
         // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
-            self.xregs.write(i, 0);
-            self.fregs.write(i, 0.0);
+            self.xregs.write(i as u64, 0);
+            self.fregs.write(i as u64, 0.0);
         }
     }
 
@@ -285,7 +285,7 @@ impl Cpu {
     }
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
-    pub fn translate(&mut self, addr: usize) -> Result<usize, Exception> {
+    pub fn translate(&mut self, addr: u64) -> Result<u64, Exception> {
         if !self.enable_paging {
             return Ok(addr);
         }
@@ -305,7 +305,7 @@ impl Cpu {
         // 1. Let a be satp.ppn × PAGESIZE, and let i = LEVELS − 1. (For Sv32, PAGESIZE=212
         //    and LEVELS=2.)
         let mut a = self.page_table;
-        let mut i: i32 = levels - 1;
+        let mut i: i64 = levels - 1;
         let mut pte;
         loop {
             // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
@@ -333,7 +333,7 @@ impl Cpu {
             }
             i -= 1;
             let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
-            a = ppn as usize * PAGE_SIZE;
+            a = ppn * PAGE_SIZE;
             if i < 0 {
                 // TODO: raise InstructionPageFault, LoadPageFault, or StoreAMOPageFault
                 // depending on the original access type.
@@ -369,85 +369,85 @@ impl Cpu {
         let offset = addr & 0xfff;
         return Ok(if i > 0 {
             let ppn = [
-                ((pte >> 10) & 0x1ff) as usize,
-                ((pte >> 19) & 0x1ff) as usize,
-                ((pte >> 28) & 0x03ff_ffff) as usize,
+                (pte >> 10) & 0x1ff,
+                (pte >> 19) & 0x1ff,
+                (pte >> 28) & 0x03ff_ffff,
             ];
             (ppn[2] << 30) | (ppn[1] << 21) | (vpn[0] << 12) | offset
         } else {
             let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
-            (ppn << 12) as usize | offset
+            (ppn << 12) | offset
         });
     }
 
     /// Read a byte from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read8(&mut self, v_addr: usize) -> Result<u8, Exception> {
+    pub fn read8(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read8(p_addr)
     }
 
     /// Read 2 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read16(&mut self, v_addr: usize) -> Result<u16, Exception> {
+    pub fn read16(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read16(p_addr)
     }
 
     /// Read 4 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read32(&mut self, v_addr: usize) -> Result<u32, Exception> {
+    pub fn read32(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read32(p_addr)
     }
 
     /// Read 8 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read64(&mut self, v_addr: usize) -> Result<u64, Exception> {
+    pub fn read64(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.read64(p_addr)
     }
 
     /// Write a byte to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write8(&mut self, v_addr: usize, val: u8) -> Result<(), Exception> {
+    pub fn write8(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.write8(p_addr, val)
     }
 
     /// Write 2 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write16(&mut self, v_addr: usize, val: u16) -> Result<(), Exception> {
+    pub fn write16(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.write16(p_addr, val)
     }
 
     /// Write 4 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write32(&mut self, v_addr: usize, val: u32) -> Result<(), Exception> {
+    pub fn write32(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.write32(p_addr, val)
     }
 
     /// Write 8 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write64(&mut self, v_addr: usize, val: u64) -> Result<(), Exception> {
+    pub fn write64(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr)?;
         self.bus.write64(p_addr, val)
     }
 
     /// Fetch the next instruction from the memory at the current program counter.
-    pub fn fetch(&mut self) -> Result<u32, Exception> {
+    pub fn fetch(&mut self) -> Result<u64, Exception> {
         self.read32(self.pc)
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothings.
-    pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {
+    pub fn execute(&mut self, inst: u64) -> Result<(), Exception> {
         let opcode = inst & 0x0000007f;
-        let rd = ((inst & 0x00000f80) >> 7) as usize;
-        let rs1 = ((inst & 0x000f8000) >> 15) as usize;
-        let rs2 = ((inst & 0x01f00000) >> 20) as usize;
+        let rd = ((inst & 0x00000f80) >> 7) as u64;
+        let rs1 = ((inst & 0x000f8000) >> 15) as u64;
+        let rs2 = ((inst & 0x01f00000) >> 20) as u64;
         let funct3 = (inst & 0x00007000) >> 12;
         let funct7 = (inst & 0xfe000000) >> 25;
 
@@ -459,7 +459,7 @@ impl Cpu {
                     0x80000000 => 0xfffff800, // offset[:11] = inst[31]
                     _ => 0,
                 } | ((inst >> 20) & 0x000007ff)) as i32 as i64; // offset[10:0] = inst[30:20]
-                let addr = self.xregs.read(rs1).wrapping_add(offset) as usize;
+                let addr = self.xregs.read(rs1).wrapping_add(offset) as u64;
                 match funct3 {
                     0x0 => {
                         // lb
@@ -502,7 +502,7 @@ impl Cpu {
             0x07 => {
                 // I-type (RV32F and RV64F)
                 let offset = ((inst & 0xfff00000) as u64) >> 20;
-                let addr = (self.xregs.read(rs1) + offset as i64) as usize;
+                let addr = (self.xregs.read(rs1) + offset as i64) as u64;
                 match funct3 {
                     0x2 => {
                         // flw
@@ -615,26 +615,22 @@ impl Cpu {
             }
             0x23 => {
                 // S-type
-                let offset = (
-                    match inst & 0x80000000 {
+                let offset = (match inst & 0x80000000 {
                         // Extend the most significant bit.
                         // offset[:12] = inst[31]
                         0x80000000 => 0xfffff800,
                         _ => 0
                     } |
-                    ((inst & 0xfe000000) >> 20) | // offset[10:5] = inst[30:25],
-                    ((inst & 0x00000f80) >> 7)
+                    // offset[10:5] = inst[30:25],
+                    ((inst & 0xfe000000) >> 20) |
                     // offset[4:0]= inst[11:7]
-                ) as i32 as i64;
-                let addr = (self.xregs.read(rs1) + offset) as usize;
+                    ((inst & 0x00000f80) >> 7)) as i32 as i64;
+                let addr = (self.xregs.read(rs1) + offset) as u64;
                 match funct3 {
-                    0x0 => self.write8(addr, self.xregs.read(rs2) as u8)?, // sb
-                    0x1 => self.write16(addr, self.xregs.read(rs2) as u16)?, // sh
-                    0x2 => self.write32(addr, self.xregs.read(rs2) as u32)?, // sw
-                    //0x3 => self.write64(addr, self.xregs.read(rs2) as u64)?, // sd
-                    0x3 => {
-                        self.write64(addr, self.xregs.read(rs2) as u64)?;
-                    }
+                    0x0 => self.write8(addr, self.xregs.read(rs2) as u64)?, // sb
+                    0x1 => self.write16(addr, self.xregs.read(rs2) as u64)?, // sh
+                    0x2 => self.write32(addr, self.xregs.read(rs2) as u64)?, // sw
+                    0x3 => self.write64(addr, self.xregs.read(rs2) as u64)?, // sd
                     _ => {}
                 }
             }
@@ -643,12 +639,12 @@ impl Cpu {
                 let imm11_5 = (((inst & 0xfe000000) as i32) as i64) >> 25;
                 let imm4_0 = ((inst & 0x00000f80) >> 7) as u64;
                 let offset = (((imm11_5 << 5) as u64) | imm4_0) as i64;
-                let addr = (self.xregs.read(rs1) + offset) as usize;
+                let addr = (self.xregs.read(rs1) + offset) as u64;
                 match funct3 {
                     0x2 => self
                         .bus
-                        .write32(addr, (self.fregs.read(rs2) as f32).to_bits())?, // fsw
-                    0x3 => self.write64(addr, self.fregs.read(rs2).to_bits())?, // fsd
+                        .write32(addr, (self.fregs.read(rs2) as f32).to_bits() as u64)?, // fsw
+                    0x3 => self.write64(addr, self.fregs.read(rs2).to_bits() as u64)?, // fsd
                     _ => {}
                 }
             }
@@ -662,184 +658,184 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            (t.wrapping_add(self.xregs.read(rs2) as i32)) as u32,
+                            self.xregs.read(rs1) as u64,
+                            (t.wrapping_add(self.xregs.read(rs2) as i32)) as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             t.wrapping_add(self.xregs.read(rs2)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.bus
-                            .write32(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u32)?;
+                            .write32(self.xregs.read(rs1) as u64, self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.bus
-                            .write64(self.xregs.read(rs1) as usize, self.xregs.read(rs2) as u64)?;
+                            .write64(self.xregs.read(rs1) as u64, self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x02) => {
                         // lr.w
-                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        let addr = self.read32(self.xregs.read(rs1) as u64)?;
                         self.xregs.write(rd, addr as i32 as i64);
                     }
                     (0x3, 0x02) => {
                         // lr.d
-                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
+                        let addr = self.read32(self.xregs.read(rs1) as u64)?;
                         self.xregs.write(rd, addr as i64);
                     }
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
-                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
-                        let src = self.read32(self.xregs.read(rs2) as usize)?;
+                        let addr = self.read32(self.xregs.read(rs1) as u64)?;
+                        let src = self.read32(self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, 0);
-                        self.bus.write32(addr as usize, src as u32)?;
+                        self.bus.write32(addr as u64, src as u64)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
-                        let addr = self.read32(self.xregs.read(rs1) as usize)?;
-                        let src = self.read32(self.xregs.read(rs2) as usize)?;
+                        let addr = self.read32(self.xregs.read(rs1) as u64)?;
+                        let src = self.read32(self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, 0);
-                        self.bus.write64(addr as usize, src as u64)?;
+                        self.bus.write64(addr, src as u64)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            (t ^ (self.xregs.read(rs2) as i32)) as u32,
+                            self.xregs.read(rs1) as u64,
+                            (t ^ (self.xregs.read(rs2) as i32)) as u32 as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             (t ^ self.xregs.read(rs2)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            (t | (self.xregs.read(rs2) as i32)) as u32,
+                            self.xregs.read(rs1) as u64,
+                            (t | (self.xregs.read(rs2) as i32)) as u32 as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             (t | self.xregs.read(rs2)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            (t & (self.xregs.read(rs2) as i32)) as u32,
+                            self.xregs.read(rs1) as u64,
+                            (t & (self.xregs.read(rs2) as i32)) as u32 as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             (t & self.xregs.read(rs1)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            cmp::min(t, self.xregs.read(rs2) as i32) as u32,
+                            self.xregs.read(rs1) as u64,
+                            cmp::min(t, self.xregs.read(rs2) as i32) as u32 as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             cmp::min(t, self.xregs.read(rs2)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)? as i32;
+                        let t = self.read32(self.xregs.read(rs1) as u64)? as i32;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            cmp::max(t, self.xregs.read(rs2) as i32) as u32,
+                            self.xregs.read(rs1) as u64,
+                            cmp::max(t, self.xregs.read(rs2) as i32) as u64,
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)? as i64;
+                        let t = self.read64(self.xregs.read(rs1) as u64)? as i64;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             cmp::max(t, self.xregs.read(rs2)) as u64,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)?;
+                        let t = self.read32(self.xregs.read(rs1) as u64)?;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            cmp::min(t, self.xregs.read(rs2) as u32),
+                            self.xregs.read(rs1) as u64,
+                            cmp::min(t, self.xregs.read(rs2) as u64),
                         )?;
                         self.xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)?;
+                        let t = self.read64(self.xregs.read(rs1) as u64)?;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             cmp::min(t, self.xregs.read(rs2) as u64),
                         )?;
                         self.xregs.write(rd, t as i64);
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = self.read32(self.xregs.read(rs1) as usize)?;
+                        let t = self.read32(self.xregs.read(rs1) as u64)?;
                         self.write32(
-                            self.xregs.read(rs1) as usize,
-                            cmp::max(t, self.xregs.read(rs2) as u32),
+                            self.xregs.read(rs1) as u64,
+                            cmp::max(t, self.xregs.read(rs2) as u64),
                         )?;
                         self.xregs.write(rd, (t as i32) as i64);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = self.read64(self.xregs.read(rs1) as usize)?;
+                        let t = self.read64(self.xregs.read(rs1) as u64)?;
                         self.write64(
-                            self.xregs.read(rs1) as usize,
+                            self.xregs.read(rs1) as u64,
                             cmp::max(t, self.xregs.read(rs2) as u64),
                         )?;
                         self.xregs.write(rd, t as i64);
@@ -1096,7 +1092,7 @@ impl Cpu {
             0x43 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -1120,7 +1116,7 @@ impl Cpu {
             0x47 => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -1144,7 +1140,7 @@ impl Cpu {
             0x4B => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -1166,7 +1162,7 @@ impl Cpu {
             0x4F => {
                 // R4-type (RV32F and RV64F)
                 // TODO: support the rounding mode encoding (rm).
-                let rs3 = ((inst & 0xf8000000) >> 27) as usize;
+                let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
@@ -1521,7 +1517,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     0x1 => {
@@ -1531,7 +1527,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     0x4 => {
@@ -1541,7 +1537,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     0x5 => {
@@ -1551,7 +1547,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     0x6 => {
@@ -1561,7 +1557,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     0x7 => {
@@ -1571,7 +1567,7 @@ impl Cpu {
                             if target % 4 != 0 {
                                 return Err(Exception::InstructionAddressMisaligned);
                             }
-                            self.pc = target as usize;
+                            self.pc = target as u64;
                         }
                     }
                     _ => {}
@@ -1588,7 +1584,7 @@ impl Cpu {
                     return Err(Exception::InstructionAddressMisaligned);
                 }
 
-                self.pc = target as usize;
+                self.pc = target as u64;
                 self.xregs.write(rd, t);
             }
             0x6F => {
@@ -1607,7 +1603,7 @@ impl Cpu {
                 if target % 4 != 0 {
                     return Err(Exception::InstructionAddressMisaligned);
                 }
-                self.pc = target as usize;
+                self.pc = target as u64;
             }
             0x73 => {
                 // I-type
@@ -1655,7 +1651,7 @@ impl Cpu {
 
                                 // Set the program coutner to the supervisor exception program
                                 // counter (SEPC).
-                                self.pc = self.state.read(SEPC) as usize;
+                                self.pc = self.state.read(SEPC) as u64;
 
                                 // TODO: Check TSR field
 
@@ -1685,7 +1681,7 @@ impl Cpu {
 
                                 // Set the program coutner to the machine exception program
                                 // counter (MEPC).
-                                self.pc = self.state.read(MEPC) as usize;
+                                self.pc = self.state.read(MEPC) as u64;
 
                                 // Set the current privileged mode depending on a privious privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
@@ -1723,7 +1719,8 @@ impl Cpu {
                         if csr_addr == SATP {
                             // Read the physical page number (PPN) of the root page table, i.e., its
                             // supervisor physical address divided by 4 KiB.
-                            self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
+                            self.page_table =
+                                (self.state.read_bits(SATP, ..44) * PAGE_SIZE as i64) as u64;
 
                             // Read the MODE field, which selects the current address-translation scheme.
                             let mode = self.state.read_bits(SATP, 60..);
@@ -1756,7 +1753,8 @@ impl Cpu {
                         if csr_addr == SATP {
                             // Read the physical page number (PPN) of the root page table, i.e., its
                             // supervisor physical address divided by 4 KiB.
-                            self.page_table = self.state.read_bits(SATP, ..44) as usize * PAGE_SIZE;
+                            self.page_table =
+                                (self.state.read_bits(SATP, ..44) * PAGE_SIZE as i64) as u64;
 
                             // Read the MODE field, which selects the current address-translation scheme.
                             let mode = self.state.read_bits(SATP, 60..);
@@ -1778,7 +1776,7 @@ impl Cpu {
                         // csrrci
                         let uimm = rs1 as u64 as i64;
                         self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state.write(csr_addr, self.xregs.read(rd) & (!uimm));
+                        self.state.write(csr_addr, self.xregs.read(rd) & !uimm);
                     }
                     _ => {}
                 }
