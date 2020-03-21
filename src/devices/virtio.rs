@@ -4,12 +4,14 @@
 //! The virtio spec:
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
 
+/*
 use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
 }
+*/
 
 use crate::bus::VIRTIO_BASE;
 use crate::cpu::Cpu;

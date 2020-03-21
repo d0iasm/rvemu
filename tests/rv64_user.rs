@@ -22,8 +22,7 @@ macro_rules! add_test {
 
             let mut emu = Emulator::new();
             emu.set_dram(data);
-            // The text in riscv/riscv-tests starts 0x80001000.
-            emu.set_pc(DRAM_BASE + 0x1000);
+            emu.set_pc(DRAM_BASE);
 
             emu.start();
 

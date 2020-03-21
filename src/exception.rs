@@ -25,7 +25,7 @@ pub enum Exception {
 }
 
 impl Exception {
-    fn exception_code(&self) -> i64 {
+    fn exception_code(&self) -> u64 {
         match self {
             Exception::InstructionAddressMisaligned => 0,
             Exception::InstructionAccessFault => 1,
@@ -45,7 +45,7 @@ impl Exception {
     }
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
-        let exception_pc = (cpu.pc as i64) - 4;
+        let exception_pc = cpu.pc - 4;
         let prev_mode = cpu.mode;
 
         let medeleg = cpu.state.read(MEDELEG);

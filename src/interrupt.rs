@@ -18,7 +18,7 @@ pub enum Interrupt {
 }
 
 impl Interrupt {
-    fn exception_code(&self) -> i64 {
+    fn exception_code(&self) -> u64 {
         match self {
             Interrupt::UserSoftwareInterrupt => 0,
             Interrupt::SupervisorSoftwareInterrupt => 1,
@@ -40,7 +40,7 @@ impl Interrupt {
 
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
-        let exception_pc = cpu.pc as i64;
+        let exception_pc = cpu.pc;
         let prev_mode = cpu.mode;
 
         let mideleg = cpu.state.read(MIDELEG);

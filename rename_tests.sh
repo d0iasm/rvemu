@@ -11,6 +11,6 @@ do
     original=$(basename $file)
     filename=$(echo $original | sed -e "s/-/_/g")
     echo ${filename}
-    #${OBJCOPY} -O binary ${file} ${OUT_DIR}/${filename}
-    cp ${file} ${OUT_DIR}/${filename}
+    ${OBJCOPY} -O binary ${file} ${OUT_DIR}/${filename}
+    #cp ${file} ${OUT_DIR}/${filename}
 done

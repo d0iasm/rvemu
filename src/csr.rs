@@ -108,7 +108,7 @@ pub const PMPADDR0: CsrAddress = 0x3b0;
 
 /// The state to contains all the CSRs.
 pub struct State {
-    csrs: [i64; CSR_SIZE],
+    csrs: [u64; CSR_SIZE],
 }
 
 impl fmt::Display for State {
@@ -156,20 +156,20 @@ impl State {
     }
 
     /// Read the val from the CSR.
-    pub fn read(&self, addr: CsrAddress) -> i64 {
+    pub fn read(&self, addr: CsrAddress) -> u64 {
         match addr {
             _ => self.csrs[addr as usize],
         }
     }
 
     /// Write the val to the CSR.
-    pub fn write(&mut self, addr: CsrAddress, val: i64) {
+    pub fn write(&mut self, addr: CsrAddress, val: u64) {
         match addr {
             MVENDORID => {}
             MARCHID => {}
             MIMPID => {}
             MHARTID => {}
-            _ => self.csrs[addr as usize] = val as i64,
+            _ => self.csrs[addr as usize] = val,
         }
     }
 
@@ -182,7 +182,7 @@ impl State {
     }
 
     /// Read a arbitrary length of bits from the CSR.
-    pub fn read_bits<T: RangeBounds<usize>>(&self, addr: CsrAddress, range: T) -> i64 {
+    pub fn read_bits<T: RangeBounds<usize>>(&self, addr: CsrAddress, range: T) -> u64 {
         let range = to_range(&range, MXLEN);
 
         if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {
@@ -196,7 +196,7 @@ impl State {
         }
 
         // Shift away low bits.
-        ((self.read(addr) as u64 & !bitmask) >> range.start) as i64
+        (self.read(addr) as u64 & !bitmask) >> range.start
     }
 
     /// Write a bit to the CSR.
@@ -213,7 +213,7 @@ impl State {
     }
 
     /// Write an arbitrary length of bits to the CSR.
-    pub fn write_bits<T: RangeBounds<usize>>(&mut self, addr: CsrAddress, range: T, val: i64) {
+    pub fn write_bits<T: RangeBounds<usize>>(&mut self, addr: CsrAddress, range: T, val: u64) {
         let range = to_range(&range, MXLEN);
 
         if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {

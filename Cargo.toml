@@ -22,10 +22,12 @@ include = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+#[target.'cfg(target_arch = "wasm32")'.dependencies]
+[dependencies]
 wasm-bindgen = "0.2.59"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+#[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+[dependencies.web-sys]
 version = "0.3.36"
 features = [
   'Document',
