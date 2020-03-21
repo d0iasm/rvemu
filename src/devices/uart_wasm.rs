@@ -89,13 +89,12 @@ impl Uart {
             let _ = check_input();
             return true;
         }
-        log(&format!("clock {}", self.clock));
         false
     }
 
     /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: u64) -> u8 {
-        //log(&format!("uart read {:#x}", index));
+        log(&format!("uart read {:#x}", index));
         match index {
             UART_RHR => {
                 self.uart[(UART_LSR - UART_BASE) as usize] &= !1;
@@ -108,7 +107,7 @@ impl Uart {
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: u64, value: u8) {
-        //log(&format!("uart write {:#x} {}", index, value));
+        log(&format!("uart write {:#x} {}", index, value));
         match index {
             UART_THR => {
                 stdout8(value);

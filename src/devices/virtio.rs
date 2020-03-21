@@ -4,15 +4,6 @@
 //! The virtio spec:
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
 
-/*
-use wasm_bindgen::prelude::*;
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-*/
-
 use crate::bus::VIRTIO_BASE;
 use crate::cpu::Cpu;
 
@@ -92,7 +83,6 @@ impl Virtio {
 
     /// Return true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
-        //log(&format!("is_interupting virtio {}", self.queue_notify));
         if self.queue_notify != 9999 {
             self.queue_notify = 9999;
             return true;
@@ -102,13 +92,11 @@ impl Virtio {
 
     /// Set the binary in the virtio disk.
     pub fn set_disk(&mut self, binary: Vec<u8>) {
-        //log(&format!("!!!!!!!!!!!1 called set_disk"));
         self.disk.extend(binary.iter().cloned());
     }
 
     /// Read 4 bytes from virtio only if the addr is valid. Otherwise, return 0.
     pub fn read(&self, addr: u64) -> u32 {
-        //log(&format!("virtio read {:#x}", addr));
         match addr {
             VIRTIO_MAGIC => 0x74726976,
             VIRTIO_VERSION => 0x1,
@@ -125,7 +113,6 @@ impl Virtio {
 
     /// Write 4 bytes to virtio only if the addr is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: u64, val: u32) {
-        //log(&format!("virtio write {:#x} {}", addr, val));
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
             VIRTIO_GUEST_PAGE_SIZE => self.page_size = val,

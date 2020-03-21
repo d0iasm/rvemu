@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <!-- This is for easy debug. Remove it in the future. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta charset="utf-8">
+    <title>xv6 on rvemu (RISC-V Emulator)</title>
+    <link rel="stylesheet" type="text/css" href="./node_modules/xterm/css/xterm.css" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      #terminal {
+        background-color: black;
+        color: white;
+        height: 100vh;
+        width: 100vw;
+      }
+      .hide {
+        display: none;
+      }
+    </style>
+    <script src="./node_modules/xterm/lib/xterm.js"></script>
+    <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  </head>
+  <body>
+    <input id="file" class="hide" type="file" multiple/>
+    <div id="buffer" class="hide"></div>
+    <div id="buffer8" class="hide"></div>
+    <div id="terminal"></div>
+    <script src="./xv6.js" type="module"></script>
+  </body>
+</html>

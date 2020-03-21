@@ -13,7 +13,7 @@ const termContainer = document.getElementById("terminal");
 const term  = new Terminal({cursorBlink: true});
 
 const fitAddon = new FitAddon.FitAddon();
-const newLine = "\r\n$ ";
+const newLine = "\r\n% ";
 const deleteLine = "\x1b[2K\r";
 
 let emu = null;
@@ -35,7 +35,7 @@ const callback = function(mutationsList, observer) {
         term.writeln(texts[i]);
       }
       buffer.removeChild(firstChild);
-      term.write("$ ");
+      term.write("% ");
     }
   }
 };
@@ -66,7 +66,7 @@ const callback8 = function(mutationsList, observer) {
     }
 
     if (buffer_count == 0 && mutation.removedNodes.length > 0) {
-      term.write("$ ");
+      term.write("% ");
     }
   }
 };
@@ -82,8 +82,6 @@ async function initialize() {
   term.loadAddon(fitAddon);
   term.open(termContainer);
   fitAddon.fit();
-
-  runTerminal();
 
   // Start observing the target node for configured mutations
   observer8.observe(buffer8, config);
@@ -131,6 +129,8 @@ async function initialize() {
     term.write("uploaded:\t" + names);
     prompt();
   };
+
+  runTerminal();
 }
 
 function prompt() {
@@ -228,7 +228,7 @@ function runTerminal() {
   term._initialized = true;
 
   term.prompt = () => {
-    term.write('\r\n$ ');
+    term.write('\r\n% ');
   };
 
   term.writeln("Welcome to RISC-V emulator!");
@@ -259,7 +259,7 @@ function runTerminal() {
           cursor--;
         }
         term.write(deleteLine);
-        term.write("$ ");
+        term.write("% ");
         term.write(input);
       }
     } else if (e.domEvent.code == 'ArrowLeft') {

@@ -53,21 +53,20 @@ impl Emulator {
             // 1. Fetch.
             let data_or_error = self.cpu.fetch();
 
-            count += 1;
-            if self.is_test && count > 100000 {
-                return;
-            }
-            /*
-            if count > 500000000 {
-                return;
-            }
-            */
-
             if self.is_debug {
                 dbg!(format!(
                     "pc: {:#x} , data: {:#?}",
                     self.cpu.pc, &data_or_error
                 ));
+            }
+
+            count += 1;
+            if self.is_test && count > 100000 {
+                return;
+            }
+
+            if count > 500000000 {
+                return;
             }
 
             // 2. Add 4 to the program counter.
