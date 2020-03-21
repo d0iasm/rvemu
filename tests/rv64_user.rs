@@ -37,6 +37,8 @@ macro_rules! add_test {
     };
 }
 
+add_test!(rv64ui_p_add);
+/*
 // rv64ui-p-*
 add_test!(rv64ui_p_add);
 add_test!(rv64ui_p_addi);
@@ -211,3 +213,4 @@ add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
 add_test!(rv64um_p_remuw);
 add_test!(rv64um_p_remw);
+*/

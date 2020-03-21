@@ -1586,12 +1586,13 @@ impl Cpu {
                 // jal
                 self.xregs.write(rd, self.pc);
 
-                let imm10_1 = (inst & 0x7fe00000) >> 21;
-                let imm11 = (inst & 0x100000) >> 20;
-                let imm19_12 = (inst & 0xff000) >> 12;
-                let mut offset = (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1);
+                let imm20 = (inst >> 31) & 1;
+                let imm10_1 = (inst >> 21) & 0b11_1111_1111;
+                let imm11 = (inst >> 20) & 1;
+                let imm19_12 = (inst >> 12) & 0b1111_1111;
+                let mut offset = (imm20 << 20) | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1);
                 if (inst & 0x80000000) != 0 {
-                    // Set bits if imm[20] is set.
+                    // Set bits when imm[20] is set.
                     offset |= 0xffffffff_fff00000;
                 }
                 let target = self.pc.wrapping_add(offset) - 4;

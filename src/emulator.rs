@@ -58,6 +58,10 @@ impl Emulator {
             }
             */
 
+                dbg!(format!(
+                    "pc: {:#x} , data: {:#?}",
+                    self.cpu.pc, &data_or_error
+                ));
             if self.is_debug {
                 dbg!(format!(
                     "pc: {:#x} , data: {:#?}",
