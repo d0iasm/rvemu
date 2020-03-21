@@ -630,14 +630,14 @@ impl Cpu {
                 let offset = match inst & 0x80000000 {
                         // Extend the most significant bit.
                         // offset[:12] = inst[31]
-                        0x80000000 => 0xfffff800,
+                        0x80000000 => 0xffffffff_fffff800,
                         _ => 0
                     } |
                     // offset[10:5] = inst[30:25],
                     ((inst & 0xfe000000) >> 20) |
                     // offset[4:0]= inst[11:7]
                     ((inst & 0x00000f80) >> 7);
-                let addr = (self.xregs.read(rs1).wrapping_add(offset)) & 0xffffffff;
+                let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x0 => self.write8(addr, self.xregs.read(rs2))?, // sb
                     0x1 => self.write16(addr, self.xregs.read(rs2))?, // sh
@@ -651,7 +651,7 @@ impl Cpu {
                 let imm11_5 = (((inst & 0xfe000000) as i32) as i64) >> 25;
                 let imm4_0 = (inst & 0x00000f80) >> 7;
                 let offset = ((imm11_5 << 5) as u64) | imm4_0;
-                let addr = (self.xregs.read(rs1).wrapping_add(offset)) & 0xffffffff;
+                let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x2 => self
                         .bus

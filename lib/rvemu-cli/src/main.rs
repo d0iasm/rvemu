@@ -16,7 +16,7 @@ fn dump_registers(cpu: &Cpu) {
     println!("-------------------------------------------------------------------------------------------");
     println!("{}", cpu.state);
     println!("-------------------------------------------------------------------------------------------");
-    println!("pc: {}", cpu.pc);
+    println!("pc: {:#x}", cpu.pc);
 }
 
 /// Main function of RISC-V emulator for the CLI version.

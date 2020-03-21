@@ -87,7 +87,7 @@ impl Emulator {
 
             if result.is_err() {
                 if self.is_debug {
-                    dbg!(format!("pc: {}, result {:#?}", self.cpu.pc, result));
+                    dbg!(format!("pc: {:#x}, result {:#?}", self.cpu.pc, result));
                 }
                 return;
             }
