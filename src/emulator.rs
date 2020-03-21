@@ -8,6 +8,7 @@ pub struct Emulator {
     pub cpu: Cpu,
     /// The debug flag. Output messages if it's true, otherwise output nothing.
     is_debug: bool,
+    pub is_test: bool,
 }
 
 impl Emulator {
@@ -16,6 +17,7 @@ impl Emulator {
         Self {
             cpu: Cpu::new(),
             is_debug: false,
+            is_test: false,
         }
     }
 
@@ -52,16 +54,15 @@ impl Emulator {
             let data_or_error = self.cpu.fetch();
 
             count += 1;
+            if self.is_test && count > 100000 {
+                return;
+            }
             /*
             if count > 500000000 {
                 return;
             }
             */
 
-                dbg!(format!(
-                    "pc: {:#x} , data: {:#?}",
-                    self.cpu.pc, &data_or_error
-                ));
             if self.is_debug {
                 dbg!(format!(
                     "pc: {:#x} , data: {:#?}",
