@@ -75,7 +75,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
     emu.set_pc(DRAM_BASE);
 
     let mut generator = move || {
-        let mut count = 0;
+        let mut count: u64 = 0;
         loop {
             count += 1;
             // 1. Fetch.
@@ -101,7 +101,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
                 None => {}
             }
 
-            if count > 1000000 {
+            if count > 500000 {
                 log(&format!("count in generator: {}", count));
                 count = 0;
                 yield;
@@ -113,7 +113,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
     let cloned_handler = handler.clone();
 
     *cloned_handler.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-        Pin::new(&mut generator).resume();
+        Pin::new(&mut generator).resume(());
         set_timeout_with_callback(handler.borrow().as_ref().unwrap(), 0);
     }) as Box<dyn FnMut()>));
 
