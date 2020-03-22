@@ -21,8 +21,7 @@ const callback = function(mutationsList, observer) {
       const texts = firstChild.innerText.split("\n");
       for (let i=0; i<texts.length; i++) {
         term.writeln(texts[i]);
-      }
-      buffer.removeChild(firstChild);
+      } buffer.removeChild(firstChild);
       term.write("% ");
     }
   }
@@ -98,5 +97,14 @@ function initTerminal() {
 initTerminal();
 
 if (window.Worker) {
-  const emulator = new Worker('worker.js', {type: 'module'});
+  const emuWorker = new Worker('worker.js', {type: 'module'});
+  emuWorker.onmessage = e => {
+    console.log("come in xv6.js", e);
+    const c = e.data;
+    if (c != "\n") {
+      term.write(c);
+    } else {
+      term.writeln("");
+    }
+  }
 }

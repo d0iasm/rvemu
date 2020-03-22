@@ -1,41 +1,46 @@
+// static import for module script.
 import init, { Emulator } from "./pkg/rvemu_wasm.js";
 
-const deleteLine = "\x1b[2K\r";
+// dynamic import for module script.
+//import('./pkg/rvemu_wasm.js').then(rvemu => {
 
 const kernelReader = new FileReader();
 const fsImgReader = new FileReader();
-let fsImgData = null;
 
 let emu = null;
 
-function loadFiles() {
-  fetch("./apps/fs.img")
-    .then(response => response.blob())
-    .then(blob => {
-      const fsImgFile = new File([blob], "fs.img");
-      fsImgReader.fileName = "fs.img";
-      fsImgReader.readAsArrayBuffer(fsImgFile);
+function loadDisk() {
+  return new Promise((resolve, reject) => {
+    fsImgReader.onloadend = e => {
+      console.log("Loaded fs.img");
+      resolve(new Uint8Array(fsImgReader.result));
+    };
 
-      fetch("./apps/xv6.text")
-        .then(response => response.blob())
-        .then(blob => {
-          const kernelFile = new File([blob], "xv6");
-          kernelReader.fileName = "xv6";
-          kernelReader.readAsArrayBuffer(kernelFile);
-        });
-    });
+    // Fetch fs.img.
+    fetch("./apps/fs.img")
+      .then(response => response.blob())
+      .then(blob => {
+        const fsImgFile = new File([blob], "fs.img");
+        fsImgReader.fileName = "fs.img";
+        fsImgReader.readAsArrayBuffer(fsImgFile);
+      });
+  });
 }
 
 async function initEmulator() {
-  // Load the wasm file.
+  // Initialize for wasm.
   await init();
 
-  loadFiles();
+  const fsImgData = await loadDisk();
 
-  fsImgReader.onloadend = e => {
-    fsImgData = new Uint8Array(fsImgReader.result);
-    console.log("Loaded fs.img", fsImgData);
-  };
+  // Fetch kernel image.
+  fetch("./apps/xv6.text")
+    .then(response => response.blob())
+    .then(blob => {
+      const kernelFile = new File([blob], "xv6");
+      kernelReader.fileName = "xv6";
+      kernelReader.readAsArrayBuffer(kernelFile);
+    });
 
   kernelReader.onloadend = e => {
     emu = Emulator.new();
@@ -51,16 +56,15 @@ async function initEmulator() {
     } catch(err) {
       console.log(err);
     } finally {
-      //emu.dump_registers();
+      emu.dump_registers();
       emu = null;
     }
   };
 }
 
-initEmulator();
-
 const inputWorker = new Worker('input.js', {type: 'module'});
 inputWorker.onmessage = e => {
-  console.log("come!!!", e);
+  postMessage(e.data);
 };
 
+initEmulator();
