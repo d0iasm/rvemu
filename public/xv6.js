@@ -91,11 +91,11 @@ function initTerminal() {
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
-    console.log("printable key", printable);
+    console.log("get key", e.key);
     if (e.domEvent.code == 'Backspace') {
       inputBuffer = inputBuffer.substring(0, str.length - 1);
     } else if (printable) {
-      inputBuffer += printable;
+      inputBuffer += e.key;
     }
   });
 }
@@ -105,7 +105,6 @@ if (window.Worker) {
   emuWorker.onmessage = e => {
     // Read request from the emulator in Rust.
     if (e.data.readRequest) {
-      console.log('read request!!!!!!!!!!', e);
       const length = inputBuffer.length;
       if (length <= 0) {
         emuWorker.postMessage({
@@ -116,8 +115,9 @@ if (window.Worker) {
         return;
       }
 
-      const c = inputBuffer[length - 1];
-      inputBuffer = inputBuffer.substring(0, length - 1);
+      const c = inputBuffer[0];
+      inputBuffer = inputBuffer.substring(1);
+      console.log('read request!!!!!!!!!!', e, inputBuffer, c);
       emuWorker.postMessage({
         id: 1,
         readRequest: false,

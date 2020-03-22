@@ -5,8 +5,12 @@ export function check_input() {
     readRequest: true,
     content: '',
   });
+
   onmessage = e => {
     console.log('come back!!! in check_input', e);
+    if (e.data.content == 0) {
+      return 0;
+    }
     return e.data.content.charCodeAt(0);
   }
 }

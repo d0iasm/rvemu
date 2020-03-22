@@ -65,14 +65,12 @@ pub fn stdout8(byte: u8) {
     }
 }
 
-#[wasm_bindgen]
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
     uart: [u8; UART_SIZE as usize],
     clock: u64,
 }
 
-#[wasm_bindgen]
 impl Uart {
     /// Create a new UART object.
     pub fn new() -> Self {
@@ -85,10 +83,12 @@ impl Uart {
     /// Return true if the byte buffer in UART is full.
     pub fn is_interrupting(&mut self) -> bool {
         self.clock += 1;
+        // Avoid too many interrupting.
         if self.clock >= 100000 {
             self.clock = 0;
-            self.uart[0] = check_input();
-            log(&format!("uart get input {}", self.uart[0] as char));
+            let b = check_input();
+            self.uart[0] = b;
+            log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
             self.uart[(UART_ISR - UART_BASE) as usize] |= 1;
             return true;
         }
