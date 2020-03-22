@@ -2,10 +2,17 @@
 //! (UART) for WebAssembly. The device is 16550a UART, which is used in the QEMU virt machine. See more information
 //! in http://byterunner.com/16550.html.
 
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::Window;
 
 use crate::bus::{UART_BASE, UART_SIZE};
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
 
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;
@@ -41,22 +48,21 @@ fn get_input(window: &Window) -> u8 {
         .get_element_by_id("buffer")
         .expect("failed to get an element by `buffer` id");
 
+    // TODO: take all children
     match buffer.first_child() {
         Some(span) => {
-            let child = span
-                .first_child()
-                .expect("failed to get a first child in span node");
             buffer
                 .remove_child(&span)
                 .expect("faled to remove a first child");
-            if child.node_name() == "BR" {
-                return 10;
-            }
             let text = span.text_content().expect("failed to get a text content");
-            if text.as_bytes().len() > 0 {
-                return text.as_bytes()[0];
-            }
-            0
+            let byte: u8 = text.parse().expect("failed to parse a text to byte");
+            log(&format!(
+                "text {} {} {}",
+                text,
+                byte as char,
+                byte.to_ascii_lowercase()
+            ));
+            byte.to_ascii_lowercase()
         }
         None => 0,
     }

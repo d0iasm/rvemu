@@ -80,20 +80,9 @@ function initTerminal() {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
     console.log(printable, e.key, e.data, e);
 
-    if (e.domEvent.code == 'Backspace') {
-      if (buffer.childElementCount <= 0) {
-          return;
-      }
-      buffer.removeChild(buffer.lastElementChild);
-    } else if (e.domEvent.code == 'Enter') {
-      const span = document.createElement('span');
-      span.innerText = "\n";
-      buffer.appendChild(span);
-    } else if (printable) {
-      const span = document.createElement('span');
-      span.innerText = e.key;
-      buffer.appendChild(span);
-    }
+    const span = document.createElement('span');
+    span.innerText = e.domEvent.keyCode;
+    buffer.appendChild(span);
   });
 }
 
