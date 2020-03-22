@@ -48,23 +48,13 @@ async function initEmulator() {
   kernelReader.onloadend = e => {
     console.log("Starting to execute xv6 ...");
     
-    //emu = Emulator.new();
-
     const kernelData = new Uint8Array(kernelReader.result);
-    //emu.set_dram(kernelData);
-    //emu.set_disk(fsImgData);
-    emulator_start(kernelData, fsImgData);
 
-    /*
     try {
-      emu.start();
+      emulator_start(kernelData, fsImgData);
     } catch(err) {
       console.log(err);
-    } finally {
-      //emu.dump_registers();
-      emu = null;
     }
-    */
   };
 }
 
@@ -104,7 +94,6 @@ function initTerminal() {
       span.innerText = e.key;
       buffer.appendChild(span);
     }
-    console.log("get key", e.key, inputBuffer);
   });
 }
 

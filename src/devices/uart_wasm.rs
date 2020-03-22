@@ -2,8 +2,8 @@
 //! (UART) for WebAssembly. The device is 16550a UART, which is used in the QEMU virt machine. See more information
 //! in http://byterunner.com/16550.html.
 
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
+use web_sys::Window;
 
 use crate::bus::{UART_BASE, UART_SIZE};
 
@@ -35,8 +35,7 @@ pub const UART_LCR: u64 = UART_BASE + 3;
 ///     1 = transmit holding register is empty. In FIFO mode this bit is set to one whenever the the transmitter FIFO and transmit shift register are empty.
 pub const UART_LSR: u64 = UART_BASE + 5;
 
-fn get_input() -> u8 {
-    let window = web_sys::window().expect("failed to get a global window object");
+fn get_input(window: &Window) -> u8 {
     let document = window.document().expect("failed to get a document object");
     let buffer = document
         .get_element_by_id("buffer")
@@ -80,7 +79,7 @@ impl Uart {
         Self {
             uart,
             clock: 0,
-            window: web_sys::window().expect("no global `window` exists"),
+            window: web_sys::window().expect("failed to get a global window object"),
         }
     }
 
@@ -90,7 +89,7 @@ impl Uart {
         // Avoid too many interrupting.
         if self.clock > 500000 {
             self.clock = 0;
-            let b = get_input();
+            let b = get_input(&self.window);
             if b == 0 {
                 return false;
             }
