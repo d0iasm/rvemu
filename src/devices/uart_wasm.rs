@@ -7,12 +7,6 @@ use wasm_bindgen::JsValue;
 
 use crate::bus::{UART_BASE, UART_SIZE};
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;
 
@@ -42,28 +36,31 @@ pub const UART_LCR: u64 = UART_BASE + 3;
 pub const UART_LSR: u64 = UART_BASE + 5;
 
 fn get_input() -> u8 {
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
+    let window = web_sys::window().expect("failed to get a global window object");
+    let document = window.document().expect("failed to get a document object");
     let buffer = document
         .get_element_by_id("buffer")
-        .expect("should have a element with a `buffer` id");
+        .expect("failed to get an element by `buffer` id");
 
-    if buffer.child_element_count() <= 0 {
-        return 0;
+    match buffer.first_child() {
+        Some(span) => {
+            let child = span
+                .first_child()
+                .expect("failed to get a first child in span node");
+            buffer
+                .remove_child(&span)
+                .expect("faled to remove a first child");
+            if child.node_name() == "BR" {
+                return 10;
+            }
+            let text = span.text_content().expect("failed to get a text content");
+            if text.as_bytes().len() > 0 {
+                return text.as_bytes()[0];
+            }
+            0
+        }
+        None => 0,
     }
-    let span = buffer
-        .first_child()
-        .expect("failed to get a first child node");
-    let text = span.text_content().expect("failed to get a text content");
-
-    buffer
-        .remove_child(&span)
-        .expect("faled to remove a first child");
-
-    if text.as_bytes().len() > 0 {
-        return text.as_bytes()[0];
-    }
-    0
 }
 
 /// The UART, the size of which is 0x100 (2**8).
@@ -91,7 +88,7 @@ impl Uart {
     pub fn is_interrupting(&mut self) -> bool {
         self.clock += 1;
         // Avoid too many interrupting.
-        if self.clock >= 1000000 {
+        if self.clock > 500000 {
             self.clock = 0;
             let b = get_input();
             if b == 0 {
@@ -99,10 +96,6 @@ impl Uart {
             }
             self.uart[0] = b;
             self.uart[(UART_LSR - UART_BASE) as usize] |= 1;
-            log(&format!(
-                "uart get input {} {} {}",
-                self.uart[0] as char, b as char, b
-            ));
             return true;
         }
         false
@@ -123,7 +116,6 @@ impl Uart {
     pub fn write(&mut self, index: u64, value: u8) {
         match index {
             UART_THR => {
-                log(&format!("write {:#x} {} {}", index, value, value as char));
                 self.window
                     .post_message(&JsValue::from(value), "*")
                     .expect("failed to post message");

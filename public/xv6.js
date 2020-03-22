@@ -88,12 +88,17 @@ function initTerminal() {
   let cursor = 0;
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
+    console.log(printable, e.key, e.data, e);
 
     if (e.domEvent.code == 'Backspace') {
       if (buffer.childElementCount <= 0) {
           return;
       }
       buffer.removeChild(buffer.lastElementChild);
+    } else if (e.domEvent.code == 'Enter') {
+      const span = document.createElement('span');
+      span.innerText = "\n";
+      buffer.appendChild(span);
     } else if (printable) {
       const span = document.createElement('span');
       span.innerText = e.key;
