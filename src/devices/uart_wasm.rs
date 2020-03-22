@@ -3,8 +3,7 @@
 //! in http://byterunner.com/16550.html.
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::MessageEvent;
+use wasm_bindgen::JsValue;
 
 use crate::bus::{UART_BASE, UART_SIZE};
 
@@ -41,25 +40,6 @@ pub const UART_LCR: u64 = UART_BASE + 3;
 ///     0 = transmitter holding and shift registers are full.
 ///     1 = transmit holding register is empty. In FIFO mode this bit is set to one whenever the the transmitter FIFO and transmit shift register are empty.
 pub const UART_LSR: u64 = UART_BASE + 5;
-
-/// Output a message to the emulator console.
-pub fn stdout8(byte: u8) {
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
-    let buffer = document
-        .get_element_by_id("buffer8")
-        .expect("should have a element with a `buffer8` id");
-
-    let message = format!("{}", byte as char);
-    let span = document
-        .create_element("span")
-        .expect("span element should be created successfully");
-    span.set_inner_html(&message);
-    let result = buffer.append_child(&span);
-    if result.is_err() {
-        panic!("can't append a span node to a buffer node")
-    }
-}
 
 fn get_input() -> u8 {
     let window = web_sys::window().expect("no global `window` exists");
@@ -100,30 +80,10 @@ impl Uart {
         uart[(UART_ISR - UART_BASE) as usize] |= 1;
         uart[(UART_LSR - UART_BASE) as usize] |= 1 << 5;
 
-        let window = web_sys::window().expect("no global `window` exists");
-        /*
-        let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
-            // handle message
-            log(&format!("uart get !!!!!!!!! {:?}", e.data()));
-            /*
-            let response = e
-                .data()
-                .as_string()
-                .expect("Can't convert received data to a string");
-                */
-            let byte: u8 = e.data().into();
-            uart[(UART_LSR - UART_BASE) as usize] |= 1;
-        }) as Box<dyn FnMut(MessageEvent)>);
-        // set message event handler on WebSocket
-        window.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
-        // forget the callback to keep it alive
-        onmessage_callback.forget();
-        */
-
         Self {
             uart,
             clock: 0,
-            window,
+            window: web_sys::window().expect("no global `window` exists"),
         }
     }
 
@@ -131,13 +91,14 @@ impl Uart {
     pub fn is_interrupting(&mut self) -> bool {
         self.clock += 1;
         // Avoid too many interrupting.
-        if self.clock >= 100000 {
+        if self.clock >= 1000000 {
             self.clock = 0;
             let b = get_input();
             if b == 0 {
                 return false;
             }
             self.uart[0] = b;
+            self.uart[(UART_LSR - UART_BASE) as usize] |= 1;
             log(&format!(
                 "uart get input {} {} {}",
                 self.uart[0] as char, b as char, b
@@ -162,11 +123,10 @@ impl Uart {
     pub fn write(&mut self, index: u64, value: u8) {
         match index {
             UART_THR => {
+                log(&format!("write {:#x} {} {}", index, value, value as char));
                 self.window
                     .post_message(&JsValue::from(value), "*")
                     .expect("failed to post message");
-                //write_to_buffer(value);
-                //stdout8(value);
             }
             _ => {
                 self.uart[(index - UART_BASE) as usize] = value;

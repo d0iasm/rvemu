@@ -104,12 +104,11 @@ function initTerminal() {
 }
 
 onmessage = e => {
-  if (e.data == "\n") {
+  const c = String.fromCharCode(e.data);
+  if (c == "\n") {
     term.writeln("");
-  } else if (e.data == "\t") {
-    // do nothing.
   } else {
-    term.write(String.fromCharCode(e.data));
+    term.write(c);
   }
 }
 

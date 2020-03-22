@@ -74,18 +74,6 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
     emu.set_disk(fsimg);
     emu.set_pc(DRAM_BASE);
 
-    let mut count = 0;
-    let key_event = Closure::wrap(Box::new(move || {
-        log(&format!("count: {}", count));
-        count += 1;
-    }) as Box<dyn FnMut()>);
-    let document = window()
-        .document()
-        .expect("should have a document on window");
-    //document.set_onkeypress(Some(key_event.as_ref().unchecked_ref()));
-    document.set_onclick(Some(key_event.as_ref().unchecked_ref()));
-    key_event.forget();
-
     let mut generator = move || {
         let mut count = 0;
         loop {
@@ -113,7 +101,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
                 None => {}
             }
 
-            if count > 500000 {
+            if count > 1000000 {
                 log(&format!("count in generator: {}", count));
                 count = 0;
                 yield;
