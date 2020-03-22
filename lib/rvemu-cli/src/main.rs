@@ -66,7 +66,7 @@ fn main() -> io::Result<()> {
     emu.set_pc(DRAM_BASE);
 
     if matches.occurrences_of("debug") == 1 {
-        emu.enable_debug();
+        emu.is_debug = true;
     }
 
     emu.start();

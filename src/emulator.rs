@@ -7,7 +7,7 @@ pub struct Emulator {
     /// The CPU which is the core implementation of this emulator.
     pub cpu: Cpu,
     /// The debug flag. Output messages if it's true, otherwise output nothing.
-    is_debug: bool,
+    pub is_debug: bool,
     pub is_test: bool,
 }
 
@@ -24,11 +24,6 @@ impl Emulator {
     /// Reset CPU state.
     pub fn reset(&mut self) {
         self.cpu.reset()
-    }
-
-    /// Enable the debug flag.
-    pub fn enable_debug(&mut self) {
-        self.is_debug = true;
     }
 
     /// Set binary data to the beginning of the DRAM from the emulator console.
@@ -62,10 +57,6 @@ impl Emulator {
 
             count += 1;
             if self.is_test && count > 100000 {
-                return;
-            }
-
-            if count > 500000000 {
                 return;
             }
 

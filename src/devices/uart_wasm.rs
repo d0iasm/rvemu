@@ -3,6 +3,7 @@
 //! in http://byterunner.com/16550.html.
 
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsValue;
 
 use crate::bus::{UART_BASE, UART_SIZE};
 
@@ -71,6 +72,7 @@ pub fn stdout8(byte: u8) {
 pub struct Uart {
     uart: [u8; UART_SIZE as usize],
     clock: u64,
+    window: web_sys::Window,
 }
 
 impl Uart {
@@ -79,7 +81,11 @@ impl Uart {
         let mut uart = [0; UART_SIZE as usize];
         uart[(UART_ISR - UART_BASE) as usize] |= 1;
         uart[(UART_LSR - UART_BASE) as usize] |= 1 << 5;
-        Self { uart, clock: 0 }
+        Self {
+            uart,
+            clock: 0,
+            window: web_sys::window().expect("no global `window` exists"),
+        }
     }
 
     /// Return true if the byte buffer in UART is full.
@@ -92,14 +98,17 @@ impl Uart {
             let b = get_input();
             self.uart[0] = b;
             self.uart[(UART_ISR - UART_BASE) as usize] |= 1;
-            log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
+            log(&format!(
+                "uart get input {} {} {}",
+                self.uart[0] as char, b as char, b
+            ));
             //let mut uart = self.uart;
             //check_input_callback(&mut |b| {
-                /*
-                uart[0] = b;
-                uart[(UART_ISR - UART_BASE) as usize] |= 1;
-                log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
-                */
+            /*
+            uart[0] = b;
+            uart[(UART_ISR - UART_BASE) as usize] |= 1;
+            log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
+            */
             //});
             return true;
         }
@@ -121,7 +130,10 @@ impl Uart {
     pub fn write(&mut self, index: u64, value: u8) {
         match index {
             UART_THR => {
-                write_to_buffer(value);
+                self.window
+                    .post_message(&JsValue::from(value), "*")
+                    .expect("failed to post message");
+                //write_to_buffer(value);
                 //stdout8(value);
             }
             _ => {
