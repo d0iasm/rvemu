@@ -8,7 +8,9 @@ use crate::bus::{UART_BASE, UART_SIZE};
 
 #[wasm_bindgen(module = "/public/input.js")]
 extern "C" {
-    fn check_input() -> u8;
+    //fn check_input_callback(callback: &mut FnMut(u8));
+    fn check_input();
+    fn get_input() -> u8;
     fn write_to_buffer(byte: u8);
 }
 
@@ -86,10 +88,19 @@ impl Uart {
         // Avoid too many interrupting.
         if self.clock >= 100000 {
             self.clock = 0;
-            let b = check_input();
+            check_input();
+            let b = get_input();
             self.uart[0] = b;
-            log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
             self.uart[(UART_ISR - UART_BASE) as usize] |= 1;
+            log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
+            //let mut uart = self.uart;
+            //check_input_callback(&mut |b| {
+                /*
+                uart[0] = b;
+                uart[(UART_ISR - UART_BASE) as usize] |= 1;
+                log(&format!("uart get input {} {} {}", self.uart[0] as char, b as char, b));
+                */
+            //});
             return true;
         }
         false

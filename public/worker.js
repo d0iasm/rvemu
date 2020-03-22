@@ -56,7 +56,7 @@ async function initEmulator() {
     } catch(err) {
       console.log(err);
     } finally {
-      emu.dump_registers();
+      //emu.dump_registers();
       emu = null;
     }
   };

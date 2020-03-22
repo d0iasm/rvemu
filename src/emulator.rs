@@ -65,7 +65,7 @@ impl Emulator {
                 return;
             }
 
-            if count > 1000000000 {
+            if count > 500000000 {
                 return;
             }
 
