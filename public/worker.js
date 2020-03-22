@@ -64,7 +64,11 @@ async function initEmulator() {
 
 const inputWorker = new Worker('input.js', {type: 'module'});
 inputWorker.onmessage = e => {
-  postMessage(e.data);
+  if (e.data.id == 3) {
+    postMessage(e.data);
+  } else if (e.data.id == 1) {
+    inputWorker.postMessage(e.data);
+  }
 };
 
 initEmulator();

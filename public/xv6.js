@@ -12,6 +12,8 @@ const term  = new Terminal({cursorBlink: true});
 const fitAddon = new FitAddon.FitAddon();
 const deleteLine = "\x1b[2K\r";
 
+let inputBuffer = "";
+
 // Callback function to execute when mutations are observed.
 const callback = function(mutationsList, observer) {
   for(let mutation of mutationsList) {
@@ -85,26 +87,54 @@ function initTerminal() {
   observer8.observe(buffer8, config);
   observer.observe(buffer, config);
 
-  let input = "";
   let cursor = 0;
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
-    console.log(e);
+    console.log("printable key", printable);
+    if (e.domEvent.code == 'Backspace') {
+      inputBuffer = inputBuffer.substring(0, str.length - 1);
+    } else if (printable) {
+      inputBuffer += printable;
+    }
   });
 }
-
-initTerminal();
 
 if (window.Worker) {
   const emuWorker = new Worker('worker.js', {type: 'module'});
   emuWorker.onmessage = e => {
-    console.log("come in xv6.js", e);
-    const c = e.data;
-    if (c != "\n") {
-      term.write(c);
+    // Read request from the emulator in Rust.
+    if (e.data.readRequest) {
+      console.log('read request!!!!!!!!!!', e);
+      const length = inputBuffer.length;
+      if (length <= 0) {
+        emuWorker.postMessage({
+          id: 1,
+          readRequest: false,
+          content: 0,
+        });
+        return;
+      }
+
+      const c = inputBuffer[length - 1];
+      inputBuffer = inputBuffer.substring(0, length - 1);
+      emuWorker.postMessage({
+        id: 1,
+        readRequest: false,
+        content: c,
+      });
+      return;
+    }
+
+    // Write a byte from the emulator in Rust.
+    if (e.data.content != "\n") {
+      term.write(e.data.content);
     } else {
       term.writeln("");
     }
   }
+} else {
+  console.error('This browser does not support worker threads yet.');
 }
+
+initTerminal();

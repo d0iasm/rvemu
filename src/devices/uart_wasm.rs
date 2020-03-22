@@ -87,7 +87,9 @@ impl Uart {
         self.clock += 1;
         if self.clock >= 100000 {
             self.clock = 0;
-            let _ = check_input();
+            self.uart[0] = check_input();
+            log(&format!("uart get input {}", self.uart[0] as char));
+            self.uart[(UART_ISR - UART_BASE) as usize] |= 1;
             return true;
         }
         false
@@ -95,11 +97,9 @@ impl Uart {
 
     /// Read a byte from the receive holding register.
     pub fn read(&mut self, index: u64) -> u8 {
-        //log(&format!("uart read {:#x}", index));
         match index {
             UART_RHR => {
                 self.uart[(UART_LSR - UART_BASE) as usize] &= !1;
-                let _ = check_input();
                 self.uart[(index - UART_BASE) as usize]
             }
             _ => self.uart[(index - UART_BASE) as usize],
@@ -108,7 +108,6 @@ impl Uart {
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: u64, value: u8) {
-        //log(&format!("uart write {:#x} {}", index, value));
         match index {
             UART_THR => {
                 write_to_buffer(value);

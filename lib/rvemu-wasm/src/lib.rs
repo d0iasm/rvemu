@@ -5,6 +5,13 @@ use rvemu_core::emulator;
 
 use wasm_bindgen::prelude::*;
 
+/*
+#[wasm_bindgen(module = "/public/input.js")]
+extern "C" {
+fn write_to_buffer(byte: u8);
+}
+*/
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -38,7 +45,10 @@ pub fn stdout(message: &str) {
 /// Output a message to both the browser console and the emulator console.
 pub fn stdout_log(message: &str) {
     log(message);
-    stdout(message);
+    //stdout(message);
+    //for c in message.chars() {
+     //   write_to_buffer(c as u8);
+    //}
 }
 
 #[wasm_bindgen]
