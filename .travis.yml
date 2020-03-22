@@ -1,7 +1,5 @@
 language: rust
 rust:
-  - stable
-  - beta
   - nightly
 before-install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -9,4 +7,4 @@ install:
   - wasm-pack build lib/rvemu-wasm --target web
   - cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml
 script:
-  - make test 
+  - make test
