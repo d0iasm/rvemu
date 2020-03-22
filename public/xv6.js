@@ -5,12 +5,12 @@ const term  = new Terminal({cursorBlink: true});
 
 const kernelReader = new FileReader();
 const fsImgReader = new FileReader();
-let emu = null;
 
 const fitAddon = new FitAddon.FitAddon();
 const deleteLine = "\x1b[2K\r";
 
 let inputBuffer = "";
+const buffer = document.getElementById("buffer");
 
 function loadDisk() {
   return new Promise((resolve, reject) => {
@@ -90,19 +90,26 @@ function initTerminal() {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
     if (e.domEvent.code == 'Backspace') {
-      inputBuffer = inputBuffer.substring(0, inputBuffer.length - 1);
+      if (buffer.childElementCount <= 0) {
+          return;
+      }
+      buffer.removeChild(buffer.lastElementChild);
     } else if (printable) {
-      inputBuffer += e.key;
+      const span = document.createElement('span');
+      span.innerText = e.key;
+      buffer.appendChild(span);
     }
     console.log("get key", e.key, inputBuffer);
   });
 }
 
 onmessage = e => {
-  if (e.data != "\n") {
-    term.write(String.fromCharCode(e.data));
-  } else {
+  if (e.data == "\n") {
     term.writeln("");
+  } else if (e.data == "\t") {
+    // do nothing.
+  } else {
+    term.write(String.fromCharCode(e.data));
   }
 }
 

@@ -23,9 +23,9 @@ fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
 
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+fn set_timeout_with_callback(f: &Closure<dyn FnMut()>, timeout: i32) {
     window()
-        .request_animation_frame(f.as_ref().unchecked_ref())
+        .set_timeout_with_callback_and_timeout_and_arguments_0(f.as_ref().unchecked_ref(), timeout)
         .expect("should register `requestAnimationFrame` OK");
 }
 
@@ -113,23 +113,23 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
                 None => {}
             }
 
-            if count > 100000 {
-                //log(&format!("count in generator: {}", count));
+            if count > 500000 {
+                log(&format!("count in generator: {}", count));
                 count = 0;
                 yield;
             }
         }
     };
 
-    let animation_handler = Rc::new(RefCell::new(None));
-    let cloned_animation_handler = animation_handler.clone();
+    let handler = Rc::new(RefCell::new(None));
+    let cloned_handler = handler.clone();
 
-    *cloned_animation_handler.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+    *cloned_handler.borrow_mut() = Some(Closure::wrap(Box::new(move || {
         Pin::new(&mut generator).resume();
-        request_animation_frame(animation_handler.borrow().as_ref().unwrap());
+        set_timeout_with_callback(handler.borrow().as_ref().unwrap(), 0);
     }) as Box<dyn FnMut()>));
 
-    request_animation_frame(cloned_animation_handler.borrow().as_ref().unwrap());
+    set_timeout_with_callback(cloned_handler.borrow().as_ref().unwrap(), 0);
 }
 
 /*
