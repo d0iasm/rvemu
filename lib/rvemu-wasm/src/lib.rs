@@ -3,11 +3,12 @@
 mod utils;
 
 use std::cell::RefCell;
-use std::ops::Generator;
+use std::ops::{Generator, GeneratorState};
 use std::pin::Pin;
 use std::rc::Rc;
 
 use rvemu_core::bus::DRAM_BASE;
+use rvemu_core::cpu::Cpu;
 use rvemu_core::emulator;
 
 use wasm_bindgen::prelude::*;
@@ -28,16 +29,56 @@ fn window() -> web_sys::Window {
 fn set_timeout_with_callback(f: &Closure<dyn FnMut()>, timeout: i32) {
     window()
         .set_timeout_with_callback_and_timeout_and_arguments_0(f.as_ref().unchecked_ref(), timeout)
-        .expect("should register `requestAnimationFrame` OK");
+        .expect("failed to regsiter setTimeout");
+}
+
+/// Add a new element to the output buffer in JS.
+fn output(message: &str) {
+    let document = window().document().expect("failed to get a document");
+    let buffer = document
+        .get_element_by_id("outputBuffer")
+        .expect("failed to get the `outputBuffer` element");
+
+    let span = document
+        .create_element("span")
+        .expect("failed to create a new span element");
+    span.set_inner_html(message);
+    let result = buffer.append_child(&span);
+    if result.is_err() {
+        panic!("can't append a span node to a buffer node")
+    }
+}
+
+/// Output current registers to UART.
+fn dump_registers(cpu: &mut Cpu) {
+    output(&format!("-------------------------------------------------------------------------------------------"));
+    output(&format!("{}", cpu.xregs));
+    output(&format!("-------------------------------------------------------------------------------------------"));
+    output(&format!("{}", cpu.fregs));
+    output(&format!("-------------------------------------------------------------------------------------------"));
+    output(&format!("{}", cpu.state));
+    output(&format!("-------------------------------------------------------------------------------------------"));
+    output(&format!("pc: {:#x}", cpu.pc));
+
+    log(&format!("-------------------------------------------------------------------------------------------"));
+    log(&format!("{}", cpu.xregs));
+    log(&format!("-------------------------------------------------------------------------------------------"));
+    log(&format!("{}", cpu.fregs));
+    log(&format!("-------------------------------------------------------------------------------------------"));
+    log(&format!("{}", cpu.state));
+    log(&format!("-------------------------------------------------------------------------------------------"));
+    log(&format!("pc: {:#x}", cpu.pc));
 }
 
 #[wasm_bindgen]
-pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
+pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
     utils::set_panic_hook();
 
     let mut emu = emulator::Emulator::new();
     emu.set_dram(kernel);
-    emu.set_disk(fsimg);
+    if let Some(fsimg) = fsimg {
+        emu.set_disk(fsimg);
+    }
     emu.set_pc(DRAM_BASE);
 
     let mut generator = move || {
@@ -53,7 +94,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
 
             // 3. Decode.
             // 4. Execution.
-            let _result = match data_or_error {
+            let result = match data_or_error {
                 Ok(data) => match emu.cpu.execute(data) {
                     Ok(_) => Ok(()),
                     Err(exception) => exception.take_trap(&mut emu.cpu),
@@ -71,6 +112,11 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
                 count = 0;
                 yield;
             }
+
+            if result.is_err() {
+                // End of the program.
+                return emu;
+            }
         }
     };
 
@@ -78,10 +124,17 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Vec<u8>) {
     let cloned_handler = handler.clone();
 
     // Set a timer to execute the emulator again.
-    *cloned_handler.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-        Pin::new(&mut generator).resume(());
-        set_timeout_with_callback(handler.borrow().as_ref().unwrap(), 0);
-    }) as Box<dyn FnMut()>));
+    *cloned_handler.borrow_mut() =
+        Some(Closure::wrap(
+            Box::new(move || match Pin::new(&mut generator).resume(()) {
+                GeneratorState::Complete(mut emu) => {
+                    dump_registers(&mut emu.cpu);
+                }
+                _ => {
+                    set_timeout_with_callback(handler.borrow().as_ref().unwrap(), 0);
+                }
+            }) as Box<dyn FnMut()>,
+        ));
 
     set_timeout_with_callback(cloned_handler.borrow().as_ref().unwrap(), 0);
 }

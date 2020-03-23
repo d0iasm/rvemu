@@ -45,8 +45,8 @@ pub const UART_LSR: u64 = UART_BASE + 5;
 fn get_input(window: &Window) -> u8 {
     let document = window.document().expect("failed to get a document object");
     let buffer = document
-        .get_element_by_id("buffer")
-        .expect("failed to get an element by `buffer` id");
+        .get_element_by_id("inputBuffer")
+        .expect("failed to get an element by `inputBuffer` id");
 
     // TODO: take all children
     match buffer.first_child() {

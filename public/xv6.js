@@ -9,8 +9,29 @@ const fsImgReader = new FileReader();
 const fitAddon = new FitAddon.FitAddon();
 const deleteLine = "\x1b[2K\r";
 
-let inputBuffer = "";
-const buffer = document.getElementById("buffer");
+// Input buffer detects user input while executing the emulator.
+const inputBuffer = document.getElementById("inputBuffer");
+// Output buffer detects the result of cpu state after the emulation is done.
+const outputBuffer = document.getElementById("outputBuffer");
+// Options for the observer (which mutations to observe)
+const config = { childList: true, subtree: true };
+
+// Create an observer instance linked to the callback function which detect
+// mutations.
+const outputObserver = new MutationObserver((mutationsList, observer) => {
+  for(let mutation of mutationsList) {
+    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+      term.write(deleteLine);
+      const firstChild = mutation.addedNodes[0];
+      const texts = firstChild.innerText.split("\n");
+      for (let i=0; i<texts.length; i++) {
+        term.writeln(texts[i]);
+      }
+      outputBuffer.removeChild(firstChild);
+      term.writeln("");
+    }
+  }
+});
 
 function loadDisk() {
   return new Promise((resolve, reject) => {
@@ -75,6 +96,8 @@ function initTerminal() {
   term.writeln("");
   term.writeln("Loading operating system ...");
 
+  outputObserver.observe(outputBuffer, config);
+
   let cursor = 0;
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
@@ -87,7 +110,7 @@ function initTerminal() {
       // Normal printable characters.
       span.innerText = e.key.charCodeAt(0);
     }
-    buffer.appendChild(span);
+    inputBuffer.appendChild(span);
   });
 }
 

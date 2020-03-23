@@ -1,13 +1,4 @@
-import init, { Emulator } from "./pkg/rvemu_wasm.js";
-
-const fileIn = document.getElementById("file");
-// The `buffer`, that will be observed for mutations, stores the output from Rust.
-const buffer = document.getElementById("buffer");
-// The `buffer8`, that will be observed for mutations, stores the 1 byte from
-// Rust.
-const buffer8 = document.getElementById("buffer8");
-// Options for the observer (which mutations to observe)
-const config = { childList: true, subtree: true };
+import init, { emulator_start } from "./pkg/rvemu_wasm.js";
 
 const termContainer = document.getElementById("terminal");
 const term  = new Terminal({cursorBlink: true});
@@ -16,16 +7,25 @@ const fitAddon = new FitAddon.FitAddon();
 const newLine = "\r\n% ";
 const deleteLine = "\x1b[2K\r";
 
-let emu = null;
-
-const fileReader = new FileReader();
 let files = [];
+const fileReader = new FileReader();
 // This is the image file `fs.img` for xv6.
 const fsImgReader = new FileReader();
-let fsImg = null;
+let fsImgData = null;
+let executing = false;
 
-// Callback function to execute when mutations are observed.
-const callback = function(mutationsList, observer) {
+// Files user uploaded.
+const fileIn = document.getElementById("file");
+// Input buffer detects user input while executing the emulator.
+const inputBuffer = document.getElementById("inputBuffer");
+// Output buffer detects the result of cpu state after the emulation is done.
+const outputBuffer = document.getElementById("outputBuffer");
+// Options for the observer (which mutations to observe)
+const config = { childList: true, subtree: true };
+
+// Create an observer instance linked to the callback function which detect
+// mutations.
+const outputObserver = new MutationObserver((mutationsList, observer) => {
   for(let mutation of mutationsList) {
     if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
       term.write(deleteLine);
@@ -34,46 +34,11 @@ const callback = function(mutationsList, observer) {
       for (let i=0; i<texts.length; i++) {
         term.writeln(texts[i]);
       }
-      buffer.removeChild(firstChild);
+      outputBuffer.removeChild(firstChild);
       term.write("% ");
     }
   }
-};
-
-let buffer_count = 0;
-
-// Callback function to execute when mutations are observed.
-const callback8 = function(mutationsList, observer) {
-  for(let mutation of mutationsList) {
-    if (buffer_count == 0 && mutation.addedNodes.length > 0) {
-      term.write(deleteLine);
-    }
-
-    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-      buffer_count++;
-      const firstChild = mutation.addedNodes[0];
-      let c = firstChild.innerText;
-      buffer8.removeChild(firstChild);
-      if (c != "\n") {
-        term.write(c);
-      } else {
-        term.writeln("");
-      }
-    }
-
-    if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
-      buffer_count--;
-    }
-
-    if (buffer_count == 0 && mutation.removedNodes.length > 0) {
-      term.write("% ");
-    }
-  }
-};
-
-// Create an observer instance linked to the callback function.
-const observer = new MutationObserver(callback);
-const observer8 = new MutationObserver(callback8);
+});
 
 async function initialize() {
   // Load the wasm file.
@@ -84,36 +49,33 @@ async function initialize() {
   fitAddon.fit();
 
   // Start observing the target node for configured mutations
-  observer8.observe(buffer8, config);
-  observer.observe(buffer, config);
+  outputObserver.observe(outputBuffer, config);
 
   fileReader.onloadend = e => {
-    emu = Emulator.new();
     const data = new Uint8Array(fileReader.result);
-    emu.set_dram(data);
 
-    // Set up fs.img for xv6.
-    if (e.target.fileName == "xv6") {
-      emu.set_disk(fsImg);
-      console.log("xv6 is executing...");
-    }
-
+    executing = true;
+    console.log(executing);
     try {
-      emu.start();
+      // Set up fs.img for xv6.
+      if (e.target.fileName == "xv6") {
+        emulator_start(data, fsImgData);
+        console.log("xv6 is executing...");
+      } else {
+        emulator_start(data, null);
+      }
     } catch(err) {
       term.write(deleteLine);
       term.write(err.message);
       prompt();
       console.log(err);
-    } finally {
-      emu.dump_registers();
-      emu = null;
     }
+    executing = false;
   };
 
   fsImgReader.onloadend = e => {
-    fsImg = new Uint8Array(fsImgReader.result);
-    console.log("set fs.img for xv6", fsImg);
+    fsImgData = new Uint8Array(fsImgReader.result);
+    console.log("set fs.img for xv6", fsImgData);
   };
 
   fileIn.onchange = e => {
@@ -246,6 +208,20 @@ function runTerminal() {
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
+    console.log(executing);
+    if (executing) {
+      const span = document.createElement('span');
+      if (e.key == "") {
+        // Control characters (enter, backspace, etc.).
+        span.innerText = e.domEvent.keyCode;
+      } else {
+        // Normal printable characters.
+        span.innerText = e.key.charCodeAt(0);
+      }
+      inputBuffer.appendChild(span);
+      return;
+    }
+
     if (e.domEvent.code == 'Enter') {
       command(input);
       input = "";
@@ -278,6 +254,15 @@ function runTerminal() {
       term.write(e.key);
     }
   });
+}
+
+onmessage = e => {
+  const c = String.fromCharCode(e.data);
+  if (c == "\n") {
+    term.writeln("");
+  } else {
+    term.write(c);
+  }
 }
 
 initialize();

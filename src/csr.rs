@@ -119,7 +119,7 @@ impl fmt::Display for State {
             format!(
                 "{}\n{}\n{}",
                 format!(
-                    "mstatus={:>#18x} mtvec={:>#18x} mepc={:>#18x} mcause={:>#18x} mtval={:>#18x}",
+                    "mstatus={:>#18x} mtvec={:>#18x} mepc={:>#18x}\n mcause={:>#18x} mtval={:>#18x}",
                     self.read(MSTATUS),
                     self.read(MTVEC),
                     self.read(MEPC),
@@ -127,7 +127,7 @@ impl fmt::Display for State {
                     self.read(MTVAL),
                 ),
                 format!(
-                    "sstatus={:>#18x} stvec={:>#18x} sepc={:>#18x} scause={:>#18x} stval={:>#18x}",
+                    "sstatus={:>#18x} stvec={:>#18x} sepc={:>#18x}\n scause={:>#18x} stval={:>#18x}",
                     self.read(SSTATUS),
                     self.read(STVEC),
                     self.read(SEPC),
@@ -135,7 +135,7 @@ impl fmt::Display for State {
                     self.read(STVAL),
                 ),
                 format!(
-                    "ustatus={:>#18x} utvec={:>#18x} uepc={:>#18x} ucause={:>#18x} utval={:>#18x}",
+                    "ustatus={:>#18x} utvec={:>#18x} uepc={:>#18x}\n ucause={:>#18x} utval={:>#18x}",
                     self.read(USTATUS),
                     self.read(UTVEC),
                     self.read(UEPC),
