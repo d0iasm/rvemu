@@ -66,6 +66,7 @@ fn get_input(window: &Window) -> u8 {
 pub struct Uart {
     uart: [u8; UART_SIZE as usize],
     clock: u64,
+    not_null: bool,
     window: web_sys::Window,
 }
 
@@ -79,6 +80,7 @@ impl Uart {
         Self {
             uart,
             clock: 0,
+            not_null: false,
             window: web_sys::window().expect("failed to get a global window object"),
         }
     }
@@ -86,15 +88,18 @@ impl Uart {
     /// Return true if the byte buffer in UART is full.
     pub fn is_interrupting(&mut self) -> bool {
         self.clock += 1;
-        // Avoid too many interrupting.
-        if self.clock > 500000 {
+        // Avoid too many interrupting, bus read a byte again if a byte is found in the previous step.
+        if self.clock > 500000 || self.not_null {
             self.clock = 0;
             let b = get_input(&self.window);
             if b == 0 {
+                self.not_null = false;
                 return false;
             }
             self.uart[0] = b;
             self.uart[(UART_LSR - UART_BASE) as usize] |= 1;
+            // Found a byte in this step, so it might find a byte again in the next step.
+            self.not_null = true;
             return true;
         }
         false
