@@ -37,21 +37,19 @@ Supports the following features:
 
 These features are compliant with "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213" and "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified".
 
-# Usage
-The online emulator supports the following commands:
+## Usage
+You can run [`xv6`](https://github.com/mit-pdos/xv6-riscv), a simple Unix-like operating system, in [**rvemu.app/xv6**](https://rvemu.app/xv6.html).
+
+![Demo](https://raw.githubusercontent.com/d0iasm/rvemu/master/demo.gif)
+
+You also be able to run an arbitrary RISC-V binary in [**rvemu.app**](https://rvemu.app/). The online emulator supports the following commands:
 - __upload__: Upload local RISC-V binaries for the execution on the emulator.
 - __ls__: List the files you uploaded.
 - __run [file]__: Execute a file which you uploaded or some files are already
   embedded.
 - __help__: Print all commands you can use.
 
-It can run [`xv6`](https://github.com/mit-pdos/xv6-riscv), a simple Unix-like operating system, by [**rvemu.app/xv6**](https://rvemu.app/xv6.html) or the
-`run xv6` command. A normal xv6 ELF file can't be used in the emulator because of [this
-issue](https://github.com/mit-pdos/xv6-riscv/pull/9), so you need to use the
-embedded xv6 binary or
-[examples/xv6-kernel.text](https://github.com/d0iasm/rvemu/blob/master/examples/xv6-kernel.text).
-
-![Demo](https://raw.githubusercontent.com/d0iasm/rvemu/master/demo.gif)
+See [the "Build RISC-V binary" section](https://github.com/d0iasm/rvemu#build-risc-v-binary) for more information.
 
 ## Build and run on the local browser
 The `wasm-pack build` command generates a pkg directory and makes Rust source code into `.wasm` binary. It also generates the JavaScript API for using our Rust-generated WebAssembly. The toolchain's supported target is `wasm32-unknown-unknown`.
@@ -99,12 +97,12 @@ OPTIONS:
 ```
 
 ## Build RISC-V binary
-This emulator starts to execute at the address 0x8000_0000, the start address of DRAM, so you need to extract .text section to execute your binary file on the emulator.
+The emulator starts to execute at the address 0x8000_0000, the start address of DRAM, so you need to extract `.text` section and place it to the address.
 ```
 // Make an assembly file from a C file.
 $ riscv64-unknown-elf-gcc -S -nostdlib hoge.c
 // Make a binary file from an assembly file with start position 0.
-$ riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o hoge hoge.s
+$l riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o hoge hoge.s
 // Extract a text section from a binary file.
 $ riscv64-unknown-elf-objcopy -O binary hoge hoge.text
 ```
