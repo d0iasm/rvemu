@@ -7,7 +7,8 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [nightly]
       fail-fast: true
 
     runs-on: ${{ matrix.os }}
@@ -15,6 +16,12 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
+
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
 
     - name: Install dependencies
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
