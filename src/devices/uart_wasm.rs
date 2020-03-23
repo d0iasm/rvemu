@@ -56,13 +56,7 @@ fn get_input(window: &Window) -> u8 {
                 .expect("faled to remove a first child");
             let text = span.text_content().expect("failed to get a text content");
             let byte: u8 = text.parse().expect("failed to parse a text to byte");
-            log(&format!(
-                "text {} {} {}",
-                text,
-                byte as char,
-                byte.to_ascii_lowercase()
-            ));
-            byte.to_ascii_lowercase()
+            byte
         }
         None => 0,
     }

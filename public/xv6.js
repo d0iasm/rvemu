@@ -69,7 +69,7 @@ function initTerminal() {
 
   term._initialized = true;
 
-  term.writeln("Welcome to RISC-V emulator rvemu!");
+  term.writeln("Welcome to rvemu (RISC-V online emulator)!");
   term.writeln("This is a work-in-progress project. You can see the progress at https://github.com/d0iasm/rvemu");
   term.writeln("Bug reports and feature requests are always welcome: https://github.com/d0iasm/rvemu/issues");
   term.writeln("");
@@ -78,10 +78,15 @@ function initTerminal() {
   let cursor = 0;
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
-    console.log(printable, e.key, e.data, e);
 
     const span = document.createElement('span');
-    span.innerText = e.domEvent.keyCode;
+    if (e.key == "") {
+      // Control characters (enter, backspace, etc.).
+      span.innerText = e.domEvent.keyCode;
+    } else {
+      // Normal printable characters.
+      span.innerText = e.key.charCodeAt(0);
+    }
     buffer.appendChild(span);
   });
 }
