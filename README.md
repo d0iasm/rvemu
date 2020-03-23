@@ -12,7 +12,7 @@ The online emulator is available here:
 - [**rvemu.app/xv6**](https://rvemu.app/xv6.html): Run
   [`xv6`](https://github.com/mit-pdos/xv6-riscv).
 
-Supports the following features:
+The emulator supports the following features:
 - [x] RV64G ISAs
   - [x] RV64I (v2.1): supports 52/52 instructions (FENCE, ECALL and EBREAK do nothing for now)
   - [x] RV64M (v2.0): supports 13/13 instructions
@@ -33,7 +33,7 @@ Supports the following features:
   - [x] UART: universal asynchronous receiver-transmitter
   - [x] CLINT: core local interruptor
   - [x] PLIC: platform level interrupt controller
-  - [x] Virtio
+  - [x] Virtio: virtual I/O
 
 These features are compliant with "The RISC-V Instruction Set ManualVolume I: Unprivileged ISADocument Version 20191213" and "The RISC-V Instruction Set ManualVolume II: Privileged ArchitectureDocument Version 20190608-Priv-MSU-Ratified".
 

@@ -71,7 +71,7 @@ async function initEmulator() {
 
   kernelReader.onloadend = e => {
     console.log("Starting to execute xv6 ...");
-    
+
     const kernelData = new Uint8Array(kernelReader.result);
 
     try {
