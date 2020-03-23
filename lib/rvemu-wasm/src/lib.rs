@@ -32,6 +32,24 @@ fn set_timeout_with_callback(f: &Closure<dyn FnMut()>, timeout: i32) {
         .expect("failed to regsiter setTimeout");
 }
 
+/// Set an active text to the flag element, which represents the emulator is executing.
+fn set_executing() {
+    let document = window().document().expect("failed to get a document");
+    let flag = document
+        .get_element_by_id("flag")
+        .expect("failed to get the `flag` element");
+    flag.set_text_content(Some("active"));
+}
+
+/// Set a inactive text to the flag element, which represents the emulator is finished.
+fn clear_executing() {
+    let document = window().document().expect("failed to get a document");
+    let flag = document
+        .get_element_by_id("flag")
+        .expect("failed to get the `flag` element");
+    flag.set_text_content(Some("inactive"));
+}
+
 /// Add a new element to the output buffer in JS.
 fn output(message: &str) {
     let document = window().document().expect("failed to get a document");
@@ -81,6 +99,8 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
     }
     emu.set_pc(DRAM_BASE);
 
+    set_executing();
+
     let mut generator = move || {
         let mut count: u64 = 0;
         loop {
@@ -128,6 +148,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
         Some(Closure::wrap(
             Box::new(move || match Pin::new(&mut generator).resume(()) {
                 GeneratorState::Complete(mut emu) => {
+                    clear_executing();
                     dump_registers(&mut emu.cpu);
                 }
                 _ => {

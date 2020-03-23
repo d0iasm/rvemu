@@ -12,7 +12,6 @@ const fileReader = new FileReader();
 // This is the image file `fs.img` for xv6.
 const fsImgReader = new FileReader();
 let fsImgData = null;
-let executing = false;
 
 // Files user uploaded.
 const fileIn = document.getElementById("file");
@@ -22,6 +21,8 @@ const inputBuffer = document.getElementById("inputBuffer");
 const outputBuffer = document.getElementById("outputBuffer");
 // Options for the observer (which mutations to observe)
 const config = { childList: true, subtree: true };
+
+const flag = document.getElementById("flag");
 
 // Create an observer instance linked to the callback function which detect
 // mutations.
@@ -40,13 +41,9 @@ const outputObserver = new MutationObserver((mutationsList, observer) => {
   }
 });
 
-async function initialize() {
+async function initEmulator() {
   // Load the wasm file.
   await init();
-
-  term.loadAddon(fitAddon);
-  term.open(termContainer);
-  fitAddon.fit();
 
   // Start observing the target node for configured mutations
   outputObserver.observe(outputBuffer, config);
@@ -54,8 +51,6 @@ async function initialize() {
   fileReader.onloadend = e => {
     const data = new Uint8Array(fileReader.result);
 
-    executing = true;
-    console.log(executing);
     try {
       // Set up fs.img for xv6.
       if (e.target.fileName == "xv6") {
@@ -65,12 +60,12 @@ async function initialize() {
         emulator_start(data, null);
       }
     } catch(err) {
+      console.log("catch");
       term.write(deleteLine);
       term.write(err.message);
       prompt();
       console.log(err);
     }
-    executing = false;
   };
 
   fsImgReader.onloadend = e => {
@@ -91,8 +86,13 @@ async function initialize() {
     term.write("uploaded:\t" + names);
     prompt();
   };
+}
 
-  runTerminal();
+function check_executing() {
+  if (flag.textContent == 'active') {
+    return true;
+  }
+  return false;
 }
 
 function prompt() {
@@ -182,11 +182,14 @@ function loadApps() {
     });
 }
 
-function runTerminal() {
+function initTerminal() {
+  term.loadAddon(fitAddon);
+  term.open(termContainer);
+  fitAddon.fit();
+
   if (term._initialized) {
       return;
   }
-
   term._initialized = true;
 
   term.prompt = () => {
@@ -208,8 +211,7 @@ function runTerminal() {
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
-    console.log(executing);
-    if (executing) {
+    if (check_executing()) {
       const span = document.createElement('span');
       if (e.key == "") {
         // Control characters (enter, backspace, etc.).
@@ -265,4 +267,5 @@ onmessage = e => {
   }
 }
 
-initialize();
+initTerminal();
+initEmulator();

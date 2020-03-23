@@ -57,6 +57,9 @@ async function initEmulator() {
 
   const fsImgData = await loadDisk();
 
+  // Start observing the target node for configured mutations
+  outputObserver.observe(outputBuffer, config);
+
   // Fetch kernel image.
   fetch("./apps/xv6.text")
     .then(response => response.blob())
@@ -87,7 +90,6 @@ function initTerminal() {
   if (term._initialized) {
       return;
   }
-
   term._initialized = true;
 
   term.writeln("Welcome to rvemu (RISC-V online emulator)!");
@@ -96,9 +98,6 @@ function initTerminal() {
   term.writeln("");
   term.writeln("Loading operating system ...");
 
-  outputObserver.observe(outputBuffer, config);
-
-  let cursor = 0;
   term.onKey(e => {
     const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey;
 
