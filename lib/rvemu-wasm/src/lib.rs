@@ -10,6 +10,7 @@ use std::rc::Rc;
 use rvemu_core::bus::DRAM_BASE;
 use rvemu_core::cpu::Cpu;
 use rvemu_core::emulator;
+use rvemu_core::exception::Trap;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -114,9 +115,9 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
 
             // 3. Decode.
             // 4. Execution.
-            let result = match data_or_error {
+            let trap = match data_or_error {
                 Ok(data) => match emu.cpu.execute(data) {
-                    Ok(_) => Ok(()),
+                    Ok(_) => Trap::Requested, // dummy
                     Err(exception) => exception.take_trap(&mut emu.cpu),
                 },
                 Err(exception) => exception.take_trap(&mut emu.cpu),
@@ -133,9 +134,12 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
                 yield;
             }
 
-            if result.is_err() {
-                // End of the program.
-                return emu;
+            match trap {
+                Trap::Requested => {}
+                _ => {
+                    // End of the program.
+                    return emu;
+                }
             }
         }
     };
