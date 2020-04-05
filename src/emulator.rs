@@ -1,6 +1,7 @@
 //! The emulator module represents an entire computer.
 
 use crate::cpu::Cpu;
+use crate::exception::Trap;
 
 /// The emulator to hold a CPU.
 pub struct Emulator {
@@ -66,9 +67,9 @@ impl Emulator {
 
             // 3. Decode.
             // 4. Execution.
-            let result = match data_or_error {
+            let trap = match data_or_error {
                 Ok(data) => match self.cpu.execute(data) {
-                    Ok(_) => Ok(()),
+                    Ok(_) => Trap::Requested, // dummy
                     Err(exception) => exception.take_trap(&mut self.cpu),
                 },
                 Err(exception) => exception.take_trap(&mut self.cpu),
@@ -80,11 +81,14 @@ impl Emulator {
                 None => {}
             }
 
-            if result.is_err() {
-                if self.is_debug {
-                    dbg!(format!("pc: {:#x}, result {:#?}", self.cpu.pc, result));
+            match trap {
+                Trap::Requested => {}
+                _ => {
+                    if self.is_debug {
+                        dbg!(format!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap));
+                    }
+                    return;
                 }
-                return;
             }
         }
     }

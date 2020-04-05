@@ -10,7 +10,7 @@ use crate::{
 pub enum Exception {
     InstructionAddressMisaligned,
     InstructionAccessFault,
-    IllegalInstruction(String),
+    IllegalInstruction,
     Breakpoint,
     LoadAddressMisaligned,
     LoadAccessFault,
@@ -24,12 +24,29 @@ pub enum Exception {
     StoreAMOPageFault,
 }
 
+/// All the trap kinds.
+#[derive(Debug)]
+pub enum Trap {
+    /// The trap is visible to, and handled by, software running inside the execution
+    /// environment.
+    Contained,
+    /// The trap is a synchronous exception that is an explicit call to the execution
+    /// environment requesting an action on behalf of software inside the execution environment.
+    Requested,
+    /// The trap is handled transparently by the execution environment and execution
+    /// resumes normally after the trap is handled.
+    Invisible,
+    /// The trap represents a fatal failure and causes the execution environment to terminate
+    /// execution.
+    Fatal,
+}
+
 impl Exception {
     fn exception_code(&self) -> u64 {
         match self {
             Exception::InstructionAddressMisaligned => 0,
             Exception::InstructionAccessFault => 1,
-            Exception::IllegalInstruction(_s) => 2,
+            Exception::IllegalInstruction => 2,
             Exception::Breakpoint => 3,
             Exception::LoadAddressMisaligned => 4,
             Exception::LoadAccessFault => 5,
@@ -43,8 +60,9 @@ impl Exception {
             Exception::StoreAMOPageFault => 15,
         }
     }
+
     /// Update CSRs and the program counter depending on an exception.
-    pub fn take_trap(&self, cpu: &mut Cpu) -> Result<(), Exception> {
+    pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
         let exception_pc = cpu.pc - 4;
         let prev_mode = cpu.mode;
 
@@ -156,21 +174,21 @@ impl Exception {
         }
 
         match self {
-            Exception::InstructionAddressMisaligned => Err(Exception::InstructionAddressMisaligned),
-            Exception::InstructionAccessFault => Err(Exception::InstructionAccessFault),
-            Exception::IllegalInstruction(s) => Err(Exception::IllegalInstruction(s.to_string())),
-            Exception::Breakpoint => Err(Exception::Breakpoint),
-            Exception::LoadAddressMisaligned => Err(Exception::LoadAddressMisaligned),
-            Exception::LoadAccessFault => Err(Exception::LoadAccessFault),
-            Exception::StoreAMOAddressMisaligned => Err(Exception::StoreAMOAddressMisaligned),
-            Exception::StoreAMOAccessFault => Err(Exception::StoreAMOAccessFault),
-            Exception::EnvironmentCallFromUMode => Ok(()),
-            Exception::EnvironmentCallFromSMode => Ok(()),
-            Exception::EnvironmentCallFromMMode => Ok(()),
-            //Exception::InstructionPageFault => Ok(()),
-            Exception::InstructionPageFault => Err(Exception::InstructionPageFault),
-            Exception::LoadPageFault => Err(Exception::LoadPageFault),
-            Exception::StoreAMOPageFault => Err(Exception::StoreAMOPageFault),
+            Exception::InstructionAddressMisaligned | Exception::InstructionAccessFault => {
+                Trap::Fatal
+            }
+            Exception::IllegalInstruction => Trap::Invisible,
+            Exception::Breakpoint => Trap::Requested,
+            Exception::LoadAddressMisaligned
+            | Exception::LoadAccessFault
+            | Exception::StoreAMOAddressMisaligned
+            | Exception::StoreAMOAccessFault => Trap::Fatal,
+            Exception::EnvironmentCallFromUMode
+            | Exception::EnvironmentCallFromSMode
+            | Exception::EnvironmentCallFromMMode => Trap::Requested,
+            Exception::InstructionPageFault
+            | Exception::LoadPageFault
+            | Exception::StoreAMOPageFault => Trap::Invisible,
         }
     }
 }

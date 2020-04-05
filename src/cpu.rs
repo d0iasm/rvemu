@@ -42,33 +42,21 @@ impl Mode {
                 if self == &Mode::Machine || self == &Mode::Supervisor || self == &Mode::User {
                     return Ok(());
                 }
-                Err(Exception::IllegalInstruction(String::from(format!(
-                    "this should be called in {:#?} mode but called in {:#?} mode",
-                    require, self
-                ))))
+                Err(Exception::IllegalInstruction)
             }
             Mode::Supervisor => {
                 if self == &Mode::Machine || self == &Mode::Supervisor {
                     return Ok(());
                 }
-                Err(Exception::IllegalInstruction(String::from(format!(
-                    "this should be called in {:#?} mode but called in {:#?} mode",
-                    require, self
-                ))))
+                Err(Exception::IllegalInstruction)
             }
             Mode::Machine => {
                 if self == &Mode::Machine {
                     return Ok(());
                 }
-                Err(Exception::IllegalInstruction(String::from(format!(
-                    "this should be called in {:#?} mode but called in {:#?} mode",
-                    require, self
-                ))))
+                Err(Exception::IllegalInstruction)
             }
-            _ => Err(Exception::IllegalInstruction(String::from(format!(
-                "this should be called in {:#?} mode but called in {:#?} mode",
-                require, self
-            )))),
+            _ => Err(Exception::IllegalInstruction),
         }
     }
 }
@@ -1202,9 +1190,7 @@ impl Cpu {
                     0b100 => {}
                     0b111 => {}
                     _ => {
-                        return Err(Exception::IllegalInstruction(String::from(
-                            "frm is set to an invalid value (101–110)",
-                        )));
+                        return Err(Exception::IllegalInstruction);
                     }
                 }
 
@@ -1773,9 +1759,7 @@ impl Cpu {
                 }
             }
             _ => {
-                return Err(Exception::IllegalInstruction(String::from(
-                    "instruction not found",
-                )));
+                return Err(Exception::IllegalInstruction);
             }
         }
         Ok(())
