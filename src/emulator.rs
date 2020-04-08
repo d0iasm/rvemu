@@ -83,6 +83,13 @@ impl Emulator {
 
             match trap {
                 Trap::Requested => {}
+                Trap::Invisible => {
+                    // TODO: improve this error message.
+                    println!("");
+                    println!("ERROR: You might be using C extensions. Make sure to build riscv toolchain with rv64g. For more information, see https://github.com/d0iasm/rvemu#build-risc-v-binary");
+                    println!("");
+                    return;
+                }
                 _ => {
                     if self.is_debug {
                         dbg!(format!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap));
