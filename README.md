@@ -16,7 +16,7 @@ The online emulator is available here:
 
 The emulator supports the following features:
 - [x] RV64G ISAs
-  - [x] RV64I (v2.1): supports 52/52 instructions (`fence` do nothing for now)
+  - [x] RV64I (v2.1): supports 52/52 instructions (`fence` does nothing for now)
   - [x] RV64M (v2.0): supports 13/13 instructions
   - [x] RV64A (v2.1): supports 22/22 instructions (No atomicity for now)
   - [x] RV64F (v2.2): supports 30/30 instructions
@@ -82,8 +82,11 @@ $ npm start // at the public directory
 ```
 
 ## Build and run as a CLI tool
-The emulator can be executed as a CLI tool too. You can build it by
-`make rvemu-cli` command which is the alias of `cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml`.
+The emulator can be executed as a CLI tool too.
+```
+// This is the alias of `cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml`.
+$ make rvemu-cli
+```
 
 In order to execute a RISC-V binary, `xv6` in the folloing example, you can
 use the `--kernel` or `-k` option to specify the kernel image. Note that
@@ -113,7 +116,7 @@ OPTIONS:
 ```
 
 ## Build RISC-V binary
-The emulator doesn't support "C" extensions yet, so make sure your RISC-V
+The emulator doesn't support C extensions yet, so make sure your RISC-V
 toolchain only uses `RV64G`.
 ```
 // In the riscv-gnu-toolchain directory.
