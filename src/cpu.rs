@@ -1688,7 +1688,7 @@ impl Cpu {
                             (0x5, 0x8) => {} // wfi
                             (_, 0x9) => {}   // sfence.vma
                             (_, 0x11) => {}  // hfence.bvma
-                            (_, 0x51) => {}  // hfence.bvma
+                            (_, 0x51) => {}  // hfence.gvma
                             _ => {}
                         }
                     }
