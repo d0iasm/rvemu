@@ -19,3 +19,4 @@ test-isa:
 
 clean:
 	cargo clean
+	rm -rf public/pkg
