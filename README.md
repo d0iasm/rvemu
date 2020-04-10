@@ -57,12 +57,6 @@ commands:
 
 See [the "Build RISC-V binary" section](https://github.com/d0iasm/rvemu#build-risc-v-binary) for more information.
 
-## Dependencies
-- [Nightly Rust](https://doc.rust-lang.org/1.2.0/book/nightly-rust.html)
-- [Python3](https://www.python.org/downloads/)
-- [Node and npm](https://github.com/nvm-sh/nvm)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-
 ## Build and run on the local browser
 The `wasm-pack build` command generates a `pkg` directory and makes Rust source
 code into `.wasm` binary. It also generates the JavaScript API for using our
@@ -166,6 +160,8 @@ $ firebase deploy
 ```
 
 ## Dependencies
+- [Nightly Rust](https://doc.rust-lang.org/1.2.0/book/nightly-rust.html)
+- [Python3](https://www.python.org/downloads/)
 - wasm-pack
 - npm
   - [xterm](https://xtermjs.org/)
