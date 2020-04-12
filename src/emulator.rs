@@ -46,14 +46,11 @@ impl Emulator {
     pub fn start(&mut self) {
         let mut count = 0;
         loop {
-            // 1. Fetch.
-            //let data_or_error = self.cpu.fetch();
-
-            if self.is_test && count > 100000 {
-                return;
-            }
             // This is for unit tests to finish the execution.
             count += 1;
+            if self.is_test && count < 10000 {
+                return;
+            }
 
             if self.is_debug {
                 let inst32 = self.cpu.fetch32().unwrap();

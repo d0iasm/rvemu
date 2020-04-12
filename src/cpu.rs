@@ -441,7 +441,10 @@ impl Cpu {
         let inst16 = self.read16(self.pc)?;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
-                dbg!("try to execute C extensions...");
+                if inst16 == 0 {
+                    // Unimplemented instruction, since all bits are 0.
+                    return Err(Exception::IllegalInstruction);
+                }
                 self.tick_c()?
             }
             _ => self.tick_g()?,
@@ -461,8 +464,8 @@ impl Cpu {
         // 2. Decode.
         let opcode = inst & 0x2;
         let funct3 = (inst & 0xe000) >> 13;
-        let funct4 = (inst & 0xf000) >> 12;
-        let funct6 = (inst & 0xfc00) >> 10;
+        //let funct4 = (inst & 0xf000) >> 12;
+        //let funct6 = (inst & 0xfc00) >> 10;
 
         // 3. Execute.
         match opcode {
@@ -477,6 +480,16 @@ impl Cpu {
             }
             1 => {
                 // C1
+                let rs1_rd = inst & 0xf80;
+                //let nzimm = inst & 0x1;
+
+                match funct3 {
+                    0x0 => {
+                        // c.addi
+                        //self.xregs.write(rs1_rd, (rs1_rd as i64 + nzimm) as u64);
+                    }
+                    _ => {}
+                }
             }
             2 => {
                 // C2
@@ -509,11 +522,11 @@ impl Cpu {
         match opcode {
             0x03 => {
                 // I-type
-                let offset = match inst & 0x80000000 {
-                    // Extend the most significant bit.
-                    0x80000000 => 0xffffffff_fffff800, // offset[:11] = inst[31]
-                    _ => 0,
-                } | ((inst >> 20) & 0x000007ff); // offset[10:0] = inst[30:20]
+                // imm[11:0] = inst[31:20]
+                let offset = match (inst & 0x80000000) == 0 {
+                    true => 0,
+                    false => 0xffffffff_fffff800,
+                } | ((inst >> 20) & 0x000007ff);
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x0 => {
@@ -556,7 +569,11 @@ impl Cpu {
             }
             0x07 => {
                 // I-type (RV32F and RV64F)
-                let offset = (((inst & 0xfff00000) as i64) >> 20) as u64;
+                // imm[11:0] = inst[31:20]
+                let offset = match (inst & 0x80000000) == 0 {
+                    true => 0,
+                    false => 0xffffffff_fffff800,
+                } | ((inst >> 20) & 0x000007ff);
                 let addr = (self.xregs.read(rs1).wrapping_add(offset)) & 0xffffffff;
                 match funct3 {
                     0x2 => {
@@ -585,8 +602,11 @@ impl Cpu {
             }
             0x13 => {
                 // I-type
-                //let imm = ((((inst & 0xfff00000) as i32) as i64) >> 20) as u64;
-                let imm = ((inst & 0xfff00000) as i32 as i64 >> 20) as u64;
+                // imm[11:0] = inst[31:20]
+                let imm = match (inst & 0x80000000) == 0 {
+                    true => 0,
+                    false => 0xffffffff_fffff800,
+                } | ((inst >> 20) & 0x000007ff);
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
                 // let shamt = (inst & 0x01F00000) >> 20; // This is for RV32I
                 let shamt = ((inst & 0x03f00000) >> 20) as u32;
@@ -682,17 +702,13 @@ impl Cpu {
             }
             0x23 => {
                 // S-type
-                let offset = match inst & 0x80000000 {
-                        // Extend the most significant bit.
-                        // offset[:12] = inst[31]
-                        0x80000000 => 0xffffffff_fffff800,
-                        _ => 0
-                    } |
-                    // offset[10:5] = inst[30:25],
-                    ((inst & 0xfe000000) >> 20) |
-                    // offset[4:0]= inst[11:7]
-                    ((inst & 0x00000f80) >> 7);
-                let addr = self.xregs.read(rs1).wrapping_add(offset);
+                // imm[11:5|4:0] = inst[31:25|inst[11:7]]
+                let imm = match (inst & 0x80000000) == 0 {
+                    true => 0,
+                    false => 0xffffffff_fffff800,
+                } | ((inst & 0xfe000000) >> 20)
+                    | ((inst & 0x00000f80) >> 7);
+                let addr = self.xregs.read(rs1).wrapping_add(imm);
                 match funct3 {
                     0x0 => self.write8(addr, self.xregs.read(rs2))?, // sb
                     0x1 => self.write16(addr, self.xregs.read(rs2))?, // sh
@@ -703,9 +719,11 @@ impl Cpu {
             }
             0x27 => {
                 // S-type (RV32F and RV64F)
-                let imm11_5 = (((inst & 0xfe000000) as i32) as i64) >> 25;
-                let imm4_0 = (inst & 0x00000f80) >> 7;
-                let offset = ((imm11_5 << 5) as u64) | imm4_0;
+                let offset = match (inst & 0x80000000) == 0 {
+                    true => 0,
+                    false => 0xffffffff_ffff800,
+                } | ((inst & 0xfe000000) >> 20)
+                    | ((inst & 0x00000f80) >> 7);
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x2 => self
@@ -1608,8 +1626,8 @@ impl Cpu {
                 // jalr
                 let t = self.pc;
 
-                let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
-                let target = ((self.xregs.read(rs1) as i64).wrapping_add(imm)) & !1;
+                let offset = (((inst & 0xfff00000) as i32) as i64) >> 20;
+                let target = ((self.xregs.read(rs1) as i64).wrapping_add(offset)) & !1;
 
                 self.pc = target as u64;
                 self.xregs.write(rd, t);
