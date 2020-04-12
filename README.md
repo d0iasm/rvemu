@@ -160,6 +160,8 @@ $ firebase deploy
 ```
 
 ## Dependencies
+- [Nightly Rust](https://doc.rust-lang.org/1.2.0/book/nightly-rust.html)
+- [Python3](https://www.python.org/downloads/)
 - wasm-pack
 - npm
   - [xterm](https://xtermjs.org/)
