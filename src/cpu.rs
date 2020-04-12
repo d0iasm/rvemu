@@ -438,7 +438,7 @@ impl Cpu {
     /// nothing.
     pub fn tick(&mut self) -> Result<(), Exception> {
         // Fetch.
-        let inst16 = self.read16(self.pc)?;
+        let inst16 = self.fetch16()?;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
                 if inst16 == 0 {
@@ -462,8 +462,8 @@ impl Cpu {
         self.pc += 2;
 
         // 2. Decode.
-        let opcode = inst & 0x2;
-        let funct3 = (inst & 0xe000) >> 13;
+        let opcode = inst & 0b11;
+        let funct3 = (inst >> 13) & 0b111;
         //let funct4 = (inst & 0xf000) >> 12;
         //let funct6 = (inst & 0xfc00) >> 10;
 
@@ -471,6 +471,7 @@ impl Cpu {
         match opcode {
             0 => {
                 // C0
+                dbg!("C0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
@@ -480,19 +481,25 @@ impl Cpu {
             }
             1 => {
                 // C1
-                let rs1_rd = inst & 0xf80;
-                //let nzimm = inst & 0x1;
-
+                dbg!("C1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
+                let rs1_rd = (inst >> 7) & 0x1f;
+                // imm[5|4:0] = inst[12|]
+                let nzimm = match (inst & 0x1000) == 0 {
+                    true => 0,
+                    false => 0xffffffc0,
+                } | (inst >> 2) & 0x1f;
                 match funct3 {
                     0x0 => {
                         // c.addi
-                        //self.xregs.write(rs1_rd, (rs1_rd as i64 + nzimm) as u64);
+                        dbg!("C1: c.addi !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions....., rs1_rd {}", rs1_rd);
+                        self.xregs.write(rs1_rd, self.xregs.read(rs1_rd) + nzimm);
                     }
                     _ => {}
                 }
             }
             2 => {
                 // C2
+                dbg!("C2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
             }
             _ => {
                 return Err(Exception::IllegalInstruction);
