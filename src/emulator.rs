@@ -47,33 +47,22 @@ impl Emulator {
         let mut count = 0;
         loop {
             // 1. Fetch.
-            let data_or_error = self.cpu.fetch();
+            //let data_or_error = self.cpu.fetch();
 
-            if self.is_debug {
-                dbg!(format!(
-                    "pc: {:#x} , data: {:#?}",
-                    self.cpu.pc, &data_or_error
-                ));
-            }
-
-            count += 1;
             if self.is_test && count > 100000 {
                 return;
             }
+            // This is for unit tests to finish the execution.
+            count += 1;
 
-            // 2. Add 4 to the program counter.
-            self.cpu.pc += 4;
-            self.cpu.timer_increment();
-
-            // 3. Decode.
-            // 4. Execution.
-            let trap = match data_or_error {
-                Ok(data) => match self.cpu.execute(data) {
-                    Ok(_) => Trap::Requested, // dummy
-                    Err(exception) => exception.take_trap(&mut self.cpu),
-                },
-                Err(exception) => exception.take_trap(&mut self.cpu),
-            };
+            if self.is_debug {
+                let inst32 = self.cpu.fetch32().unwrap();
+                let inst16 = self.cpu.fetch16().unwrap();
+                dbg!(format!(
+                    "pc: {:#x} , inst32: {:#x}, inst16: {:#x}",
+                    self.cpu.pc, inst32, inst16,
+                ));
+            }
 
             // Take an interrupt.
             match self.cpu.check_interrupt() {
@@ -81,15 +70,17 @@ impl Emulator {
                 None => {}
             }
 
+            // Increment a CPU timer for a timer interrupt.
+            self.cpu.timer_increment();
+
+            // Increment a CPU clock. In one cycle, CPU does fetch, decode, and execute.
+            let trap = match self.cpu.tick() {
+                Ok(_) => Trap::Requested, // dummy
+                Err(exception) => exception.take_trap(&mut self.cpu),
+            };
+
             match trap {
                 Trap::Requested => {}
-                Trap::Invisible => {
-                    // TODO: improve this error message.
-                    println!("");
-                    println!("ERROR: You might be using C extensions. Make sure to build riscv toolchain with rv64g. For more information, see https://github.com/d0iasm/rvemu#build-risc-v-binary");
-                    println!("");
-                    return;
-                }
                 _ => {
                     if self.is_debug {
                         dbg!(format!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap));

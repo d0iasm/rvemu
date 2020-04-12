@@ -425,13 +425,79 @@ impl Cpu {
     }
 
     /// Fetch the next instruction from the memory at the current program counter.
-    pub fn fetch(&mut self) -> Result<u64, Exception> {
+    pub fn fetch32(&mut self) -> Result<u64, Exception> {
         self.read32(self.pc)
     }
 
+    /// Fetch the next instruction from the memory at the current program counter.
+    pub fn fetch16(&mut self) -> Result<u64, Exception> {
+        self.read16(self.pc)
+    }
+
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
-    /// nothings.
-    pub fn execute(&mut self, inst: u64) -> Result<(), Exception> {
+    /// nothing.
+    pub fn tick(&mut self) -> Result<(), Exception> {
+        // Fetch.
+        let inst16 = self.read16(self.pc)?;
+        match inst16 & 0b11 {
+            0 | 1 | 2 => {
+                dbg!("try to execute C extensions...");
+                self.tick_c()?
+            }
+            _ => self.tick_g()?,
+        }
+        Ok(())
+    }
+
+    /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
+    /// returns nothing. It also increments the program counter by 2 bytes.
+    pub fn tick_c(&mut self) -> Result<(), Exception> {
+        // 1. Fetch.
+        let inst = self.fetch16()?;
+
+        // Add 2 bytes to the program counter.
+        self.pc += 2;
+
+        // 2. Decode.
+        let opcode = inst & 0x2;
+        let funct3 = (inst & 0xe000) >> 13;
+        let funct4 = (inst & 0xf000) >> 12;
+        let funct6 = (inst & 0xfc00) >> 10;
+
+        // 3. Execute.
+        match opcode {
+            0 => {
+                // C0
+                match funct3 {
+                    0x0 => {
+                        // c.addi4spn
+                    }
+                    _ => {}
+                }
+            }
+            1 => {
+                // C1
+            }
+            2 => {
+                // C2
+            }
+            _ => {
+                return Err(Exception::IllegalInstruction);
+            }
+        }
+        Ok(())
+    }
+
+    /// Execute a general-purpose instruction. Raises an exception if something is wrong,
+    /// otherwise, returns nothing. It also increments the program counter by 4 bytes.
+    pub fn tick_g(&mut self) -> Result<(), Exception> {
+        // 1. Fetch.
+        let inst = self.fetch32()?;
+
+        // Add 4 bytes to the program counter.
+        self.pc += 4;
+
+        // 2. Decode.
         let opcode = inst & 0x0000007f;
         let rd = (inst & 0x00000f80) >> 7;
         let rs1 = (inst & 0x000f8000) >> 15;
@@ -439,6 +505,7 @@ impl Cpu {
         let funct3 = (inst & 0x00007000) >> 12;
         let funct7 = (inst & 0xfe000000) >> 25;
 
+        // 3. Execute.
         match opcode {
             0x03 => {
                 // I-type
@@ -1177,6 +1244,7 @@ impl Cpu {
                  * The format consist of three fields: a sign bit, a biased exponent, and a fraction.
                  *
                  * | sign(1) | exponent(8) | fraction(23) |
+                 * Ok => {}
                  * 31                                     0
                  *
                  */

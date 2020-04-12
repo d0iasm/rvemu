@@ -106,22 +106,10 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
         let mut count: u64 = 0;
         loop {
             count += 1;
-            // 1. Fetch.
-            let data_or_error = emu.cpu.fetch();
-
-            // 2. Add 4 to the program counter.
-            emu.cpu.pc += 4;
-            emu.cpu.timer_increment();
-
-            // 3. Decode.
-            // 4. Execution.
-            let trap = match data_or_error {
-                Ok(data) => match emu.cpu.execute(data) {
-                    Ok(_) => Trap::Requested, // dummy
-                    Err(exception) => exception.take_trap(&mut emu.cpu),
-                },
-                Err(exception) => exception.take_trap(&mut emu.cpu),
-            };
+            if count > 500000 {
+                count = 0;
+                yield;
+            }
 
             // Take an interrupt.
             match emu.cpu.check_interrupt() {
@@ -129,10 +117,14 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
                 None => {}
             }
 
-            if count > 500000 {
-                count = 0;
-                yield;
-            }
+            // Increment a CPU timer for a timer interrupt.
+            emu.cpu.timer_increment();
+
+            // Increment a CPU clock. In one cycle, CPU does fetch, decode, and execute.
+            let trap = match emu.cpu.tick() {
+                Ok(_) => Trap::Requested, // dummy
+                Err(exception) => exception.take_trap(&mut emu.cpu),
+            };
 
             match trap {
                 Trap::Requested => {}
