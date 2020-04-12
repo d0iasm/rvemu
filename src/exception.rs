@@ -8,6 +8,8 @@ use crate::{
 /// All the exception kinds.
 #[derive(Debug)]
 pub enum Exception {
+    /// With the addition of the C extension, no instructions can raise
+    /// instruction-address-misaligned exceptions.
     InstructionAddressMisaligned,
     InstructionAccessFault,
     IllegalInstruction,

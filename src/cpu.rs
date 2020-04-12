@@ -1562,9 +1562,6 @@ impl Cpu {
                         // beq
                         if self.xregs.read(rs1) == self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1572,9 +1569,6 @@ impl Cpu {
                         // bne
                         if self.xregs.read(rs1) != self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1582,9 +1576,6 @@ impl Cpu {
                         // blt
                         if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1592,9 +1583,6 @@ impl Cpu {
                         // bge
                         if (self.xregs.read(rs1) as i64) >= (self.xregs.read(rs2) as i64) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1602,9 +1590,6 @@ impl Cpu {
                         // bltu
                         if self.xregs.read(rs1) < self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1612,9 +1597,6 @@ impl Cpu {
                         // bgeu
                         if self.xregs.read(rs1) >= self.xregs.read(rs2) {
                             let target = (self.pc as i64) + offset - 4;
-                            if target % 4 != 0 {
-                                return Err(Exception::InstructionAddressMisaligned);
-                            }
                             self.pc = target as u64;
                         }
                     }
@@ -1628,9 +1610,6 @@ impl Cpu {
 
                 let imm = (((inst & 0xfff00000) as i32) as i64) >> 20;
                 let target = ((self.xregs.read(rs1) as i64).wrapping_add(imm)) & !1;
-                if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned);
-                }
 
                 self.pc = target as u64;
                 self.xregs.write(rd, t);
@@ -1649,11 +1628,7 @@ impl Cpu {
                     // Set bits when imm[20] is set.
                     offset |= 0xffffffff_fff00000;
                 }
-                let target = self.pc.wrapping_add(offset) - 4;
-                if target % 4 != 0 {
-                    return Err(Exception::InstructionAddressMisaligned);
-                }
-                self.pc = target;
+                self.pc = self.pc.wrapping_add(offset) - 4;
             }
             0x73 => {
                 // I-type
