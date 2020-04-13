@@ -489,7 +489,8 @@ impl Cpu {
                         let imm3 = (inst >> 5) & 0b1;
                         let nzuimm =
                             (imm9_6 << 9) as u64 | (imm5_4 << 5) | (imm3 << 3) | (imm2 << 2);
-                        self.xregs.write(rd_rs2, self.xregs.read(2) + nzuimm);
+                        self.xregs
+                            .write(rd_rs2, self.xregs.read(2).wrapping_add(nzuimm));
                     }
                     0x1 => {
                         // c.fld
@@ -497,7 +498,8 @@ impl Cpu {
                         let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
                         let imm5_3 = (inst >> 10) & 0b111;
                         let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
-                        let val = f64::from_bits(self.read64(self.xregs.read(2) + uimm)?);
+                        let val =
+                            f64::from_bits(self.read64(self.xregs.read(2).wrapping_add(uimm))?);
                         self.fregs.write(rd_rs2, val);
                     }
                     0x2 => {
@@ -507,8 +509,29 @@ impl Cpu {
                         let imm5_3 = (inst >> 10) & 0b111;
                         let imm2 = (inst >> 6) & 0b1;
                         let uimm = (imm6 << 6) as u64 | (imm5_3 << 5) | (imm2 << 2);
-                        let val = self.read32(rs1 + uimm)?;
+                        let val = self.read32(self.xregs.read(rs1).wrapping_add(uimm))?;
                         self.xregs.write(rd_rs2, val as i32 as i64 as u64);
+                    }
+                    0x3 => {
+                        // c.ld
+                        // uimm[5:3|7:6] = isnt[12:10|6:5]
+                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
+                        let val = self.read64(self.xregs.read(rs1).wrapping_add(uimm))?;
+                        self.xregs.write(rd_rs2, val);
+                    }
+                    0x4 => {
+                        // Reserved.
+                    }
+                    0x5 => {
+                        // c.fsd
+                        // uimm[5:3|7:6] = isnt[12:10|6:5]
+                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
+                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
+                        self.write64(addr, self.fregs.read(rd_rs2).to_bits() as u64)?;
                     }
                     _ => {}
                 }
