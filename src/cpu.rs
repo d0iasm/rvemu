@@ -472,9 +472,43 @@ impl Cpu {
             0 => {
                 // C0
                 dbg!("C0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
+                let rd_rs2_dash = (inst >> 2) & 0b111;
+                let rs1_dash = (inst >> 7) & 0b111;
+                // Compressed instructions have 3-bit field for popular registers,
+                // which correspond to registers x8 to x15.
+                let rd_rs2 = rd_rs2_dash + 8;
+                let rs1 = rs1_dash + 8;
+
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
+                        // nzuimm[5:4|9:6|2|3] = inst[12:11|10:7|6|5]
+                        let imm9_6 = (((inst & 0x1c0) as i32) as i64) >> 7;
+                        let imm5_4 = (inst >> 11) & 0b11;
+                        let imm2 = (inst >> 6) & 0b1;
+                        let imm3 = (inst >> 5) & 0b1;
+                        let nzuimm =
+                            (imm9_6 << 9) as u64 | (imm5_4 << 5) | (imm3 << 3) | (imm2 << 2);
+                        self.xregs.write(rd_rs2, self.xregs.read(2) + nzuimm);
+                    }
+                    0x1 => {
+                        // c.fld
+                        // uimm[5:3|7:6] = isnt[12:10|6:5]
+                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
+                        let val = f64::from_bits(self.read64(self.xregs.read(2) + uimm)?);
+                        self.fregs.write(rd_rs2, val);
+                    }
+                    0x2 => {
+                        // c.lw
+                        // uimm[5:3|2|6] = isnt[12:10|6|5]
+                        let imm6 = (((inst & 0x10) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let imm2 = (inst >> 6) & 0b1;
+                        let uimm = (imm6 << 6) as u64 | (imm5_3 << 5) | (imm2 << 2);
+                        let val = self.read32(rs1 + uimm)?;
+                        self.xregs.write(rd_rs2, val as i32 as i64 as u64);
                     }
                     _ => {}
                 }
@@ -483,7 +517,7 @@ impl Cpu {
                 // C1
                 dbg!("C1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
                 let rs1_rd = (inst >> 7) & 0x1f;
-                // imm[5|4:0] = inst[12|]
+                // imm[5|4:0] = inst[12|6:2]
                 let nzimm = match (inst & 0x1000) == 0 {
                     true => 0,
                     false => 0xffffffc0,
