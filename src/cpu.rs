@@ -717,6 +717,107 @@ impl Cpu {
             }
             2 => {
                 // C2
+                let rd_rs1 = (inst >> 7) & 0x1f;
+                match funct3 {
+                    0x0 => {
+                        // c.slli
+                        // imm[5|4:0] = inst[12|6:2]
+                        let imm5 = (((inst & 0x1000) as i32) as i64) >> 12;
+                        let imm4_0 = (inst >> 2) & 0b1111;
+                        let nzuimm = (imm5 << 5) as u64 | imm4_0;
+                        self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) << nzuimm);
+                    }
+                    0x1 => {
+                        // c.fldsp
+                        // imm[5|4:3|8:6] = inst[12|6:5|4:2]
+                        let imm8_6 = (((inst & 0x10) as i32) as i64) >> 2;
+                        let imm5 = (inst >> 12) & 0b1;
+                        let imm4_3 = (inst >> 5) & 0b11;
+                        let uimm = (imm8_6 << 6) as u64 | imm5 << 5 | imm4_3 << 3;
+                        let val = f64::from_bits(self.read64(self.xregs.read(rd_rs1) + uimm)?);
+                        self.fregs.write(rd_rs1, val);
+                    }
+                    0x2 => {
+                        // c.lwsp
+                        // imm[5|4:2|7:6] = inst[12|6:4|3:2]
+                        let imm7_6 = (((inst & 0x8) as i32) as i64) >> 2;
+                        let imm5 = (inst >> 12) & 0b1;
+                        let imm4_2 = (inst >> 4) & 0b111;
+                        let uimm = (imm7_6 << 6) as u64 | imm5 << 5 | imm4_2 << 2;
+                        let val = self.read32(self.xregs.read(2).wrapping_add(uimm))?;
+                        self.xregs.write(rd_rs1, val as i32 as i64 as u64);
+                    }
+                    0x3 => {
+                        // c.ldsp
+                        // imm[5|4:3|8:6] = inst[12|6:5|4:2]
+                        let imm8_6 = (((inst & 0x10) as i32) as i64) >> 2;
+                        let imm5 = (inst >> 12) & 0b1;
+                        let imm4_3 = (inst >> 5) & 0b11;
+                        let uimm = (imm8_6 << 6) as u64 | imm5 << 5 | imm4_3 << 3;
+                        let val = self.read64(self.xregs.read(2).wrapping_add(uimm))?;
+                        self.xregs.write(rd_rs1, val);
+                    }
+                    0x4 => {
+                        let rs2 = (inst >> 2) & 0x1f;
+                        match ((inst & 0x1000) == 0, rs2 == 0) {
+                            (true, true) => {
+                                // c.jr
+                                self.pc = self.xregs.read(rd_rs1);
+                            }
+                            (true, false) => {
+                                // c.mv
+                                self.xregs.write(rd_rs1, self.xregs.read(rs2));
+                            }
+                            (false, true) => {
+                                if rd_rs1 == 0 {
+                                    // c.ebreak
+                                    return Err(Exception::Breakpoint);
+                                } else {
+                                    // c.jalr
+                                    let t = self.pc + 2;
+                                    self.pc = self.xregs.read(rd_rs1);
+                                    self.xregs.write(1, t);
+                                }
+                            }
+                            (false, false) => {
+                                // c.add
+                                self.xregs
+                                    .write(rd_rs1, self.xregs.read(rd_rs1) + self.xregs.read(rs2));
+                            }
+                        }
+                    }
+                    0x5 => {
+                        // c.fsdsp
+                        let rs2 = (inst >> 2) & 0x1f;
+                        // uimm[5:3|8:6] = isnt[12:10|9:7]
+                        let imm8_6 = (((inst & 0x380) as i32) as i64) >> 7;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm8_6 << 6) as u64 | imm5_3 << 3;
+                        let addr = self.xregs.read(2) + uimm;
+                        self.write64(addr, self.fregs.read(rs2).to_bits() as u64)?;
+                    }
+                    0x6 => {
+                        // c.swsp
+                        let rs2 = (inst >> 2) & 0x1f;
+                        // uimm[5:2|7:6] = inst[12:9|8:7]
+                        let imm7_6 = (((inst & 0x180) as i32) as i64) >> 7;
+                        let imm5_2 = (inst >> 9) & 0b1111;
+                        let uimm = (imm7_6 << 6) as u64 | imm5_2 << 2;
+                        let addr = self.xregs.read(2).wrapping_add(uimm);
+                        self.write32(addr, self.xregs.read(rs2))?;
+                    }
+                    0x7 => {
+                        // c.sdsp
+                        let rs2 = (inst >> 2) & 0x1f;
+                        // uimm[5:3|8:6] = isnt[12:10|9:7]
+                        let imm8_6 = (((inst & 0x380) as i32) as i64) >> 7;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm8_6 << 6) as u64 | imm5_3 << 3;
+                        let addr = self.xregs.read(2) + uimm;
+                        self.write64(addr, self.xregs.read(rs2))?;
+                    }
+                    _ => {}
+                }
             }
             _ => {
                 return Err(Exception::IllegalInstruction);
