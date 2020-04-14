@@ -471,7 +471,6 @@ impl Cpu {
         match opcode {
             0 => {
                 // C0
-                dbg!("C0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
                 let rd_rs2_dash = (inst >> 2) & 0b111;
                 let rs1_dash = (inst >> 7) & 0b111;
                 // Compressed instructions have 3-bit field for popular registers,
@@ -532,6 +531,23 @@ impl Cpu {
                         let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
                         let addr = self.xregs.read(rs1).wrapping_add(uimm);
                         self.write64(addr, self.fregs.read(rd_rs2).to_bits() as u64)?;
+                    }
+                    0x6 => {
+                        // c.sw
+                        let imm6 = (((inst & 0x10) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let imm2 = (inst >> 6) & 0b1;
+                        let uimm = (imm6 << 6) as u64 | (imm5_3 << 5) | (imm2 << 2);
+                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
+                        self.write32(addr, self.xregs.read(rd_rs2))?;
+                    }
+                    0x7 => {
+                        // c.sd
+                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
+                        let imm5_3 = (inst >> 10) & 0b111;
+                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
+                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
+                        self.write64(addr, self.xregs.read(rd_rs2))?;
                     }
                     _ => {}
                 }
