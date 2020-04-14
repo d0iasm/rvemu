@@ -534,6 +534,7 @@ impl Cpu {
                     }
                     0x6 => {
                         // c.sw
+                        // uimm[5:3|2|6] = isnt[12:10|6|5]
                         let imm6 = (((inst & 0x10) as i32) as i64) >> 5;
                         let imm5_3 = (inst >> 10) & 0b111;
                         let imm2 = (inst >> 6) & 0b1;
@@ -543,6 +544,7 @@ impl Cpu {
                     }
                     0x7 => {
                         // c.sd
+                        // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
                         let imm5_3 = (inst >> 10) & 0b111;
                         let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
@@ -554,25 +556,167 @@ impl Cpu {
             }
             1 => {
                 // C1
-                dbg!("C1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
-                let rs1_rd = (inst >> 7) & 0x1f;
+                let rd_rs1 = (inst >> 7) & 0x1f;
                 // imm[5|4:0] = inst[12|6:2]
-                let nzimm = match (inst & 0x1000) == 0 {
-                    true => 0,
-                    false => 0xffffffc0,
-                } | (inst >> 2) & 0x1f;
+                let imm5 = (((inst & 0x1000) as i32) as i64) >> 12;
+                let imm4_0 = (inst >> 2) & 0b1111;
+                let imm = (imm5 << 5) as u64 | imm4_0;
                 match funct3 {
                     0x0 => {
                         // c.addi
-                        dbg!("C1: c.addi !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions....., rs1_rd {}", rs1_rd);
-                        self.xregs.write(rs1_rd, self.xregs.read(rs1_rd) + nzimm);
+                        self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) + imm);
+                    }
+                    0x1 => {
+                        // c.addiw
+                        self.xregs.write(
+                            rd_rs1,
+                            self.xregs.read(rd_rs1).wrapping_add(imm) as i32 as i64 as u64,
+                        );
+                    }
+                    0x2 => {
+                        // c.li
+                        self.xregs.write(rd_rs1, imm as i32 as i64 as u64);
+                    }
+                    0x3 => {
+                        // TODO: implement them
+                        // c.addi16sp
+                        // c.lui
+                    }
+                    0x4 => {
+                        let rd_rs1_dash = rd_rs1 & 0b111;
+                        let rd = rd_rs1_dash + 8;
+                        match (rd_rs1 >> 3) & 0b11 {
+                            0x0 => {
+                                // c.srli
+                                self.xregs
+                                    .write(rd, self.xregs.read(rd).wrapping_shr(imm as u32));
+                            }
+                            0x1 => {
+                                // c.srai
+                                self.xregs.write(
+                                    rd,
+                                    (self.xregs.read(rd) as i64).wrapping_shr(imm as u32) as u64,
+                                );
+                            }
+                            0x2 => {
+                                // c.andi
+                                self.xregs.write(rd, self.xregs.read(rd) & imm);
+                            }
+                            0x3 => {
+                                let rs2 = (imm4_0 & 0b111) + 8;
+                                match (imm5, (imm4_0 >> 3) & 0b11) {
+                                    (0x0, 0x0) => {
+                                        // c.sub
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) - self.xregs.read(rs2));
+                                    }
+                                    (0x0, 0x1) => {
+                                        // c.xor
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) ^ self.xregs.read(rs2));
+                                    }
+                                    (0x0, 0x2) => {
+                                        // c.or
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) | self.xregs.read(rs2));
+                                    }
+                                    (0x0, 0x3) => {
+                                        // c.and
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) & self.xregs.read(rs2));
+                                    }
+                                    (0x1, 0x0) => {
+                                        // c.subw
+                                        self.xregs.write(
+                                            rd,
+                                            ((self
+                                                .xregs
+                                                .read(rd)
+                                                .wrapping_sub(self.xregs.read(rs2)))
+                                                as i32)
+                                                as u64,
+                                        );
+                                    }
+                                    (0x1, 0x1) => {
+                                        // c.addw
+                                        self.xregs.write(
+                                            rd,
+                                            self.xregs.read(rd).wrapping_add(self.xregs.read(rs2))
+                                                as i32
+                                                as i64
+                                                as u64,
+                                        );
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    0x5 => {
+                        // c.j
+                        // imm[11|4|9:8|10|6|7|3:1|5] = inst[12|11|10:9|8|7|6|5:3|2]
+                        let imm11 = (((inst & 0x1000) as i32) as i64) >> 12;
+                        let imm10 = (inst >> 8) & 0b1;
+                        let imm9_8 = (inst >> 9) & 0b11;
+                        let imm7 = (inst >> 6) & 0b1;
+                        let imm6 = (inst >> 7) & 0b1;
+                        let imm5 = (inst >> 2) & 0b1;
+                        let imm4 = (inst >> 11) & 0b1;
+                        let imm3_1 = (inst >> 3) & 0b111;
+                        let offset = (imm11 << 11) as u64
+                            | imm10 << 10
+                            | imm9_8 << 8
+                            | imm7 << 7
+                            | imm6 << 6
+                            | imm5 << 5
+                            | imm4 << 4
+                            | imm3_1 << 1;
+                        self.pc += offset;
+                    }
+                    0x6 => {
+                        // c.beqz
+                        let rd_rs1_dash = rd_rs1 & 0b111;
+                        let rs1 = rd_rs1_dash + 8;
+                        // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
+                        let imm8 = (((inst & 0x1000) as i32) as i64) >> 12;
+                        let imm7_6 = (inst >> 5) & 0b11;
+                        let imm5 = (inst >> 2) & 0b1;
+                        let imm4_3 = (inst >> 10) & 0b11;
+                        let imm2_1 = (inst >> 3) & 0b11;
+                        let imm = (imm8 << 8) as u64
+                            | imm7_6 << 6
+                            | imm5 << 5
+                            | imm4_3 << 3
+                            | imm2_1 << 1;
+                        if self.xregs.read(rs1) == 0 {
+                            self.pc += imm;
+                        }
+                    }
+                    0x7 => {
+                        // c.bnez
+                        let rd_rs1_dash = rd_rs1 & 0b111;
+                        let rs1 = rd_rs1_dash + 8;
+                        // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
+                        let imm8 = (((inst & 0x1000) as i32) as i64) >> 12;
+                        let imm7_6 = (inst >> 5) & 0b11;
+                        let imm5 = (inst >> 2) & 0b1;
+                        let imm4_3 = (inst >> 10) & 0b11;
+                        let imm2_1 = (inst >> 3) & 0b11;
+                        let imm = (imm8 << 8) as u64
+                            | imm7_6 << 6
+                            | imm5 << 5
+                            | imm4_3 << 3
+                            | imm2_1 << 1;
+                        if self.xregs.read(rs1) != 0 {
+                            self.pc += imm;
+                        }
                     }
                     _ => {}
                 }
             }
             2 => {
                 // C2
-                dbg!("C2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! try to execute C extensions.....");
             }
             _ => {
                 return Err(Exception::IllegalInstruction);
