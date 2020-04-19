@@ -169,7 +169,7 @@ impl fmt::Display for FRegisters {
     }
 }
 
-/// The CPU to contains registers, a program coutner, status, and a privileged mode.
+/// The CPU to contain registers, a program coutner, status, and a privileged mode.
 pub struct Cpu {
     pub xregs: XRegisters,
     pub fregs: FRegisters,
@@ -848,10 +848,7 @@ impl Cpu {
             0x03 => {
                 // I-type
                 // imm[11:0] = inst[31:20]
-                let offset = match (inst & 0x80000000) == 0 {
-                    true => 0,
-                    false => 0xffffffff_fffff800,
-                } | ((inst >> 20) & 0x000007ff);
+                let offset = ((inst as i32 as i64) >> 20) as u64;
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x0 => {
@@ -1401,9 +1398,13 @@ impl Cpu {
                                 as u64,
                         );
                     }
-                    (0x1, 0x00) => self
-                        .xregs
-                        .write(rd, (((self.xregs.read(rs1) as u32) << shamt) as i32) as u64), // sllw
+                    (0x1, 0x00) => {
+                        // sllw
+                        self.xregs.write(
+                            rd,
+                            (self.xregs.read(rs1) as u32).wrapping_shl(shamt) as i32 as i64 as u64,
+                        );
+                    }
                     (0x4, 0x01) => {
                         // divw
                         self.xregs.write(
@@ -1422,9 +1423,13 @@ impl Cpu {
                             },
                         );
                     }
-                    (0x5, 0x00) => self
-                        .xregs
-                        .write(rd, (((self.xregs.read(rs1) as u32) >> shamt) as i32) as u64), // srlw
+                    (0x5, 0x00) => {
+                        // srlw
+                        self.xregs.write(
+                            rd,
+                            (self.xregs.read(rs1) as u32).wrapping_shr(shamt) as i32 as i64 as u64,
+                        );
+                    }
                     (0x5, 0x01) => {
                         // divuw
                         self.xregs.write(
@@ -1443,9 +1448,13 @@ impl Cpu {
                             },
                         );
                     }
-                    (0x5, 0x20) => self
-                        .xregs
-                        .write(rd, ((self.xregs.read(rs1) as i32) >> (shamt as i32)) as u64), // sraw
+                    (0x5, 0x20) => {
+                        // sraw
+                        self.xregs.write(
+                            rd,
+                            (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
+                        );
+                    }
                     (0x6, 0x01) => {
                         // remw
                         self.xregs.write(
