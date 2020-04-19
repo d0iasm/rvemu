@@ -915,7 +915,7 @@ impl Cpu {
                 }
             }
             0x0F => {
-                // I-type
+                // I-type (RV32I)
                 // fence instructions are not supportted yet because this emulator executes a
                 // inst sequentially on a single thread.
                 // fence i is a part of the Zifencei extension.
@@ -926,12 +926,9 @@ impl Cpu {
                 }
             }
             0x13 => {
-                // I-type
+                // I-type (RV32I and RV64I)
                 // imm[11:0] = inst[31:20]
-                let imm = match (inst & 0x80000000) == 0 {
-                    true => 0,
-                    false => 0xffffffff_fffff800,
-                } | ((inst >> 20) & 0x000007ff);
+                let imm = ((inst & 0xfff00000) as i32 as i64 >> 20) as u64;
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
                 // let shamt = (inst & 0x01F00000) >> 20; // This is for RV32I
                 let shamt = ((inst & 0x03f00000) >> 20) as u32;
@@ -977,16 +974,17 @@ impl Cpu {
                 }
             }
             0x17 => {
-                // U-type
+                // U-type (RV32I)
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
                 let imm = (inst & 0xfffff000) as i32 as i64 as u64;
                 // auipc
-                self.xregs.write(rd, self.pc.wrapping_add(imm) - 4);
+                self.xregs
+                    .write(rd, self.pc.wrapping_add(imm).wrapping_sub(4));
             }
             0x1B => {
                 // I-type (RV64I only)
-                let imm = (((inst & 0xfff00000) as i32 as i64) >> 20) as u64;
+                let imm = ((inst as i32 as i64) >> 20) as u64;
                 // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
                 let shamt = (imm & 0x1f) as u32;
                 match funct3 {
@@ -1026,13 +1024,9 @@ impl Cpu {
                 }
             }
             0x23 => {
-                // S-type
-                // imm[11:5|4:0] = inst[31:25|inst[11:7]]
-                let imm = match (inst & 0x80000000) == 0 {
-                    true => 0,
-                    false => 0xffffffff_fffff800,
-                } | ((inst & 0xfe000000) >> 20)
-                    | ((inst & 0x00000f80) >> 7);
+                // S-type (RV32I)
+                // imm[11:5|4:0] = inst[31:25|11:7]
+                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64) | ((inst >> 7) & 0x1f);
                 let addr = self.xregs.read(rs1).wrapping_add(imm);
                 match funct3 {
                     0x0 => self.write8(addr, self.xregs.read(rs2))?, // sb
@@ -1373,7 +1367,7 @@ impl Cpu {
                 };
             }
             0x37 => {
-                // U-type
+                // U-type (RV32I)
                 // LUI places the U-immediate value in the top 20 bits of the destination
                 // register rd, filling in the lowest 12 bits with zeros.
                 self.xregs
@@ -1893,54 +1887,48 @@ impl Cpu {
                 }
             }
             0x63 => {
-                // B-type
-                let imm12 = (((inst & 0x80000000) as i32) as i64) >> 31;
-                let imm10_5 = (inst & 0x7e000000) >> 25;
-                let imm4_1 = (inst & 0x00000f00) >> 8;
-                let imm11 = (inst & 0x00000080) >> 7;
-                let offset =
-                    ((imm12 << 12) as u64 | (imm11 << 11) | (imm10_5 << 5) | (imm4_1 << 1)) as i64;
+                // B-type (RV32I)
+                // imm[12|10:5|4:1|11] = inst[31|30:25|11:8|7]
+                let imm = (((inst & 0x80000000) as i32 as i64 >> 19) as u64)
+                    | ((inst & 0x80) << 4) // imm[11]
+                    | ((inst >> 20) & 0x7e0) // imm[10:5]
+                    | ((inst >> 7) & 0x1e); // imm[4:1]
+
                 match funct3 {
                     0x0 => {
                         // beq
                         if self.xregs.read(rs1) == self.xregs.read(rs2) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
                         // bne
                         if self.xregs.read(rs1) != self.xregs.read(rs2) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
                         // blt
                         if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
                         // bge
                         if (self.xregs.read(rs1) as i64) >= (self.xregs.read(rs2) as i64) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
                         // bltu
                         if self.xregs.read(rs1) < self.xregs.read(rs2) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
                         // bgeu
                         if self.xregs.read(rs1) >= self.xregs.read(rs2) {
-                            let target = (self.pc as i64) + offset - 4;
-                            self.pc = target as u64;
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     _ => {}
@@ -1962,19 +1950,16 @@ impl Cpu {
                 // jal
                 self.xregs.write(rd, self.pc);
 
-                let imm20 = (inst >> 31) & 1;
-                let imm10_1 = (inst >> 21) & 0b11_1111_1111;
-                let imm11 = (inst >> 20) & 1;
-                let imm19_12 = (inst >> 12) & 0b1111_1111;
-                let mut offset = (imm20 << 20) | (imm19_12 << 12) | (imm11 << 11) | (imm10_1 << 1);
-                if (inst & 0x80000000) != 0 {
-                    // Set bits when imm[20] is set.
-                    offset |= 0xffffffff_fff00000;
-                }
-                self.pc = self.pc.wrapping_add(offset) - 4;
+                // imm[20|10:1|11|19:12] = inst[31|30:21|20|19:12]
+                let offset = (((inst & 0x80000000) as i32 as i64 >> 11) as u64) // imm[20]
+                    | (inst & 0xff000) // imm[19:12]
+                    | ((inst >> 9) & 0x800) // imm[11]
+                    | ((inst >> 20) & 0x7fe); // imm[10:1]
+
+                self.pc = self.pc.wrapping_add(offset).wrapping_sub(4);
             }
             0x73 => {
-                // I-type
+                // I-type (RV32I, RVZicsr, supervisor ISA)
                 let csr_addr = ((inst & 0xfff00000) >> 20) as u16;
                 match funct3 {
                     0x0 => {
