@@ -579,8 +579,36 @@ impl Cpu {
                     }
                     0x3 => {
                         // TODO: implement them
-                        // c.addi16sp
-                        // c.lui
+                        match rd_rs1 {
+                            0 => {}
+                            2 => {
+                                // c.addi16sp
+                                // nzimm[9|4|6|8:7|5] = inst[12|6|5|4:3|2]
+                                let mut imm = ((inst >> 3) & 0x200) // nzimm[9]
+                                    | ((inst >> 2) & 0x10) // nzimm[4]
+                                    | ((inst << 1) & 0x40) // nzimm[6]
+                                    | ((inst << 4) & 0x180) // nzimm[8:7]
+                                    | ((inst << 3) & 0x20); // nzimm[5]
+                                // Sign-extended.
+                                imm = match (imm & 0x200) == 0 {
+                                    true => imm,
+                                    false => (0xfe00 | imm) as i16 as i32 as i64 as u64,
+                                };
+                                self.xregs.write(2, self.xregs.read(2).wrapping_add(imm));
+                            }
+                            _ => {
+                                // c.lui
+                                // nzimm[17|16:12] = inst[12|6:2]
+                                let mut imm = ((inst << 5) & 0x20000)
+                                    | ((inst << 10) & 0x1f000);
+                                // Sign-extended.
+                                imm = match (imm & 0x20000) == 0 {
+                                    true => imm,
+                                    false => (0xfffe0000 | imm) as i32 as i64 as u64,
+                                };
+                                self.xregs.write(rd_rs1, imm);
+                            }
+                        }
                     }
                     0x4 => {
                         let rd_rs1_dash = rd_rs1 & 0b111;
