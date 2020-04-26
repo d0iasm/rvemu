@@ -739,7 +739,7 @@ impl Cpu {
                             false => (0xfe00 | offset) as i16 as i64 as u64,
                         };
                         if self.xregs.read(rs1) == 0 {
-                            self.pc = self.pc.wrapping_add(offset);
+                            self.pc = self.pc.wrapping_add(offset).wrapping_sub(2);
                         }
                     }
                     0x7 => {
@@ -757,7 +757,7 @@ impl Cpu {
                             false => (0xfe00 | offset) as i16 as i64 as u64,
                         };
                         if self.xregs.read(rs1) != 0 {
-                            self.pc = self.pc.wrapping_add(offset);
+                            self.pc = self.pc.wrapping_add(offset).wrapping_sub(2);
                         }
                     }
                     _ => {}
