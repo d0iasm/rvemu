@@ -5,6 +5,11 @@ use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
 use crate::exception::Exception;
 use crate::memory::Memory;
 
+/// The address which the debug information includes.
+pub const DEBUG_BASE: u64 = 0x0;
+/// The size of debug information.
+pub const DEBUG_SIZE: u64 = 0x100;
+
 /// The address which the core-local interruptor (CLINT) starts. It contains the timer and
 /// generates per-hart software interrupts and timer
 /// interrupts.
@@ -88,6 +93,10 @@ impl Bus {
 
     /// Read 4 bytes from the system bus.
     pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
+        if DEBUG_BASE <= addr && addr < DEBUG_BASE + DEBUG_SIZE {
+            // Nothing for now.
+            return Ok(0);
+        }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.read(addr) as u64);
         }
