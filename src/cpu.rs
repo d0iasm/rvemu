@@ -473,8 +473,8 @@ impl Cpu {
                 // Quadrant 0.
                 // Compressed instructions have 3-bit field for popular registers,
                 // which correspond to registers x8 to x15.
-                let rd_rs2 = ((inst >> 2) & 0b111) + 8;
-                let rs1 = ((inst >> 7) & 0b111) + 8;
+                let rd_rs2_short = ((inst >> 2) & 0b111) + 8;
+                let rs1_short = ((inst >> 7) & 0b111) + 8;
 
                 match funct3 {
                     0x0 => {
@@ -493,36 +493,33 @@ impl Cpu {
                             return Err(Exception::IllegalInstruction);
                         }
                         self.xregs
-                            .write(rd_rs2, self.xregs.read(2).wrapping_add(nzuimm));
+                            .write(rd_rs2_short, self.xregs.read(2).wrapping_add(nzuimm));
                     }
                     0x1 => {
                         // c.fld
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
+                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                            | ((inst >> 7) & 0x38); // imm[5:3]
                         let val =
                             f64::from_bits(self.read64(self.xregs.read(2).wrapping_add(uimm))?);
-                        self.fregs.write(rd_rs2, val);
+                        self.fregs.write(rd_rs2_short, val);
                     }
                     0x2 => {
                         // c.lw
                         // uimm[5:3|2|6] = isnt[12:10|6|5]
-                        let imm6 = (((inst & 0x10) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let imm2 = (inst >> 6) & 0b1;
-                        let uimm = (imm6 << 6) as u64 | (imm5_3 << 5) | (imm2 << 2);
-                        let val = self.read32(self.xregs.read(rs1).wrapping_add(uimm))?;
-                        self.xregs.write(rd_rs2, val as i32 as i64 as u64);
+                        let uimm = ((inst << 1) & 0x40) // imm[6]
+                            | ((inst >> 7) & 0x38) // imm[5:3]
+                            | ((inst >> 4) & 0x4); // imm[2]
+                        let val = self.read32(self.xregs.read(rs1_short).wrapping_add(uimm))?;
+                        self.xregs.write(rd_rs2_short, val as i32 as i64 as u64);
                     }
                     0x3 => {
                         // c.ld
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
-                        let val = self.read64(self.xregs.read(rs1).wrapping_add(uimm))?;
-                        self.xregs.write(rd_rs2, val);
+                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                            | ((inst >> 7) & 0x38); // imm[5:3]
+                        let val = self.read64(self.xregs.read(rs1_short).wrapping_add(uimm))?;
+                        self.xregs.write(rd_rs2_short, val);
                     }
                     0x4 => {
                         // Reserved.
@@ -530,36 +527,33 @@ impl Cpu {
                     0x5 => {
                         // c.fsd
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
-                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
-                        self.write64(addr, self.fregs.read(rd_rs2).to_bits() as u64)?;
+                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                            | ((inst >> 7) & 0x38); // imm[5:3]
+                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
+                        self.write64(addr, self.fregs.read(rd_rs2_short).to_bits() as u64)?;
                     }
                     0x6 => {
                         // c.sw
                         // uimm[5:3|2|6] = isnt[12:10|6|5]
-                        let imm6 = (((inst & 0x10) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let imm2 = (inst >> 6) & 0b1;
-                        let uimm = (imm6 << 6) as u64 | (imm5_3 << 5) | (imm2 << 2);
-                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
-                        self.write32(addr, self.xregs.read(rd_rs2))?;
+                        let uimm = ((inst << 1) & 0x40) // imm[6]
+                            | ((inst >> 7) & 0x38) // imm[5:3]
+                            | ((inst >> 4) & 0x4); // imm[2]
+                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
+                        self.write32(addr, self.xregs.read(rd_rs2_short))?;
                     }
                     0x7 => {
                         // c.sd
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let imm7_6 = (((inst & 0x60) as i32) as i64) >> 5;
-                        let imm5_3 = (inst >> 10) & 0b111;
-                        let uimm = (imm7_6 << 6) as u64 | (imm5_3 << 5);
-                        let addr = self.xregs.read(rs1).wrapping_add(uimm);
-                        self.write64(addr, self.xregs.read(rd_rs2))?;
+                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                            | ((inst >> 7) & 0x38); // imm[5:3]
+                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
+                        self.write64(addr, self.xregs.read(rd_rs2_short))?;
                     }
                     _ => {}
                 }
             }
             1 => {
-                // C1
+                // Quadrant 1.
                 let rd_rs1 = (inst >> 7) & 0x1f;
                 // imm[5|4:0] = inst[12|6:2]
                 let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
