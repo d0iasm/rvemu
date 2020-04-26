@@ -722,7 +722,7 @@ impl Cpu {
                             // Sign-extended.
                             false => (0xf000 | offset) as i16 as i64 as u64,
                         };
-                        self.pc += offset;
+                        self.pc = self.pc.wrapping_add(offset).wrapping_sub(2);
                     }
                     0x6 => {
                         // c.beqz
@@ -2109,10 +2109,12 @@ impl Cpu {
                                 // 0.
                                 self.state.write_bits(MSTATUS, 11..13, 0b00);
                             }
-                            (0x5, 0x8) => {} // wfi
-                            (_, 0x9) => {}   // sfence.vma
-                            (_, 0x11) => {}  // hfence.bvma
-                            (_, 0x51) => {}  // hfence.gvma
+                            (0x5, 0x8) => {
+                                // wfi
+                            }
+                            (_, 0x9) => {}  // sfence.vma
+                            (_, 0x11) => {} // hfence.bvma
+                            (_, 0x51) => {} // hfence.gvma
                             _ => {}
                         }
                     }
