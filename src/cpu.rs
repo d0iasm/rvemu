@@ -470,24 +470,28 @@ impl Cpu {
         // 3. Execute.
         match opcode {
             0 => {
-                // C0
-                let rd_rs2_dash = (inst >> 2) & 0b111;
-                let rs1_dash = (inst >> 7) & 0b111;
+                // Quadrant 0.
                 // Compressed instructions have 3-bit field for popular registers,
                 // which correspond to registers x8 to x15.
-                let rd_rs2 = rd_rs2_dash + 8;
-                let rs1 = rs1_dash + 8;
+                let rd_rs2 = ((inst >> 2) & 0b111) + 8;
+                let rs1 = ((inst >> 7) & 0b111) + 8;
 
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
                         // nzuimm[5:4|9:6|2|3] = inst[12:11|10:7|6|5]
-                        let imm9_6 = (((inst & 0x1c0) as i32) as i64) >> 7;
-                        let imm5_4 = (inst >> 11) & 0b11;
-                        let imm2 = (inst >> 6) & 0b1;
-                        let imm3 = (inst >> 5) & 0b1;
-                        let nzuimm =
-                            (imm9_6 << 9) as u64 | (imm5_4 << 5) | (imm3 << 3) | (imm2 << 2);
+                        let mut nzuimm = ((inst >> 1) & 0x3c0) // imm[9:6]
+                            | ((inst >> 7) & 0x30) // imm[5:4]
+                            | ((inst >> 2) & 0x8) // imm[3]
+                            | ((inst >> 4) & 0x4); // imm[2]
+                        nzuimm = match (inst & 0x3c0) == 0 {
+                            true => nzuimm,
+                            // Sign-extended.
+                            false => (0xfc00 | nzuimm) as i16 as i64 as u64,
+                        };
+                        if nzuimm == 0 {
+                            return Err(Exception::IllegalInstruction);
+                        }
                         self.xregs
                             .write(rd_rs2, self.xregs.read(2).wrapping_add(nzuimm));
                     }
@@ -558,13 +562,17 @@ impl Cpu {
                 // C1
                 let rd_rs1 = (inst >> 7) & 0x1f;
                 // imm[5|4:0] = inst[12|6:2]
-                let imm5 = (((inst & 0x1000) as i32) as i64) >> 12;
-                let imm4_0 = (inst >> 2) & 0b1111;
-                let imm = (imm5 << 5) as u64 | imm4_0;
+                let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
+                // Sign-extended.
+                imm = match (imm & 0x20) == 0 {
+                    true => imm,
+                    false => (0xf0 | imm) as i8 as i64 as u64,
+                };
                 match funct3 {
                     0x0 => {
                         // c.addi
-                        self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) + imm);
+                        self.xregs
+                            .write(rd_rs1, self.xregs.read(rd_rs1).wrapping_add(imm));
                     }
                     0x1 => {
                         // c.addiw
@@ -578,7 +586,6 @@ impl Cpu {
                         self.xregs.write(rd_rs1, imm as i32 as i64 as u64);
                     }
                     0x3 => {
-                        // TODO: implement them
                         match rd_rs1 {
                             0 => {}
                             2 => {
@@ -589,7 +596,7 @@ impl Cpu {
                                     | ((inst << 1) & 0x40) // nzimm[6]
                                     | ((inst << 4) & 0x180) // nzimm[8:7]
                                     | ((inst << 3) & 0x20); // nzimm[5]
-                                // Sign-extended.
+                                                            // Sign-extended.
                                 imm = match (imm & 0x200) == 0 {
                                     true => imm,
                                     false => (0xfe00 | imm) as i16 as i32 as i64 as u64,
@@ -599,8 +606,7 @@ impl Cpu {
                             _ => {
                                 // c.lui
                                 // nzimm[17|16:12] = inst[12|6:2]
-                                let mut imm = ((inst << 5) & 0x20000)
-                                    | ((inst << 10) & 0x1f000);
+                                let mut imm = ((inst << 5) & 0x20000) | ((inst << 10) & 0x1f000);
                                 // Sign-extended.
                                 imm = match (imm & 0x20000) == 0 {
                                     true => imm,
@@ -631,8 +637,8 @@ impl Cpu {
                                 self.xregs.write(rd, self.xregs.read(rd) & imm);
                             }
                             0x3 => {
-                                let rs2 = (imm4_0 & 0b111) + 8;
-                                match (imm5, (imm4_0 >> 3) & 0b11) {
+                                let rs2 = (imm & 0b111) + 8;
+                                match ((imm >> 5) & 0b1, (imm >> 3) & 0b11) {
                                     (0x0, 0x0) => {
                                         // c.sub
                                         self.xregs
