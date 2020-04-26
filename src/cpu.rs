@@ -498,7 +498,7 @@ impl Cpu {
                     0x1 => {
                         // c.fld
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let val =
                             f64::from_bits(self.read64(self.xregs.read(2).wrapping_add(uimm))?);
@@ -516,7 +516,7 @@ impl Cpu {
                     0x3 => {
                         // c.ld
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let val = self.read64(self.xregs.read(rs1_short).wrapping_add(uimm))?;
                         self.xregs.write(rd_rs2_short, val);
@@ -527,7 +527,7 @@ impl Cpu {
                     0x5 => {
                         // c.fsd
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
                         self.write64(addr, self.fregs.read(rd_rs2_short).to_bits() as u64)?;
@@ -544,7 +544,7 @@ impl Cpu {
                     0x7 => {
                         // c.sd
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = (((inst << 1) & 0xc0) as i8 as i64 as u64) // imm[7:6]
+                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
                         self.write64(addr, self.xregs.read(rd_rs2_short))?;
@@ -560,7 +560,7 @@ impl Cpu {
                 // Sign-extended.
                 imm = match (imm & 0x20) == 0 {
                     true => imm,
-                    false => (0xf0 | imm) as i8 as i64 as u64,
+                    false => (0xc0 | imm) as i8 as i64 as u64,
                 };
                 match funct3 {
                     0x0 => {
@@ -572,14 +572,18 @@ impl Cpu {
                     }
                     0x1 => {
                         // c.addiw
-                        self.xregs.write(
-                            rd_rs1,
-                            self.xregs.read(rd_rs1).wrapping_add(imm) as i32 as i64 as u64,
-                        );
+                        if rd_rs1 != 0 {
+                            self.xregs.write(
+                                rd_rs1,
+                                self.xregs.read(rd_rs1).wrapping_add(imm) as i32 as i64 as u64,
+                            );
+                        }
                     }
                     0x2 => {
                         // c.li
-                        self.xregs.write(rd_rs1, imm);
+                        if rd_rs1 != 0 {
+                            self.xregs.write(rd_rs1, imm);
+                        }
                     }
                     0x3 => {
                         match rd_rs1 {
@@ -595,20 +599,24 @@ impl Cpu {
                                 nzimm = match (nzimm & 0x200) == 0 {
                                     true => nzimm,
                                     // Sign-extended.
-                                    false => (0xfe00 | nzimm) as i16 as i32 as i64 as u64,
+                                    false => (0xfc00 | nzimm) as i16 as i32 as i64 as u64,
                                 };
-                                self.xregs.write(2, self.xregs.read(2).wrapping_add(nzimm));
+                                if nzimm != 0 {
+                                    self.xregs.write(2, self.xregs.read(2).wrapping_add(nzimm));
+                                }
                             }
                             _ => {
                                 // c.lui
                                 // nzimm[17|16:12] = inst[12|6:2]
-                                let mut imm = ((inst << 5) & 0x20000) | ((inst << 10) & 0x1f000);
+                                let mut nzimm = ((inst << 5) & 0x20000) | ((inst << 10) & 0x1f000);
                                 // Sign-extended.
-                                imm = match (imm & 0x20000) == 0 {
-                                    true => imm,
-                                    false => (0xfffe0000 | imm) as i32 as i64 as u64,
+                                nzimm = match (nzimm & 0x20000) == 0 {
+                                    true => nzimm,
+                                    false => (0xfffc0000 | nzimm) as i32 as i64 as u64,
                                 };
-                                self.xregs.write(rd_rs1, imm);
+                                if nzimm != 0 {
+                                    self.xregs.write(rd_rs1, nzimm);
+                                }
                             }
                         }
                     }
@@ -701,23 +709,19 @@ impl Cpu {
                     0x5 => {
                         // c.j
                         // imm[11|4|9:8|10|6|7|3:1|5] = inst[12|11|10:9|8|7|6|5:3|2]
-                        // TODO: maybe sign-extended is not correct.
-                        let imm11 = (((inst & 0x1000) as i32) as i64) >> 12;
-                        let imm10 = (inst >> 8) & 0b1;
-                        let imm9_8 = (inst >> 9) & 0b11;
-                        let imm7 = (inst >> 6) & 0b1;
-                        let imm6 = (inst >> 7) & 0b1;
-                        let imm5 = (inst >> 2) & 0b1;
-                        let imm4 = (inst >> 11) & 0b1;
-                        let imm3_1 = (inst >> 3) & 0b111;
-                        let offset = (imm11 << 11) as u64
-                            | imm10 << 10
-                            | imm9_8 << 8
-                            | imm7 << 7
-                            | imm6 << 6
-                            | imm5 << 5
-                            | imm4 << 4
-                            | imm3_1 << 1;
+                        let mut offset = ((inst >> 1) & 0x800) // imm[11]
+                            | ((inst << 2) & 0x400) // imm[10]
+                            | ((inst >> 1) & 0x300) // imm[9:8]
+                            | ((inst << 1) & 0x80) // imm[7]
+                            | ((inst >> 1) & 0x40) // imm[6]
+                            | ((inst << 3) & 0x20) // imm[5]
+                            | ((inst >> 7) & 0x10) // imm[4]
+                            | ((inst >> 2) & 0xe); // imm[3:1]
+                        offset = match (offset & 0x800) == 0 {
+                            true => offset,
+                            // Sign-extended.
+                            false => (0xf000 | offset) as i16 as i64 as u64,
+                        };
                         self.pc += offset;
                     }
                     0x6 => {
@@ -725,19 +729,17 @@ impl Cpu {
                         let rd_rs1_dash = rd_rs1 & 0b111;
                         let rs1 = rd_rs1_dash + 8;
                         // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
-                        // TODO: maybe sign-extended is not correct.
-                        let imm8 = (((inst & 0x1000) as i32) as i64) >> 12;
-                        let imm7_6 = (inst >> 5) & 0b11;
-                        let imm5 = (inst >> 2) & 0b1;
-                        let imm4_3 = (inst >> 10) & 0b11;
-                        let imm2_1 = (inst >> 3) & 0b11;
-                        let imm = (imm8 << 8) as u64
-                            | imm7_6 << 6
-                            | imm5 << 5
-                            | imm4_3 << 3
-                            | imm2_1 << 1;
+                        let mut offset = ((inst >> 4) & 0x100) // imm[8]
+                            | ((inst << 1) & 0xc0) // imm[7:6]
+                            | ((inst << 3) & 0x20) // imm[5]
+                            | ((inst >> 7) & 0x18) // imm[4:3]
+                            | ((inst >> 2) & 0x6); // imm[2:1]
+                        offset = match (offset & 0x100) == 0 {
+                            true => offset,
+                            false => (0xfe00 | offset) as i16 as i64 as u64,
+                        };
                         if self.xregs.read(rs1) == 0 {
-                            self.pc += imm;
+                            self.pc = self.pc.wrapping_add(offset);
                         }
                     }
                     0x7 => {
@@ -745,33 +747,33 @@ impl Cpu {
                         let rd_rs1_dash = rd_rs1 & 0b111;
                         let rs1 = rd_rs1_dash + 8;
                         // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
-                        // TODO: maybe sign-extended is not correct.
-                        let imm8 = (((inst & 0x1000) as i32) as i64) >> 12;
-                        let imm7_6 = (inst >> 5) & 0b11;
-                        let imm5 = (inst >> 2) & 0b1;
-                        let imm4_3 = (inst >> 10) & 0b11;
-                        let imm2_1 = (inst >> 3) & 0b11;
-                        let imm = (imm8 << 8) as u64
-                            | imm7_6 << 6
-                            | imm5 << 5
-                            | imm4_3 << 3
-                            | imm2_1 << 1;
+                        let mut offset = ((inst >> 4) & 0x100) // imm[8]
+                            | ((inst << 1) & 0xc0) // imm[7:6]
+                            | ((inst << 3) & 0x20) // imm[5]
+                            | ((inst >> 7) & 0x18) // imm[4:3]
+                            | ((inst >> 2) & 0x6); // imm[2:1]
+                        offset = match (offset & 0x100) == 0 {
+                            true => offset,
+                            false => (0xfe00 | offset) as i16 as i64 as u64,
+                        };
                         if self.xregs.read(rs1) != 0 {
-                            self.pc += imm;
+                            self.pc = self.pc.wrapping_add(offset);
                         }
                     }
                     _ => {}
                 }
             }
             2 => {
-                // C2
+                // Quadrant 2.
                 let rd_rs1 = (inst >> 7) & 0x1f;
                 match funct3 {
                     0x0 => {
                         // c.slli
                         // nzuimm[5|4:0] = inst[12|6:2]
                         let nzuimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
-                        self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) << nzuimm);
+                        if rd_rs1 != 0 {
+                            self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) << nzuimm);
+                        }
                     }
                     0x1 => {
                         // c.fldsp

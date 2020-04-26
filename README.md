@@ -23,7 +23,7 @@ The emulator supports the following features:
   - [x] RV64D (v2.2): supports 32/32 instructions
   - [x] Zifencei (v2.0): supports 1/1 instructions (`fence.i` does nothing for now)
   - [x] Zicsr (v2.0): supports 6/6 instructions (No atomicity for now)
-- [ ] RV64C ISAs
+- [x] RV64C ISAs
 - [x] Privileged ISAs: supports 7/7 instructions (`wfi`, `sfence.vma`, `hfence.bvma`, and `hfence.gvma` do nothing for now)
 - [x] Control and status registers (CSRs)
   - [x] Machine-level CSRs
@@ -137,6 +137,16 @@ $l riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o foo foo.s
 // Remove headers from a binary file.
 $ riscv64-unknown-elf-objcopy -O binary foo foo.text
 ```
+
+### Linux kernel
+```
+wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.6.7.tar.xz
+tar -xf linux-5.6.7.tar.xz
+cd linux-5.6.7
+make ARCH=riscv defconfig
+make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+```
+
 
 ## Testing
 You can see the binaries for unit testings in
