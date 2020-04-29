@@ -6,6 +6,8 @@ use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
 use std::num::FpCategory;
+use std::thread;
+use std::time;
 
 use crate::{
     bus::{Bus, DRAM_BASE},
@@ -2111,6 +2113,9 @@ impl Cpu {
                             }
                             (0x5, 0x8) => {
                                 // wfi
+                                // Wait for interrupt. Idels the processor to save eneryg if no enabled interrupts are currently pendings.
+                                // Sleep 100 milliseconds.
+                                thread::sleep(time::Duration::from_millis(100));
                             }
                             (_, 0x9) => {}  // sfence.vma
                             (_, 0x11) => {} // hfence.bvma
