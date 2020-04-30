@@ -41,8 +41,9 @@ See the example usage in
 
 ## Features
 Now, supports the following features (will be added in the future):
-- RV64G ISAs
-- Privileged ISAs
+- RV64G ISA
+- RV64C ISA
+- Privileged ISA
 - Control and status registers (CSRs)
 - Virtual memory system (Sv39)
 - Devices

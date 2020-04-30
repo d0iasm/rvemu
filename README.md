@@ -140,7 +140,8 @@ $l riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o foo foo.s
 $ riscv64-unknown-elf-objcopy -O binary foo foo.text
 ```
 
-### Linux kernel
+### Linux
+#### Build vmlinux
 ```
 wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.6.7.tar.xz
 tar -xf linux-5.6.7.tar.xz
@@ -149,6 +150,23 @@ make ARCH=riscv defconfig
 make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
 ```
 
+#### Get pre-built binaries
+```
+$ wget https://fedorapeople.org/groups/risc-v/disk-images/vmlinux
+$ wget https://fedorapeople.org/groups/risc-v/disk-images/bbl
+$ wget https://fedorapeople.org/groups/risc-v/disk-images/stage4-disk.img.xz
+// Disk images.
+$ xzdec -d stage4-disk.img.xz > stage4-disk.img
+```
+
+#### Get a device tree blob (dtb) from QEMU
+```
+$ qemu-system-riscv64 -nographic -machine virt,dumpdtb=virt.dtb
+// See the content.
+$ fdtdump virt.dtb
+// Decompile device tree blob to text.
+$ dtc -I dtb -O dts -o virt.dts virt.dtb
+```
 
 ## Testing
 You can see the binaries for unit testings in
