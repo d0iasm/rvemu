@@ -1,0 +1,38 @@
+/dts-v1/;
+
+/ {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "riscv-virtio";
+    model = "riscv-virtio,qemu";
+
+    uart@10000000 {
+        interrupts = <0xa>;
+        interrupt-parent = <0x2>;
+        clock-frequency = <0x384000>;
+        reg = <0x0 0x10000000 0x0 0x100>;
+        compatible = "ns16550a";
+    };
+
+    cpus {
+        #address-cells = <0x1>;
+        #size-cells = <0x0>;
+        timebase-frequency = <0x989680>;
+
+        cpu@0 {
+            device_type = "cpu";
+            reg = <0x0>;
+            status = "okay";
+            riscv,isa = "rv64imafdcsu";
+            mmu-type = "riscv,sv39";
+            clock-frequency = <0x3b9aca00>;
+
+            interrupt-controller {
+                #interrupt-cells = <1>;
+                interrupt-controller;
+                compatible = "riscv,cpu-intc";
+                phandle = <0x2>;
+            };
+        };
+    };
+};
