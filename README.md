@@ -162,10 +162,13 @@ $ xzdec -d stage4-disk.img.xz > stage4-disk.img
 #### Get a device tree blob (dtb) from QEMU
 ```
 $ qemu-system-riscv64 -nographic -machine virt,dumpdtb=virt.dtb
+
 // See the content.
 $ fdtdump virt.dtb
-// Decompile device tree blob to text.
+// Decompile a device tree blog to a device tree source.
 $ dtc -I dtb -O dts -o virt.dts virt.dtb
+// Compile a device tree source to a device tree blob.
+$ dtc -I dts -O dtb -o virt.dtb virt.dts
 ```
 
 ## Testing
