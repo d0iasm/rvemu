@@ -48,7 +48,10 @@ impl Emulator {
         let dtb = match dtb() {
             Ok(dtb) => dtb,
             Err(e) => {
-                panic!("failed to read a device tree binary: {}", e);
+                // TODO: should fail?
+                println!("failed to read a device tree binary: {}", e);
+                println!("maybe need to install dtc commend `apt install device-tree-compiler`");
+                Vec::new()
             }
         };
 
