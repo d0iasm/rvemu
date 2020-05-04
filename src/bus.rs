@@ -4,11 +4,17 @@
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
 use crate::exception::Exception;
 use crate::memory::Memory;
+use crate::rom::Rom;
 
 /// The address which the debug information includes.
 pub const DEBUG_BASE: u64 = 0x0;
 /// The size of debug information.
 pub const DEBUG_SIZE: u64 = 0x100;
+
+/// The address which the mask ROM starts.
+pub const MROM_BASE: u64 = 0x1000;
+/// The size of the mask ROM.
+pub const MROM_SIZE: u64 = 0x11000;
 
 /// The address which the core-local interruptor (CLINT) starts. It contains the timer and
 /// generates per-hart software interrupts and timer
@@ -43,6 +49,7 @@ pub struct Bus {
     pub uart: Uart,
     pub virtio: Virtio,
     pub dram: Memory,
+    pub rom: Rom,
 }
 
 impl Bus {
@@ -54,6 +61,7 @@ impl Bus {
             uart: Uart::new(),
             virtio: Virtio::new(),
             dram: Memory::new(),
+            rom: Rom::new(),
         }
     }
 
@@ -67,6 +75,11 @@ impl Bus {
         self.dram.set_dram(data);
     }
 
+    /// Set the binary data to the rom.
+    pub fn set_rom(&mut self, data: Vec<u8>) {
+        self.rom.set_data(data);
+    }
+
     /// Set the binary data to the virtIO disk.
     pub fn set_disk(&mut self, data: Vec<u8>) {
         self.virtio.set_disk(data);
@@ -74,19 +87,25 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
+        if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
+            return Ok(self.rom.read8(addr));
+        }
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             return Ok(self.uart.read(addr) as u64);
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.read8(addr - DRAM_BASE));
+            return Ok(self.dram.read8(addr));
         }
         Err(Exception::InstructionAccessFault)
     }
 
     /// Read 2 bytes from the system bus.
     pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
+        if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
+            return Ok(self.rom.read16(addr));
+        }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.read16(addr - DRAM_BASE));
+            return Ok(self.dram.read16(addr));
         }
         Err(Exception::InstructionAccessFault)
     }
@@ -97,6 +116,9 @@ impl Bus {
             // Nothing for now.
             return Ok(0);
         }
+        if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
+            return Ok(self.rom.read32(addr));
+        }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.read(addr) as u64);
         }
@@ -104,18 +126,21 @@ impl Bus {
             return Ok(self.virtio.read(addr) as u64);
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.read32(addr - DRAM_BASE));
+            return Ok(self.dram.read32(addr));
         }
         Err(Exception::InstructionAccessFault)
     }
 
     /// Read 8 bytes from the system bus.
     pub fn read64(&self, addr: u64) -> Result<u64, Exception> {
+        if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
+            return Ok(self.rom.read64(addr));
+        }
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
             return Ok(self.clint.read(addr));
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.read64(addr - DRAM_BASE));
+            return Ok(self.dram.read64(addr));
         }
         Err(Exception::InstructionAccessFault)
     }
@@ -127,7 +152,7 @@ impl Bus {
             return Ok(self.uart.write(addr, val as u8));
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.write8(addr - DRAM_BASE, val));
+            return Ok(self.dram.write8(addr, val));
         }
         // TODO: The type of an exception InstructionAccessFault is correct?
         Err(Exception::InstructionAccessFault)
@@ -136,7 +161,7 @@ impl Bus {
     /// Write 2 bytes to the system bus.
     pub fn write16(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if DRAM_BASE <= addr {
-            return Ok(self.dram.write16(addr - DRAM_BASE, val));
+            return Ok(self.dram.write16(addr, val));
         }
         Err(Exception::InstructionAccessFault)
     }
@@ -150,7 +175,7 @@ impl Bus {
             return Ok(self.virtio.write(addr, val as u32));
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.write32(addr - DRAM_BASE, val));
+            return Ok(self.dram.write32(addr, val));
         }
         Err(Exception::InstructionAccessFault)
     }
@@ -161,7 +186,7 @@ impl Bus {
             return Ok(self.clint.write(addr, val));
         }
         if DRAM_BASE <= addr {
-            return Ok(self.dram.write64(addr - DRAM_BASE, val));
+            return Ok(self.dram.write64(addr, val));
         }
         Err(Exception::InstructionAccessFault)
     }

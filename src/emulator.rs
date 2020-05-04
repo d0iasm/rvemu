@@ -10,6 +10,7 @@ pub struct Emulator {
     pub cpu: Cpu,
     /// The debug flag. Output messages if it's true, otherwise output nothing.
     pub is_debug: bool,
+    /// The test flag for riscv/riscv-tests.
     pub is_test: bool,
 }
 
@@ -54,6 +55,7 @@ impl Emulator {
                 Vec::new()
             }
         };
+        self.cpu.bus.set_rom(dtb);
 
         let mut count = 0;
         loop {

@@ -19,6 +19,11 @@ fn create_dts() -> std::io::Result<()> {
     compatible = "riscv-virtio";
     model = "riscv-virtio,qemu";
 
+    chosen {
+        bootargs = [00];
+        stdout-path = "/uart@10000000";
+    };
+
     uart@10000000 {
         interrupts = <0xa>;
         interrupt-parent = <0x2>;
@@ -69,7 +74,20 @@ pub fn dtb() -> std::io::Result<Vec<u8>> {
     create_dts()?;
     compile_dts()?;
 
-    let mut dtb = Vec::new();
+// TODO: set a reset vector correctly.
+/*
+    let reset_vec = vec![
+        0x297,                // auipc  t0,0x0
+        0x28593 + (32 << 20), // addi   a1, t0, &dtb
+        0xf1402573,           // csrr   a0, mhartid
+        0x0182b283,           // ld     t0,24(t0)
+        0x28067,              // jr     t0
+        0,
+        (0x80000004 & 0xffffffff) as u32,
+        (0x80000004 >> 32) as u32,
+    ];
+*/
+	let mut dtb = Vec::new();
     File::open(DTB_FILE_NAME)?.read_to_end(&mut dtb)?;
     Ok(dtb)
 }

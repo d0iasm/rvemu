@@ -6,6 +6,11 @@
     compatible = "riscv-virtio";
     model = "riscv-virtio,qemu";
 
+    chosen {
+        bootargs = [00];
+        stdout-path = "/uart@10000000";
+    };
+
     uart@10000000 {
         interrupts = <0xa>;
         interrupt-parent = <0x2>;
