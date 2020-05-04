@@ -1,7 +1,6 @@
 //! The emulator module represents an entire computer.
 
 use crate::cpu::Cpu;
-use crate::dts::*;
 use crate::exception::Trap;
 
 /// The emulator to hold a CPU.
@@ -46,17 +45,6 @@ impl Emulator {
 
     /// Start executing the emulator.
     pub fn start(&mut self) {
-        let dtb = match dtb() {
-            Ok(dtb) => dtb,
-            Err(e) => {
-                // TODO: should fail?
-                println!("failed to read a device tree binary: {}", e);
-                println!("maybe need to install dtc commend `apt install device-tree-compiler`");
-                Vec::new()
-            }
-        };
-        self.cpu.bus.set_rom(dtb);
-
         let mut count = 0;
         loop {
             // This is for unit tests to finish the execution.

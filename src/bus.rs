@@ -75,11 +75,6 @@ impl Bus {
         self.dram.set_dram(data);
     }
 
-    /// Set the binary data to the rom.
-    pub fn set_rom(&mut self, data: Vec<u8>) {
-        self.rom.set_data(data);
-    }
-
     /// Set the binary data to the virtIO disk.
     pub fn set_disk(&mut self, data: Vec<u8>) {
         self.virtio.set_disk(data);
