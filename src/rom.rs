@@ -34,6 +34,62 @@ fn create_dts() -> std::io::Result<()> {
         compatible = "ns16550a";
     };
 
+	virtio_mmio@10008000 {
+		interrupts = <0x8>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10008000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10007000 {
+		interrupts = <0x7>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10007000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10006000 {
+		interrupts = <0x6>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10006000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10005000 {
+		interrupts = <0x5>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10005000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10004000 {
+		interrupts = <0x4>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10004000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10003000 {
+		interrupts = <0x3>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10003000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10002000 {
+		interrupts = <0x2>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10002000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
+	virtio_mmio@10001000 {
+		interrupts = <0x1>;
+		interrupt-parent = <0x2>;
+		reg = <0x0 0x10001000 0x0 0x1000>;
+		compatible = "virtio,mmio";
+	};
+
     cpus {
         #address-cells = <0x1>;
         #size-cells = <0x0>;
@@ -48,13 +104,45 @@ fn create_dts() -> std::io::Result<()> {
             clock-frequency = <0x3b9aca00>;
 
             interrupt-controller {
-                #interrupt-cells = <1>;
+                #interrupt-cells = <0x1>;
                 interrupt-controller;
                 compatible = "riscv,cpu-intc";
-                phandle = <0x2>;
+                linux,phandle = <0x1>;
+                phandle = <0x1>;
             };
         };
     };
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x0 0x8000000>;
+	};
+
+	soc {
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		compatible = "riscv-virtio-soc";
+		ranges;
+
+		interrupt-controller@c000000 {
+			linux,phandle = <0x2>;
+			phandle = <0x2>;
+			riscv,ndev = <0xa>;
+			riscv,max-priority = <0x7>;
+			reg-names = "control";
+			reg = <0x0 0xc000000 0x0 0x4000000>;
+			interrupts-extended = <0x1 0xb 0x1 0x9>;
+			interrupt-controller;
+			compatible = "riscv,plic0";
+			#interrupt-cells = <0x1>;
+		};
+
+		clint@2000000 {
+			interrupts-extended = <0x1 0x3 0x1 0x7>;
+			reg = <0x0 0x2000000 0x0 0x10000>;
+			compatible = "riscv,clint0";
+		};
+	};
 };"#;
 
     let mut dts = File::create(DTS_FILE_NAME)?;

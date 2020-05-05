@@ -36,7 +36,7 @@ The emulator supports the following features:
   - [x] CLINT: core local interruptor
   - [x] PLIC: platform level interrupt controller
   - [x] Virtio: virtual I/O
-- [ ] FDT: flattened device tree
+- [ ] Device tree
 
 These features are compliant with "The RISC-V Instruction Set Manual Volume I:
 Unprivileged ISADocument Version 20191213" and "The RISC-V Instruction Set
@@ -199,6 +199,7 @@ $ firebase deploy
 - npm
   - [xterm](https://xtermjs.org/)
   - xterm-addon-fit
+- dtc: device tree compiler
 
 ## Resources
 ### Documents
