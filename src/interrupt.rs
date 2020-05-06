@@ -71,8 +71,8 @@ impl Interrupt {
                 // Set the program counter to the machine trap-handler base address (mtvec)
                 // depending on the mode.
                 let vector = match cpu.state.read_bit(MTVEC, 0) {
-                    true => 4 * self.exception_code(), // vectored mode
-                    false => 0,                        // direct mode
+                    1 => 4 * self.exception_code(), // vectored mode
+                    _ => 0,                         // direct mode
                 };
                 cpu.pc = ((cpu.state.read(MTVEC) & !1) + vector) as u64;
 
@@ -107,7 +107,7 @@ impl Interrupt {
                 cpu.state
                     .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
                 // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
-                cpu.state.write_bit(MSTATUS, 3, false);
+                cpu.state.write_bit(MSTATUS, 3, 0);
                 // Set a privious privilege mode for supervisor mode (MPP, 11..13) to 0.
                 cpu.state.write_bits(MSTATUS, 11..13, 0b00);
             }
@@ -115,8 +115,8 @@ impl Interrupt {
                 // Set the program counter to the machine trap-handler base address (stvec)
                 // depending on the mode.
                 let vector = match cpu.state.read_bit(STVEC, 0) {
-                    true => 4 * self.exception_code(), // vectored mode
-                    false => 0,                        // direct mode
+                    1 => 4 * self.exception_code(), // vectored mode
+                    _ => 0,                         // direct mode
                 };
                 cpu.pc = ((cpu.state.read(STVEC) & !1) + vector) as u64;
 
@@ -150,21 +150,21 @@ impl Interrupt {
                 cpu.state
                     .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
                 // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
-                cpu.state.write_bit(SSTATUS, 1, false);
+                cpu.state.write_bit(SSTATUS, 1, 0);
                 // 4.1.1 Supervisor Status Register (sstatus)
                 // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
                 // 1 otherwise."
                 match cpu.prev_mode {
-                    Mode::User => cpu.state.write_bit(SSTATUS, 8, false),
-                    _ => cpu.state.write_bit(SSTATUS, 8, true),
+                    Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
+                    _ => cpu.state.write_bit(SSTATUS, 8, 1),
                 }
             }
             Mode::User => {
                 // Set the program counter to the machine trap-handler base address (utvec)
                 // depending on the mode.
                 let vector = match cpu.state.read_bit(UTVEC, 0) {
-                    true => 4 * self.exception_code(), // vectored mode
-                    false => 0,                        // direct mode
+                    1 => 4 * self.exception_code(), // vectored mode
+                    _ => 0,                         // direct mode
                 };
                 cpu.pc = ((cpu.state.read(UTVEC) & !1) + vector) as u64;
 

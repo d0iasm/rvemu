@@ -54,6 +54,8 @@ pub const SEPC: CsrAddress = 0x141;
 pub const SCAUSE: CsrAddress = 0x142;
 /// Supervisor bad address or instruction.
 pub const STVAL: CsrAddress = 0x143;
+/// Supervisor interrupt pending.
+pub const SIP: CsrAddress = 0x144;
 
 // Supervisor protection and translation.
 /// Supervisor address translation and protection.
@@ -105,6 +107,20 @@ pub const MIP: CsrAddress = 0x344;
 pub const PMPCFG0: CsrAddress = 0x3a0;
 /// Physical memory protection address register.
 pub const PMPADDR0: CsrAddress = 0x3b0;
+
+// MIP fields.
+//pub const MIP_USIP: u64 = 1 << 0;
+pub const MIP_SSIP: u64 = 1 << 1;
+//pub const MIP_HSIP: u64 = 2 << 2;
+pub const MIP_MSIP: u64 = 1 << 3;
+//pub const MIP_UTIP: u64 = 1 << 4;
+pub const MIP_STIP: u64 = 1 << 5;
+//pub const MIP_HTIP: u64 = 1 << 6;
+pub const MIP_MTIP: u64 = 1 << 7;
+//pub const MIP_UEIP: u64 = 1 << 8;
+pub const MIP_SEIP: u64 = 1 << 9;
+//pub const MIP_HEIP: u64 = 1 << 10;
+pub const MIP_MEIP: u64 = 1 << 11;
 
 /// The state to contains all the CSRs.
 pub struct State {
@@ -174,11 +190,16 @@ impl State {
     }
 
     /// Read a bit from the CSR.
-    pub fn read_bit(&self, addr: CsrAddress, bit: usize) -> bool {
+    pub fn read_bit(&self, addr: CsrAddress, bit: usize) -> u64 {
         if bit >= MXLEN {
             // TODO: raise exception?
         }
-        (self.read(addr) & (1 << bit)) != 0
+
+        if (self.read(addr) & (1 << bit)) != 0 {
+            1
+        } else {
+            0
+        }
     }
 
     /// Read a arbitrary length of bits from the CSR.
@@ -200,14 +221,17 @@ impl State {
     }
 
     /// Write a bit to the CSR.
-    pub fn write_bit(&mut self, addr: CsrAddress, bit: usize, val: bool) {
+    pub fn write_bit(&mut self, addr: CsrAddress, bit: usize, val: u64) {
         if bit >= MXLEN {
             // TODO: raise exception?
         }
+        if val > 1 {
+            // TODO: raise exception
+        }
 
-        if val {
+        if val == 1 {
             self.write(addr, self.read(addr) | 1 << bit);
-        } else {
+        } else if val == 0 {
             self.write(addr, self.read(addr) & !(1 << bit));
         }
     }

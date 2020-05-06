@@ -1346,7 +1346,7 @@ impl Cpu {
                             match self.xregs.read(rs2) {
                                 0 => {
                                     // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, true);
+                                    self.state.write_bit(FCSR, 3, 1);
                                     0xffffffff_ffffffff
                                 }
                                 _ => {
@@ -1367,7 +1367,7 @@ impl Cpu {
                             match self.xregs.read(rs2) {
                                 0 => {
                                     // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, true);
+                                    self.state.write_bit(FCSR, 3, 1);
                                     0xffffffff_ffffffff
                                 }
                                 _ => {
@@ -1465,7 +1465,7 @@ impl Cpu {
                             match self.xregs.read(rs2) {
                                 0 => {
                                     // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, true);
+                                    self.state.write_bit(FCSR, 3, 1);
                                     0xffffffff_ffffffff
                                 }
                                 _ => {
@@ -1490,7 +1490,7 @@ impl Cpu {
                             match self.xregs.read(rs2) {
                                 0 => {
                                     // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, true);
+                                    self.state.write_bit(FCSR, 3, 1);
                                     0xffffffff_ffffffff
                                 }
                                 _ => {
@@ -2072,8 +2072,8 @@ impl Cpu {
 
                                 // Set the current privileged mode depending on a privious privilege mode for supervisor mode (SPP, 8).
                                 self.mode = match self.state.read_bit(SSTATUS, 8) {
-                                    false => Mode::User,
-                                    true => Mode::Supervisor,
+                                    1 => Mode::Supervisor,
+                                    _ => Mode::User,
                                 };
                                 // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
                                 self.state
@@ -2081,9 +2081,9 @@ impl Cpu {
 
                                 // Set a privious interrupt-enable bit for supervisor mode (SPIE,
                                 // 5) to 1.
-                                self.state.write_bit(SSTATUS, 5, true);
+                                self.state.write_bit(SSTATUS, 5, 1);
                                 // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
-                                self.state.write_bit(SSTATUS, 8, false);
+                                self.state.write_bit(SSTATUS, 8, 0);
                             }
                             (0x2, 0x18) => {
                                 // mret
@@ -2112,7 +2112,7 @@ impl Cpu {
 
                                 // Set a privious interrupt-enable bit for machine mode (MPIE, 7)
                                 // to 1.
-                                self.state.write_bit(MSTATUS, 7, true);
+                                self.state.write_bit(MSTATUS, 7, 1);
 
                                 // Set a privious privilege mode for machine mode (MPP, 11..13) to
                                 // 0.

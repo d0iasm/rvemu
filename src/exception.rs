@@ -115,7 +115,7 @@ impl Exception {
                 cpu.state
                     .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
                 // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
-                cpu.state.write_bit(MSTATUS, 3, false);
+                cpu.state.write_bit(MSTATUS, 3, 0);
                 // Set a privious privilege mode for supervisor mode (MPP, 11..13) to 0.
                 cpu.state.write_bits(MSTATUS, 11..13, 0b00);
             }
@@ -153,13 +153,13 @@ impl Exception {
                 cpu.state
                     .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
                 // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
-                cpu.state.write_bit(SSTATUS, 1, false);
+                cpu.state.write_bit(SSTATUS, 1, 0);
                 // 4.1.1 Supervisor Status Register (sstatus)
                 // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
                 // 1 otherwise."
                 match cpu.prev_mode {
-                    Mode::User => cpu.state.write_bit(SSTATUS, 8, false),
-                    _ => cpu.state.write_bit(SSTATUS, 8, true),
+                    Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
+                    _ => cpu.state.write_bit(SSTATUS, 8, 1),
                 }
             }
             Mode::User => {
