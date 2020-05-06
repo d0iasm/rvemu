@@ -66,7 +66,7 @@ impl Exception {
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
         let exception_pc = cpu.pc - 4;
-        let prev_mode = cpu.mode;
+        cpu.prev_mode = cpu.mode;
 
         let medeleg = cpu.state.read(MEDELEG);
         let sedeleg = cpu.state.read(SEDELEG);
@@ -157,7 +157,7 @@ impl Exception {
                 // 4.1.1 Supervisor Status Register (sstatus)
                 // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
                 // 1 otherwise."
-                match prev_mode {
+                match cpu.prev_mode {
                     Mode::User => cpu.state.write_bit(SSTATUS, 8, false),
                     _ => cpu.state.write_bit(SSTATUS, 8, true),
                 }

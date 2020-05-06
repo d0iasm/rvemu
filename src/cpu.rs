@@ -178,6 +178,7 @@ pub struct Cpu {
     pub pc: u64,
     pub state: State,
     pub mode: Mode,
+    pub prev_mode: Mode,
     pub bus: Bus,
     pub enable_paging: bool,
     pub page_table: u64,
@@ -193,6 +194,7 @@ impl Cpu {
             pc: 0,
             state: State::new(),
             mode: Mode::Machine,
+            prev_mode: Mode::Machine,
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
@@ -203,6 +205,8 @@ impl Cpu {
     /// Reset CPU states.
     pub fn reset(&mut self) {
         self.pc = 0;
+        self.mode = Mode::Machine;
+        self.prev_mode = Mode::Machine;
         self.state.reset();
         // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
@@ -217,7 +221,10 @@ impl Cpu {
     }
 
     /// Check interrupt flags for all devices that can interrupt.
-    pub fn check_interrupt(&mut self) -> Option<Interrupt> {
+    pub fn check_pending_interrupt(&mut self) -> Option<Interrupt> {
+        // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global interrupts to multiple harts.
+        // local interrupt: CLINT (Core Local Interrupter) dispatches local interrupts to a hart which directly connected to CLINT.
+
         // Check if an interrupt register is enable. If it's disable, no interrupt occurs.
         match self.mode {
             Mode::Machine => {

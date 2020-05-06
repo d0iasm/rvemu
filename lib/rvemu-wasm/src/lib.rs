@@ -112,7 +112,7 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
             }
 
             // Take an interrupt.
-            match emu.cpu.check_interrupt() {
+            match emu.cpu.check_pending_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut emu.cpu),
                 None => {}
             }

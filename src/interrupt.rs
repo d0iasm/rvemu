@@ -12,6 +12,9 @@ pub enum Interrupt {
     UserSoftwareInterrupt,
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,
+    UserTimerInterrupt,
+    SupervisorTimerInterrupt,
+    MachineTimerInterrupt,
     UserExternalInterrupt(u64),
     SupervisorExternalInterrupt(u64),
     MachineExternalInterrupt(u64),
@@ -23,6 +26,9 @@ impl Interrupt {
             Interrupt::UserSoftwareInterrupt => 0,
             Interrupt::SupervisorSoftwareInterrupt => 1,
             Interrupt::MachineSoftwareInterrupt => 3,
+            Interrupt::UserTimerInterrupt => 4,
+            Interrupt::SupervisorTimerInterrupt => 5,
+            Interrupt::MachineTimerInterrupt => 7,
             Interrupt::UserExternalInterrupt(_irq) => 8,
             Interrupt::SupervisorExternalInterrupt(_irq) => 9,
             Interrupt::MachineExternalInterrupt(_irq) => 11,
@@ -41,7 +47,7 @@ impl Interrupt {
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
         let exception_pc = cpu.pc;
-        let prev_mode = cpu.mode;
+        cpu.prev_mode = cpu.mode;
 
         let mideleg = cpu.state.read(MIDELEG);
         let sideleg = cpu.state.read(SIDELEG);
@@ -148,7 +154,7 @@ impl Interrupt {
                 // 4.1.1 Supervisor Status Register (sstatus)
                 // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
                 // 1 otherwise."
-                match prev_mode {
+                match cpu.prev_mode {
                     Mode::User => cpu.state.write_bit(SSTATUS, 8, false),
                     _ => cpu.state.write_bit(SSTATUS, 8, true),
                 }
