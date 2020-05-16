@@ -28,7 +28,7 @@ const SP: u64 = 2;
 const PAGE_SIZE: u64 = 4096;
 
 /// The privileged mode.
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Copy, Clone)]
 pub enum Mode {
     User = 0b00,
     Supervisor = 0b01,
@@ -248,6 +248,13 @@ impl Cpu {
             _ => {}
         }
 
+        // TODO:
+        let pending = self.state.read(MIE) & self.state.read(MIP);
+        if pending != 0 {
+        // TODO: Why is it never called.
+            dbg!("pending is not 0 {}", pending);
+        }
+
         // Software interrupt for timer (CLINT).
         // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
         // used for simplicity.
@@ -274,11 +281,112 @@ impl Cpu {
         }
 
         match self.mode {
-            Mode::Machine => Some(Interrupt::MachineExternalInterrupt(irq)),
-            Mode::Supervisor => Some(Interrupt::SupervisorExternalInterrupt(irq)),
-            Mode::User => Some(Interrupt::UserExternalInterrupt(irq)),
-            _ => Some(Interrupt::MachineExternalInterrupt(irq)),
+            Mode::Machine => return Some(Interrupt::MachineExternalInterrupt(irq)),
+            Mode::Supervisor => return Some(Interrupt::SupervisorExternalInterrupt(irq)),
+            Mode::User => return Some(Interrupt::UserExternalInterrupt(irq)),
+            _ => return Some(Interrupt::MachineExternalInterrupt(irq)),
         }
+
+        // "An interrupt i will be taken if bit i is set in both mip and mie, and if interrupts are globally enabled.
+        // By default, M-mode interrupts are globally enabled if the hart’s current privilege mode is less than
+        // M, or if the current privilege mode is M and the MIE bit in the mstatus register is set. If bit i
+        // in mideleg is set, however, interrupts are considered to be globally enabled if the hart’s current
+        // privilege mode equals the delegated privilege mode (S or U) and that mode’s interrupt enable bit
+        // (SIE or UIE in mstatus) is set, or if the current privilege mode is less than the delegated privilege
+        // mode."
+
+        /*
+        reg_t pending_interrupts
+        reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
+          reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
+          reg_t enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
+
+          reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
+          reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
+          // M-ints have highest priority; consider S-ints only if no M-ints pending
+          if (enabled_interrupts == 0)
+            enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
+        */
+
+        let pending = self.state.read(MIE) & self.state.read(MIP);
+
+        /*
+        let mie = self.state.read_bit(MSTATUS, 3);
+        let m_enabled = (if self.prev_mode < Mode::Machine { 1 } else { 0 }
+            | (if self.prev_mode == Mode::Machine {
+                1
+            } else {
+                0
+            } & mie)) as i64;
+        let mut enabled_interrupts = pending & !self.state.read(MIDELEG) & (-m_enabled as u64);
+
+        let sie = self.state.read_bit(MSTATUS, 1);
+        let s_enabled = (if self.prev_mode < Mode::Supervisor { 1 } else { 0 }
+            | (if self.prev_mode == Mode::Supervisor {
+                1
+            } else {
+                0
+            } & sie)) as i64;
+        if enabled_interrupts == 0 {
+            enabled_interrupts = pending & self.state.read(MIDELEG) & (-s_enabled as u64);
+        }
+        */
+
+        if pending != 0 {
+            dbg!("pending is not 0 {}", pending);
+        }
+
+        if (pending & MIP_MEIP) != 0 {
+            dbg!("check interrupting machine");
+            let irq;
+            if self.bus.uart.is_interrupting() {
+                irq = UART_IRQ;
+            } else if self.bus.virtio.is_interrupting() {
+                // Access disk by direct memory access (DMA). An interrupt is raised after a disk
+                // access is done.
+                Virtio::disk_access(self);
+                irq = VIRTIO_IRQ;
+            } else {
+                return None;
+            }
+            return Some(Interrupt::MachineExternalInterrupt(irq));
+        }
+        if (pending & MIP_MSIP) != 0 {
+            return Some(Interrupt::MachineSoftwareInterrupt);
+        }
+        if (pending & MIP_MTIP) != 0 {
+            // CLINT
+            // TODO: remove is_interrupting() from clint
+            if self.bus.clint.is_interrupting() {
+                return Some(Interrupt::MachineTimerInterrupt);
+            }
+        }
+        if (pending & MIP_SEIP) != 0 {
+            dbg!("check interrupting supervisor");
+            let irq;
+            if self.bus.uart.is_interrupting() {
+                irq = UART_IRQ;
+            } else if self.bus.virtio.is_interrupting() {
+                // Access disk by direct memory access (DMA). An interrupt is raised after a disk
+                // access is done.
+                Virtio::disk_access(self);
+                irq = VIRTIO_IRQ;
+            } else {
+                return None;
+            }
+            return Some(Interrupt::SupervisorExternalInterrupt(irq));
+        }
+        if (pending & MIP_SSIP) != 0 {
+            return Some(Interrupt::SupervisorSoftwareInterrupt);
+        }
+        if (pending & MIP_STIP) != 0 {
+            // CLINT
+            // TODO: remove is_interrupting() from clint
+            if self.bus.clint.is_interrupting() {
+                return Some(Interrupt::MachineTimerInterrupt);
+            }
+        }
+        return None;
     }
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.

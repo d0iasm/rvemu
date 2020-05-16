@@ -44,6 +44,8 @@ pub const SSTATUS: CsrAddress = 0x100;
 pub const SEDELEG: CsrAddress = 0x102;
 /// Supervisor interrupt delegation register.
 pub const SIDELEG: CsrAddress = 0x103;
+/// Supervisor interrupt-enable register.
+pub const SIE: CsrAddress = 0x104;
 /// Supervisor trap handler base address.
 pub const STVEC: CsrAddress = 0x105;
 
@@ -174,6 +176,9 @@ impl State {
     /// Read the val from the CSR.
     pub fn read(&self, addr: CsrAddress) -> u64 {
         match addr {
+            SSTATUS => self.csrs[MSTATUS as usize] & 0x80000003000de162,
+            SIE => self.csrs[MIE as usize] & 0x222,
+            SIP => self.csrs[MIP as usize] & 0x222,
             _ => self.csrs[addr as usize],
         }
     }
@@ -185,6 +190,21 @@ impl State {
             MARCHID => {}
             MIMPID => {}
             MHARTID => {}
+            SSTATUS => {
+                self.csrs[MSTATUS as usize] &= !0x80000003000de162;
+                self.csrs[MSTATUS as usize] |= val & 0x80000003000de162;
+            }
+            SIE => {
+                self.csrs[MIE as usize] &= !0x222;
+                self.csrs[MIE as usize] |= val & 0x222;
+            }
+            SIP => {
+                self.csrs[MIP as usize] &= !0x222;
+                self.csrs[MIP as usize] |= val & 0x222;
+            }
+            MIDELEG => {
+                self.csrs[addr as usize] = val & 0x666; // from qemu
+            }
             _ => self.csrs[addr as usize] = val,
         }
     }
