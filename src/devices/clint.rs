@@ -1,10 +1,15 @@
 //! The clint module contains the core-local interruptor (CLINT). The CLINT
 //! block holds memory-mapped control and status registers associated with
 //! software and timer interrupts. It generates per-hart software interrupts and timer.
-//! The implementation compliant with the chapter 9 in "SiFive FU540-C000 Manual v1p0".
-//! https://sifive.cdn.prismic.io/sifive%2F834354f0-08e6-423c-bf1f-0cb58ef14061_fu540-c000-v1.0.pdf
+
+// Good documents for understanding CLINT:
+// - "SiFive FU540-C000 Manual v1p0":
+// https://sifive.cdn.prismic.io/sifive%2F834354f0-08e6-423c-bf1f-0cb58ef14061_fu540-c000-v1.0.pdf
+// - "SiFive Interrupt Cookbook Version 1.0":
+// https://sifive.cdn.prismic.io/sifive/0d163928-2128-42be-a75a-464df65e04e0_sifive-interrupt-cookbook.pdf
 
 use crate::bus::CLINT_BASE;
+use crate::csr::{State, MIP};
 
 /// The address of a mtimecmp register starts.
 pub const CLINT_MTIMECMP_BASE: u64 = CLINT_BASE + 0x4000;
@@ -40,15 +45,22 @@ impl Clint {
         }
     }
 
-    /// Increment the mtimer register.
-    pub fn increment(&mut self) {
+    /// Increment the mtimer register. It's not a real-time value. The MTIP bit (MIP, 7) is enabled
+    /// when `mtime` is greater than or equal to `mtimecmp`.
+    pub fn increment(&mut self, state: &mut State) {
         self.mtime = self.mtime.wrapping_add(1);
+        // Enable all bits except the MTIP bit (MIP, 7).
+        state.write(MIP, state.read(MIP) & !(1 << 7));
+        // TODO: Only 1 hart is supported, so assume hart is 0.
+        if self.mtime >= self.mtimecmps[0] {
+            state.write(MIP, state.read(MIP) | (1 << 7));
+        }
     }
 
     /// Return true if an interrupt is pending and clear the `mtime` register if an interrupting
     /// is enable.
     pub fn is_interrupting(&mut self) -> bool {
-        // Assume hart is 0.
+        // TODO: Only 1 hart is supported, so assume hart is 0.
         if self.mtime >= self.mtimecmps[0] {
             self.mtime = 0;
             true

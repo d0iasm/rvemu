@@ -1,8 +1,13 @@
 //! The plic module contains the platform-level interrupt controller (PLIC).
 //! The plic connects all external interrupts in the system to all hart
-//! contexts in the system, via the external interrupt source in each hart. It's the global interrupt controller in a RISC-V system.
-//! The implementation compliant with the chapter 10 in "SiFive FU540-C000 Manual v1p0".
-//! https://sifive.cdn.prismic.io/sifive%2F834354f0-08e6-423c-bf1f-0cb58ef14061_fu540-c000-v1.0.pdf
+//! contexts in the system, via the external interrupt source in each hart.
+//! It's the global interrupt controller in a RISC-V system.
+
+// Good documents for understanding PLIC:
+// - "SiFive FU540-C000 Manual v1p0":
+// https://sifive.cdn.prismic.io/sifive%2F834354f0-08e6-423c-bf1f-0cb58ef14061_fu540-c000-v1.0.pdf
+// - "SiFive Interrupt Cookbook Version 1.0":
+// https://sifive.cdn.prismic.io/sifive/0d163928-2128-42be-a75a-464df65e04e0_sifive-interrupt-cookbook.pdf
 
 use crate::bus::PLIC_BASE;
 use crate::devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ};

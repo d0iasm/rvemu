@@ -217,7 +217,7 @@ impl Cpu {
 
     /// Increment the timer register (mtimer) in CLINT.
     pub fn timer_increment(&mut self) {
-        self.bus.clint.increment();
+        self.bus.clint.increment(&mut self.state);
     }
 
     /// Check interrupt flags for all devices that can interrupt.
