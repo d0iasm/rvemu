@@ -183,7 +183,9 @@ impl Rom {
             Err(e) => {
                 // TODO: should fail?
                 println!("WARNING: failed to read a device tree binary: {}", e);
-                println!("WARNING: maybe need to install dtc commend `apt install device-tree-compiler`");
+                println!(
+                    "WARNING: maybe need to install dtc commend `apt install device-tree-compiler`"
+                );
                 Vec::new()
             }
         };

@@ -173,15 +173,25 @@ impl fmt::Display for FRegisters {
 
 /// The CPU to contain registers, a program coutner, status, and a privileged mode.
 pub struct Cpu {
+    /// 64-bit integer registers.
     pub xregs: XRegisters,
+    /// 64-bit floating-point registers.
     pub fregs: FRegisters,
+    /// Program coutner.
     pub pc: u64,
+    /// Control and status registers (CSR).
     pub state: State,
+    /// Privilege level.
     pub mode: Mode,
+    /// Previous privilege level.
     pub prev_mode: Mode,
+    /// System bus.
     pub bus: Bus,
+    /// SV39 paging flag.
     pub enable_paging: bool,
+    /// physical page number (PPN)
     pub page_table: u64,
+    /// Debug flag.
     pub debug: bool,
 }
 
@@ -251,8 +261,8 @@ impl Cpu {
         // TODO:
         let pending = self.state.read(MIE) & self.state.read(MIP);
         if pending != 0 {
-        // TODO: Why is it never called.
-            dbg!("pending is not 0 {}", pending);
+            // TODO: Why is it never called.
+            //dbg!("pending is not 0 {}", pending);
         }
 
         // Software interrupt for timer (CLINT).
