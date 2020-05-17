@@ -233,6 +233,7 @@ impl Cpu {
         // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global interrupts to multiple harts.
         // local interrupt: CLINT (Core Local Interrupter) dispatches local interrupts to a hart which directly connected to CLINT.
 
+        // 3.1.6.1 Privilege and Global Interrupt-Enable Stack in mstatus register
         // "When a hart is executing in privilege mode x, interrupts are globally enabled when x
         // IE=1 and globally disabled when x IE=0."
         match self.mode {
@@ -245,12 +246,6 @@ impl Cpu {
             Mode::Supervisor => {
                 // Check if the SIE bit is enabled.
                 if (self.state.read(SSTATUS) >> 1) & 1 == 0 {
-                    return None;
-                }
-            }
-            Mode::User => {
-                // Check if the UIE bit is enabled.
-                if self.state.read(USTATUS) & 1 == 0 {
                     return None;
                 }
             }
@@ -313,7 +308,6 @@ impl Cpu {
         }
         */
 
-        // External interrupts.
         if (pending & MIP_MEIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
             return Some(Interrupt::MachineExternalInterrupt);
@@ -324,7 +318,7 @@ impl Cpu {
         }
         if (pending & MIP_MTIP) != 0 {
             //TODO: MachineTimerInterrupt causes an error.
-            //dbg!("mtip!!!!!!!!!!!!!!!!1");
+            //dbg!("mtip");
             self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
             //return Some(Interrupt::MachineTimerInterrupt);
         }
@@ -334,6 +328,7 @@ impl Cpu {
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
         if (pending & MIP_SSIP) != 0 {
+            //dbg!("ssip");
             self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
