@@ -113,15 +113,12 @@ pub const PMPADDR0: CsrAddress = 0x3b0;
 // MIP fields.
 //pub const MIP_USIP: u64 = 1 << 0;
 pub const MIP_SSIP: u64 = 1 << 1;
-//pub const MIP_HSIP: u64 = 2 << 2;
 pub const MIP_MSIP: u64 = 1 << 3;
 //pub const MIP_UTIP: u64 = 1 << 4;
 pub const MIP_STIP: u64 = 1 << 5;
-//pub const MIP_HTIP: u64 = 1 << 6;
 pub const MIP_MTIP: u64 = 1 << 7;
 //pub const MIP_UEIP: u64 = 1 << 8;
 pub const MIP_SEIP: u64 = 1 << 9;
-//pub const MIP_HEIP: u64 = 1 << 10;
 pub const MIP_MEIP: u64 = 1 << 11;
 
 /// The state to contains all the CSRs.

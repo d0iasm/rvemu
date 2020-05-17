@@ -318,26 +318,24 @@ impl Cpu {
             self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
             return Some(Interrupt::MachineExternalInterrupt);
         }
-        if (pending & MIP_SEIP) != 0 {
-            self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
-            return Some(Interrupt::SupervisorExternalInterrupt);
-        }
-
-        // Software interrupts.
         if (pending & MIP_MSIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_MSIP);
             return Some(Interrupt::MachineSoftwareInterrupt);
         }
+        if (pending & MIP_MTIP) != 0 {
+            //TODO: MachineTimerInterrupt causes an error.
+            //dbg!("mtip!!!!!!!!!!!!!!!!1");
+            self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
+            //return Some(Interrupt::MachineTimerInterrupt);
+        }
+
+        if (pending & MIP_SEIP) != 0 {
+            self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
+            return Some(Interrupt::SupervisorExternalInterrupt);
+        }
         if (pending & MIP_SSIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
-        }
-
-        // Timer interrupts.
-        if (pending & MIP_MTIP) != 0 {
-            //TODO: MachineTimerInterrupt causes an error.
-            //self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
-            //return Some(Interrupt::MachineTimerInterrupt);
         }
         if (pending & MIP_STIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_STIP);
