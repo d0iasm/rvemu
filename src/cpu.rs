@@ -316,11 +316,11 @@ impl Cpu {
         // External interrupts.
         if (pending & MIP_MEIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
-            return Some(Interrupt::MachineExternalInterrupt(irq));
+            return Some(Interrupt::MachineExternalInterrupt);
         }
         if (pending & MIP_SEIP) != 0 {
             self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
-            return Some(Interrupt::SupervisorExternalInterrupt(irq));
+            return Some(Interrupt::SupervisorExternalInterrupt);
         }
 
         // Software interrupts.

@@ -14,9 +14,9 @@ pub enum Interrupt {
     UserTimerInterrupt,
     SupervisorTimerInterrupt,
     MachineTimerInterrupt,
-    UserExternalInterrupt(u64),
-    SupervisorExternalInterrupt(u64),
-    MachineExternalInterrupt(u64),
+    UserExternalInterrupt,
+    SupervisorExternalInterrupt,
+    MachineExternalInterrupt,
 }
 
 impl Interrupt {
@@ -28,9 +28,9 @@ impl Interrupt {
             Interrupt::UserTimerInterrupt => 4,
             Interrupt::SupervisorTimerInterrupt => 5,
             Interrupt::MachineTimerInterrupt => 7,
-            Interrupt::UserExternalInterrupt(_irq) => 8,
-            Interrupt::SupervisorExternalInterrupt(_irq) => 9,
-            Interrupt::MachineExternalInterrupt(_irq) => 11,
+            Interrupt::UserExternalInterrupt => 8,
+            Interrupt::SupervisorExternalInterrupt => 9,
+            Interrupt::MachineExternalInterrupt => 11,
         }
     }
 
