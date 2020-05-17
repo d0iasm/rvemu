@@ -13,6 +13,7 @@ use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
     devices::{
+        plic::PLIC_SCLAIM,
         uart::UART_IRQ,
         virtio::{Virtio, VIRTIO_IRQ},
     },
@@ -191,8 +192,6 @@ pub struct Cpu {
     pub enable_paging: bool,
     /// physical page number (PPN)
     pub page_table: u64,
-    /// Debug flag.
-    pub debug: bool,
 }
 
 impl Cpu {
@@ -208,7 +207,6 @@ impl Cpu {
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
-            debug: false,
         }
     }
 
@@ -235,7 +233,8 @@ impl Cpu {
         // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global interrupts to multiple harts.
         // local interrupt: CLINT (Core Local Interrupter) dispatches local interrupts to a hart which directly connected to CLINT.
 
-        // Check if an interrupt register is enable. If it's disable, no interrupt occurs.
+        // "When a hart is executing in privilege mode x, interrupts are globally enabled when x
+        // IE=1 and globally disabled when x IE=0."
         match self.mode {
             Mode::Machine => {
                 // Check if the MIE bit is enabled.
@@ -258,26 +257,9 @@ impl Cpu {
             _ => {}
         }
 
-        // TODO:
-        let pending = self.state.read(MIE) & self.state.read(MIP);
-        if pending != 0 {
-            // TODO: Why is it never called.
-            //dbg!("pending is not 0 {}", pending);
-        }
+        // TODO: Take interrupts based on priorities.
 
-        // Software interrupt for timer (CLINT).
-        // TODO: Actually, the timer interrupt caused when the MTIP bit in MIP is set, but it's not
-        // used for simplicity.
-        if self.bus.clint.is_interrupting() {
-            match self.mode {
-                Mode::Machine => return Some(Interrupt::MachineSoftwareInterrupt),
-                Mode::Supervisor => return Some(Interrupt::SupervisorSoftwareInterrupt),
-                Mode::User => return Some(Interrupt::UserSoftwareInterrupt),
-                _ => return Some(Interrupt::MachineSoftwareInterrupt),
-            }
-        }
-
-        // External interrupt for UART and virtio.
+        // Check external interrupt for uart and virtio.
         let irq;
         if self.bus.uart.is_interrupting() {
             irq = UART_IRQ;
@@ -287,14 +269,16 @@ impl Cpu {
             Virtio::disk_access(self);
             irq = VIRTIO_IRQ;
         } else {
-            return None;
+            irq = 0;
         }
 
-        match self.mode {
-            Mode::Machine => return Some(Interrupt::MachineExternalInterrupt(irq)),
-            Mode::Supervisor => return Some(Interrupt::SupervisorExternalInterrupt(irq)),
-            Mode::User => return Some(Interrupt::UserExternalInterrupt(irq)),
-            _ => return Some(Interrupt::MachineExternalInterrupt(irq)),
+        if irq != 0 {
+            // TODO: assume that hart is 0
+            // TODO: write a value to MCLAIM if the mode is machine
+            self.bus
+                .write32(PLIC_SCLAIM, irq)
+                .expect("failed to write an IRQ to the PLIC_SCLAIM");
+            self.state.write(MIP, self.state.read(MIP) | MIP_SEIP);
         }
 
         // "An interrupt i will be taken if bit i is set in both mip and mie, and if interrupts are globally enabled.
@@ -304,19 +288,6 @@ impl Cpu {
         // privilege mode equals the delegated privilege mode (S or U) and that mode’s interrupt enable bit
         // (SIE or UIE in mstatus) is set, or if the current privilege mode is less than the delegated privilege
         // mode."
-
-        /*
-        reg_t pending_interrupts
-        reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
-          reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
-          reg_t enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
-
-          reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
-          reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-          // M-ints have highest priority; consider S-ints only if no M-ints pending
-          if (enabled_interrupts == 0)
-            enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
-        */
 
         let pending = self.state.read(MIE) & self.state.read(MIP);
 
@@ -342,60 +313,37 @@ impl Cpu {
         }
         */
 
-        if pending != 0 {
-            dbg!("pending is not 0 {}", pending);
-        }
-
+        // External interrupts.
         if (pending & MIP_MEIP) != 0 {
-            dbg!("check interrupting machine");
-            let irq;
-            if self.bus.uart.is_interrupting() {
-                irq = UART_IRQ;
-            } else if self.bus.virtio.is_interrupting() {
-                // Access disk by direct memory access (DMA). An interrupt is raised after a disk
-                // access is done.
-                Virtio::disk_access(self);
-                irq = VIRTIO_IRQ;
-            } else {
-                return None;
-            }
+            self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
             return Some(Interrupt::MachineExternalInterrupt(irq));
         }
-        if (pending & MIP_MSIP) != 0 {
-            return Some(Interrupt::MachineSoftwareInterrupt);
-        }
-        if (pending & MIP_MTIP) != 0 {
-            // CLINT
-            // TODO: remove is_interrupting() from clint
-            if self.bus.clint.is_interrupting() {
-                return Some(Interrupt::MachineTimerInterrupt);
-            }
-        }
         if (pending & MIP_SEIP) != 0 {
-            dbg!("check interrupting supervisor");
-            let irq;
-            if self.bus.uart.is_interrupting() {
-                irq = UART_IRQ;
-            } else if self.bus.virtio.is_interrupting() {
-                // Access disk by direct memory access (DMA). An interrupt is raised after a disk
-                // access is done.
-                Virtio::disk_access(self);
-                irq = VIRTIO_IRQ;
-            } else {
-                return None;
-            }
+            self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
             return Some(Interrupt::SupervisorExternalInterrupt(irq));
         }
+
+        // Software interrupts.
+        if (pending & MIP_MSIP) != 0 {
+            self.state.write(MIP, self.state.read(MIP) & !MIP_MSIP);
+            return Some(Interrupt::MachineSoftwareInterrupt);
+        }
         if (pending & MIP_SSIP) != 0 {
+            self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
-        if (pending & MIP_STIP) != 0 {
-            // CLINT
-            // TODO: remove is_interrupting() from clint
-            if self.bus.clint.is_interrupting() {
-                return Some(Interrupt::MachineTimerInterrupt);
-            }
+
+        // Timer interrupts.
+        if (pending & MIP_MTIP) != 0 {
+            //TODO: MachineTimerInterrupt causes an error.
+            //self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
+            //return Some(Interrupt::MachineTimerInterrupt);
         }
+        if (pending & MIP_STIP) != 0 {
+            self.state.write(MIP, self.state.read(MIP) & !MIP_STIP);
+            return Some(Interrupt::SupervisorTimerInterrupt);
+        }
+
         return None;
     }
 

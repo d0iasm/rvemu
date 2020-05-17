@@ -3,7 +3,6 @@
 use crate::{
     cpu::{Cpu, Mode},
     csr::*,
-    devices::plic::PLIC_SCLAIM,
 };
 
 /// All the interrupt kinds.
@@ -35,15 +34,6 @@ impl Interrupt {
         }
     }
 
-    fn irq(&self) -> u64 {
-        match self {
-            Interrupt::UserExternalInterrupt(irq) => *irq,
-            Interrupt::SupervisorExternalInterrupt(irq) => *irq,
-            Interrupt::MachineExternalInterrupt(irq) => *irq,
-            _ => 0,
-        }
-    }
-
     /// Update CSRs and interrupt flags in devices.
     pub fn take_trap(&self, cpu: &mut Cpu) {
         let exception_pc = cpu.pc;
@@ -59,12 +49,6 @@ impl Interrupt {
                 false => cpu.mode = Mode::User,
             },
         }
-
-        // TODO: assume that hart is 0
-        // TODO: write a value to MCLAIM if the mode is machine
-        cpu.bus
-            .write32(PLIC_SCLAIM, self.irq())
-            .expect("failed to write an IRQ to the PLIC_SCLAIM");
 
         match cpu.mode {
             Mode::Machine => {

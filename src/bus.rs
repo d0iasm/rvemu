@@ -82,6 +82,10 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT read 8");
+            return Ok(0);
+        }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read8(addr));
         }
@@ -96,6 +100,10 @@ impl Bus {
 
     /// Read 2 bytes from the system bus.
     pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT read 16");
+            return Ok(0);
+        }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read16(addr));
         }
@@ -107,6 +115,10 @@ impl Bus {
 
     /// Read 4 bytes from the system bus.
     pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT read 32");
+            return Ok(0);
+        }
         if DEBUG_BASE <= addr && addr < DEBUG_BASE + DEBUG_SIZE {
             // Nothing for now.
             return Ok(0);
@@ -132,6 +144,7 @@ impl Bus {
             return Ok(self.rom.read64(addr));
         }
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT read 64");
             return Ok(self.clint.read(addr));
         }
         if DRAM_BASE <= addr {
@@ -142,6 +155,10 @@ impl Bus {
 
     /// Write a byte to the system bus.
     pub fn write8(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT write 8");
+            return Ok(());
+        }
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             return Ok(self.uart.write(addr, val as u8));
@@ -155,6 +172,10 @@ impl Bus {
 
     /// Write 2 bytes to the system bus.
     pub fn write16(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT write 16");
+            return Ok(());
+        }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write16(addr, val));
         }
@@ -163,6 +184,10 @@ impl Bus {
 
     /// Write 4 bytes to the system bus.
     pub fn write32(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT write 32");
+            return Ok(());
+        }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.write(addr, val as u32));
         }
@@ -178,6 +203,7 @@ impl Bus {
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            dbg!("Called CLINT write 64");
             return Ok(self.clint.write(addr, val));
         }
         if DRAM_BASE <= addr {

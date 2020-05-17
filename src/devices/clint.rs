@@ -78,6 +78,7 @@ impl Clint {
         if self.mtime >= self.mtimecmps[0] {
             // Enable the MTIP bit (MIP, 7).
             state.write(MIP, state.read(MIP) | (1 << 7));
+            self.mtime = 0;
         }
     }
 
