@@ -63,6 +63,19 @@ pub const SIP: CsrAddress = 0x144;
 /// Supervisor address translation and protection.
 pub const SATP: CsrAddress = 0x180;
 
+// SSTATUS fields.
+//pub const SSTATUS_UIE: u64 = 0x00000001;
+pub const SSTATUS_SIE: u64 = 0x00000002;
+//pub const SSTATUS_UPIE: u64 = 0x00000010;
+pub const SSTATUS_SPIE: u64 = 0x00000020;
+pub const SSTATUS_SPP: u64 = 0x00000100;
+pub const SSTATUS_VS: u64 = 0x00000600;
+pub const SSTATUS_FS: u64 = 0x00006000;
+pub const SSTATUS_XS: u64 = 0x00018000;
+pub const SSTATUS_SUM: u64 = 0x00040000;
+pub const SSTATUS_MXR: u64 = 0x00080000;
+pub const SSTATUS_UXL: u64 = 0x0000000300000000;
+
 /////////////////////////////////
 // Machine-level CSR addresses //
 /////////////////////////////////
@@ -173,9 +186,19 @@ impl State {
     /// Read the val from the CSR.
     pub fn read(&self, addr: CsrAddress) -> u64 {
         match addr {
-            SSTATUS => self.csrs[MSTATUS as usize] & 0x80000003000de162,
-            SIE => self.csrs[MIE as usize] & 0x222,
-            SIP => self.csrs[MIP as usize] & 0x222,
+            SSTATUS => {
+                let mask = SSTATUS_SIE
+                    | SSTATUS_SPIE
+                    | SSTATUS_SPP
+                    | SSTATUS_FS
+                    | SSTATUS_XS
+                    | SSTATUS_SUM
+                    | SSTATUS_MXR
+                    | SSTATUS_UXL;
+                self.csrs[MSTATUS as usize] & mask
+            }
+            SIE => self.csrs[MIE as usize] & self.csrs[MIDELEG as usize],
+            SIP => self.csrs[MIP as usize] & self.csrs[MIDELEG as usize],
             _ => self.csrs[addr as usize],
         }
     }
@@ -188,19 +211,22 @@ impl State {
             MIMPID => {}
             MHARTID => {}
             SSTATUS => {
-                self.csrs[MSTATUS as usize] &= !0x80000003000de162;
-                self.csrs[MSTATUS as usize] |= val & 0x80000003000de162;
+                let mask = SSTATUS_SIE
+                    | SSTATUS_SPIE
+                    | SSTATUS_SPP
+                    | SSTATUS_FS
+                    | SSTATUS_XS
+                    | SSTATUS_SUM
+                    | SSTATUS_MXR;
+                self.csrs[MSTATUS as usize] = (self.csrs[MSTATUS as usize] & !mask) | (val & mask);
             }
             SIE => {
-                self.csrs[MIE as usize] &= !0x222;
-                self.csrs[MIE as usize] |= val & 0x222;
+                self.csrs[MIE as usize] = (self.csrs[MIE as usize] & !self.csrs[MIDELEG as usize])
+                    | (val & self.csrs[MIDELEG as usize]);
             }
             SIP => {
-                self.csrs[MIP as usize] &= !0x222;
-                self.csrs[MIP as usize] |= val & 0x222;
-            }
-            MIDELEG => {
-                self.csrs[addr as usize] = val & 0x666; // from qemu
+                let mask = MIP_SSIP & self.csrs[MIDELEG as usize];
+                self.csrs[MIP as usize] = (self.csrs[MIP as usize] & !mask) | (val & mask);
             }
             _ => self.csrs[addr as usize] = val,
         }

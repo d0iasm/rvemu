@@ -324,6 +324,7 @@ impl Cpu {
         }
 
         if (pending & MIP_SEIP) != 0 {
+            dbg!("seip {}", irq);
             self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
