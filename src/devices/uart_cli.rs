@@ -68,9 +68,9 @@ impl Uart {
         let _uart_thread_for_read = thread::spawn(move || loop {
             match io::stdin().read(&mut byte) {
                 Ok(_) => {
-                    // Wait for the thread to start up.
                     let (uart, cvar) = &*cloned_uart;
                     let mut uart = uart.lock().expect("failed to get an UART object");
+                    // Wait for the thread to start up.
                     while (uart[(UART_LSR - UART_BASE) as usize] & UART_LSR_RX) == 1 {
                         uart = cvar.wait(uart).expect("the mutex is poisoned");
                     }
@@ -87,25 +87,19 @@ impl Uart {
 
         /*
         let cloned_uart = uart.clone();
-        let cloned_interrupting = interrupting.clone();
+        //let cloned_interrupting = interrupting.clone();
         let _uart_thread_for_write = thread::spawn(move || loop {
-            match io::stdin().read(&mut byte) {
-                Ok(_) => {
-                    // Wait for the thread to start up.
-                    let (uart, cvar) = &*cloned_uart;
-                    let mut uart = uart.lock().expect("failed to get an UART object");
-                    while (uart[(UART_LSR - UART_BASE) as usize] & UART_LSR_TX) == 1 {
-                        uart = cvar.wait(uart).expect("the mutex is poisoned");
-                    }
-                    uart[0] = byte[0];
-                    cloned_interrupting.store(true, Ordering::Release);
-                    // Data has been receive.
-                    uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_TX;
-                }
-                Err(e) => {
-                    println!("{}", e);
-                }
+            let (uart, cvar) = &*cloned_uart;
+            let mut uart = uart.lock().expect("failed to get an UART object");
+            // Wait for the thread to start up.
+            while (uart[(UART_LSR - UART_BASE) as usize] & UART_LSR_TX) == 0 {
+                uart = cvar.wait(uart).expect("the mutex is poisoned");
             }
+            //print!("{}", uart[(UART_THR - UART_BASE) as usize] as char);
+            //io::stdout().flush().expect("failed to flush stdout");
+            //cloned_interrupting.store(true, Ordering::Release);
+            // Data has been receive.
+            //uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_TX;
         });
         */
 
@@ -133,6 +127,12 @@ impl Uart {
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: u64, value: u8) {
+        // This is from xv6:
+        //   // wait for Transmit Holding Empty to be set in LSR.
+        //   while((ReadReg(LSR) & (1 << 5)) == 0)
+        //   ;
+        //   WriteReg(THR, c);
+        //
         // This is from riscv-pk:
         //   while ((uart16550[UART_REG_LSR << uart16550_reg_shift] & UART_REG_STATUS_TX) == 0);
         //   uart16550[UART_REG_QUEUE << uart16550_reg_shift] = ch;
@@ -140,8 +140,8 @@ impl Uart {
         let mut uart = uart.lock().expect("failed to get an UART object");
         match index {
             UART_THR => {
-                //cvar.notify_one();
                 //uart[(UART_LSR - UART_BASE) as usize] &= !UART_LSR_TX;
+                //cvar.notify_one();
                 //uart[(UART_THR - UART_BASE) as usize] = value;
                 print!("{}", value as char);
                 io::stdout().flush().expect("failed to flush stdout");
