@@ -209,14 +209,12 @@ impl Rom {
     /// Read 2 bytes from the rom.
     pub fn read16(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
-        // little endian
         return (self.data[index] as u64) | ((self.data[index + 1] as u64) << 8);
     }
 
     /// Read 4 bytes from the rom.
     pub fn read32(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
-        // little endian
         return (self.data[index] as u64)
             | ((self.data[index + 1] as u64) << 8)
             | ((self.data[index + 2] as u64) << 16)
@@ -226,7 +224,6 @@ impl Rom {
     /// Read 8 bytes from the rom.
     pub fn read64(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
-        // little endian
         return (self.data[index] as u64)
             | ((self.data[index + 1] as u64) << 8)
             | ((self.data[index + 2] as u64) << 16)

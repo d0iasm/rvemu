@@ -197,8 +197,23 @@ pub struct Cpu {
 impl Cpu {
     /// Create a new `Cpu` object.
     pub fn new() -> Cpu {
+        // From riscv-pk:
+        // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
+        //   save a0 and a1; arguments from previous boot loader stage:
+        //   // li x10, 0
+        //   // li x11, 0
+        //
+        // void init_first_hart(uintptr_t hartid, uintptr_t dtb)
+        //   x10 (a0): hartid
+        //   x11 (a1): pointer to dtb
+        //
+        // So, we need to set registers register to the state as they are when a bootloader finished.
+        let mut xregs = XRegisters::new();
+        xregs.write(10, 0);
+        xregs.write(11, 0x1020);
+
         Cpu {
-            xregs: XRegisters::new(),
+            xregs,
             fregs: FRegisters::new(),
             pc: 0,
             state: State::new(),
