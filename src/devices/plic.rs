@@ -65,7 +65,7 @@ impl Plic {
     }
 
     /// Read 4 bytes from the PLIC only if the address is valid. Otherwise, returns 0.
-    pub fn read(&self, addr: u64) -> u32 {
+    pub fn read32(&self, addr: u64) -> u32 {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {
             if addr == PLIC_BASE + UART_IRQ * 4 {
@@ -96,7 +96,7 @@ impl Plic {
     }
 
     /// Write 4 bytes to the PLIC only if the address is valid.
-    pub fn write(&mut self, addr: u64, val: u32) {
+    pub fn write32(&mut self, addr: u64, val: u32) {
         // TODO: This `if` statement is temporary.
         if PLIC_BASE <= addr && addr <= PLIC_BASE + UART_IRQ * 4 {
             if addr == PLIC_BASE + UART_IRQ * 4 {
