@@ -903,7 +903,8 @@ impl Cpu {
                                     return Err(Exception::Breakpoint);
                                 } else {
                                     // c.jalr
-                                    let t = self.pc.wrapping_add(2);
+                                    // Don't add 2 because the pc already moved on.
+                                    let t = self.pc;
                                     self.pc = self.xregs.read(rd_rs1);
                                     self.xregs.write(1, t);
                                 }
@@ -2074,6 +2075,7 @@ impl Cpu {
             0x67 => {
                 // I-type
                 // jalr
+                // Don't add 4 because the pc already moved on.
                 let t = self.pc;
 
                 let offset = (((inst & 0xfff00000) as i32) as i64) >> 20;
