@@ -83,7 +83,6 @@ impl Bus {
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT read 8");
             return Ok(0);
         }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
@@ -101,7 +100,6 @@ impl Bus {
     /// Read 2 bytes from the system bus.
     pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT read 16");
             return Ok(0);
         }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
@@ -116,7 +114,6 @@ impl Bus {
     /// Read 4 bytes from the system bus.
     pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT read 32");
             return Ok(0);
         }
         if DEBUG_BASE <= addr && addr < DEBUG_BASE + DEBUG_SIZE {
@@ -127,7 +124,7 @@ impl Bus {
             return Ok(self.rom.read32(addr));
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.read(addr) as u64);
+            return Ok(self.plic.read32(addr) as u64);
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.read(addr) as u64);
@@ -143,8 +140,11 @@ impl Bus {
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read64(addr));
         }
+        if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
+            // TODO: make read64 for plic.
+            return Ok(self.plic.read32(addr) as u64);
+        }
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT read 64");
             return Ok(self.clint.read(addr));
         }
         if DRAM_BASE <= addr {
@@ -156,7 +156,6 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT write 8");
             return Ok(());
         }
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
@@ -173,7 +172,6 @@ impl Bus {
     /// Write 2 bytes to the system bus.
     pub fn write16(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT write 16");
             return Ok(());
         }
         if DRAM_BASE <= addr {
@@ -185,11 +183,10 @@ impl Bus {
     /// Write 4 bytes to the system bus.
     pub fn write32(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT write 32");
             return Ok(());
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.write(addr, val as u32));
+            return Ok(self.plic.write32(addr, val as u32));
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.write(addr, val as u32));
@@ -203,8 +200,11 @@ impl Bus {
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            dbg!("Called CLINT write 64");
             return Ok(self.clint.write(addr, val));
+        }
+        if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
+            // TODO: make write64 for plic.
+            return Ok(self.plic.write32(addr, val as u32));
         }
         if DRAM_BASE <= addr {
             return Ok(self.dram.write64(addr, val));
