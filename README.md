@@ -192,6 +192,12 @@ $ perf report
 $ firebase deploy
 ```
 
+## Install
+1. rustc
+2. rustup nightly
+3. wasm-pack
+4. dtc (apt install device-tree-compiler)
+
 ## Dependencies
 - [Nightly Rust](https://doc.rust-lang.org/1.2.0/book/nightly-rust.html)
 - [Python3](https://www.python.org/downloads/)
