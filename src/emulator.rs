@@ -80,7 +80,7 @@ impl Emulator {
             match trap {
                 Trap::Requested => {}
                 _ => {
-                    dbg!(format!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap));
+                    println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
                     return;
                 }
             }
