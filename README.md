@@ -29,7 +29,7 @@ The emulator can run both in your browser and in your terminal. Also, the
 emulator can be embedded in your project by
 [the crate registry](https://crates.io/crates/rvemu).
 
-### On Browser
+### On browser
 You can run [`xv6`](https://github.com/mit-pdos/xv6-riscv), a simple Unix-like
 operating system, in [**rvemu.app/xv6**](https://rvemu.app/xv6.html).
 
@@ -48,7 +48,7 @@ See
 [the "Build RISC-V binary" section](https://github.com/d0iasm/rvemu#build-risc-v-binary)
 for more information to build RISC-V binary.
 
-### On Terminal
+### On terminal
 The option `--kernel` or `-k` specifies a kernel image, and `--file` or `-f`
 specifies a root filesystem image.
 
@@ -63,6 +63,7 @@ $ ./target/release/rvemu-cli -k examples/xv6-kernel.text -f examples/xv6-fs.img
 ```
 
 **Bare-metal binary**
+
 You can use an arbitrary RISC-V binary and you can skip the `-f` option. An ELF
 binary should have no headers.
 ```
@@ -70,7 +71,7 @@ $ ./target/release/rvemu-cli -k <your-binary>
 ```
 
 ## Build
-### For WEB
+### For WEB application
 The `wasm-pack build` command generates a `pkg` directory and makes Rust source
 code into `.wasm` binary. It also generates the JavaScript API for using our
 Rust-generated WebAssembly. The toolchain's supported target is
@@ -110,11 +111,6 @@ $ make
 $ make linux
 ```
 
-### Linux
-The page [Running 64- and 32-bit RISC-V Linux on QEMU](https://risc-v-getting-started-guide.readthedocs.io/en/latest/linux-qemu.html)
-helps to build a Linux image. When you compile this project in a x86 computer,
-you might need to update `CC := riscv64-unknown-elf-gcc` in `Makefile`.
-
 ### Bare-metal C program
 You need to make an ELF file without headers, which starts at the address
 `0x8000_0000` by the following instructions:
@@ -126,6 +122,11 @@ $l riscv64-unknown-elf-gcc -Wl,-Ttext=0x80000000 -nostdlib -o foo foo.s
 // Remove headers from a binary file.
 $ riscv64-unknown-elf-objcopy -O binary foo foo.text
 ```
+
+### Linux
+The page [Running 64- and 32-bit RISC-V Linux on QEMU](https://risc-v-getting-started-guide.readthedocs.io/en/latest/linux-qemu.html)
+helps to build a Linux image. When you compile this project in a x86 computer,
+you might need to update `CC := riscv64-unknown-elf-gcc` in `Makefile`.
 
 ## Testing
 You can see the binaries for unit testings in
@@ -147,13 +148,6 @@ $ perf report
 ```
 $ firebase deploy
 ```
-
-## Install
-To set up environment:
-1. rustc
-2. rustup nightly
-3. wasm-pack
-4. dtc (apt install device-tree-compiler)
 
 ## Features List
 The emulator supports the following features:
@@ -178,6 +172,13 @@ The emulator supports the following features:
   - [x] PLIC: platform level interrupt controller
   - [x] Virtio: virtual I/O
 - [x] Device tree
+
+## Install
+To set up environment:
+1. rustc
+2. rustup nightly
+3. wasm-pack
+4. dtc (apt install device-tree-compiler)
 
 ## Dependencies
 - [Nightly Rust](https://doc.rust-lang.org/1.2.0/book/nightly-rust.html)
