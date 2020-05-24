@@ -190,7 +190,7 @@ pub struct Cpu {
     pub bus: Bus,
     /// SV39 paging flag.
     pub enable_paging: bool,
-    /// physical page number (PPN)
+    /// physical page number (PPN) × PAGE_SIZE (4096).
     pub page_table: u64,
 }
 
@@ -356,13 +356,28 @@ impl Cpu {
         return None;
     }
 
+    /// Update the physical page number (PPN) and the addressing mode.
+    fn update_paging(&mut self) {
+        // Read the physical page number (PPN) of the root page table, i.e., its
+        // supervisor physical address divided by 4 KiB.
+        self.page_table = self.state.read_bits(SATP, ..44) * PAGE_SIZE;
+
+        // Read the MODE field, which selects the current address-translation scheme.
+        let mode = self.state.read_bits(SATP, 60..);
+        // Enable the SV39 paging if the value of the mode field is 8.
+
+        if mode == 8 {
+            self.enable_paging = true;
+        } else {
+            self.enable_paging = false;
+        }
+    }
+
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
     pub fn translate(&mut self, addr: u64) -> Result<u64, Exception> {
         if !self.enable_paging {
             return Ok(addr);
         }
-
-        // TODO: Support only Sv39
 
         // 4.3.2 Virtual Address Translation Process
         // (The RISC-V Instruction Set Manual Volume II-Privileged Architecture_20190608)
@@ -2214,61 +2229,60 @@ impl Cpu {
                         self.xregs.write(rd, t);
 
                         if csr_addr == SATP {
-                            // Read the physical page number (PPN) of the root page table, i.e., its
-                            // supervisor physical address divided by 4 KiB.
-                            self.page_table = self.state.read_bits(SATP, ..44) * PAGE_SIZE;
-
-                            // Read the MODE field, which selects the current address-translation scheme.
-                            let mode = self.state.read_bits(SATP, 60..);
-                            // Enable the SV39 paging if the value of the mode field is 8.
-                            if mode == 8 {
-                                self.enable_paging = true;
-                            } else {
-                                self.enable_paging = false;
-                            }
+                            self.update_paging();
                         }
                     }
                     0x2 => {
                         // csrrs
-                        self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state
-                            .write(csr_addr, self.xregs.read(rd) | self.xregs.read(rs1));
+                        let t = self.state.read(csr_addr);
+                        self.state.write(csr_addr, t | self.xregs.read(rs1));
+                        self.xregs.write(rd, t);
+
+                        if csr_addr == SATP {
+                            self.update_paging();
+                        }
                     }
                     0x3 => {
                         // csrrc
-                        self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state
-                            .write(csr_addr, self.xregs.read(rd) & (!self.xregs.read(rs1)));
+                        let t = self.state.read(csr_addr);
+                        self.state.write(csr_addr, t & (!self.xregs.read(rs1)));
+                        self.xregs.write(rd, t);
+
+                        if csr_addr == SATP {
+                            self.update_paging();
+                        }
                     }
                     0x5 => {
                         // csrrwi
+                        let zimm = rs1;
                         self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state.write(csr_addr, rs1);
+                        self.state.write(csr_addr, zimm);
 
                         if csr_addr == SATP {
-                            // Read the physical page number (PPN) of the root page table, i.e., its
-                            // supervisor physical address divided by 4 KiB.
-                            self.page_table = self.state.read_bits(SATP, ..44) * PAGE_SIZE;
-
-                            // Read the MODE field, which selects the current address-translation scheme.
-                            let mode = self.state.read_bits(SATP, 60..);
-                            // Enable the SV39 paging if the value of the mode field is 8.
-                            if mode == 8 {
-                                self.enable_paging = true;
-                            } else {
-                                self.enable_paging = false;
-                            }
+                            self.update_paging();
                         }
                     }
                     0x6 => {
                         // csrrsi
-                        self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state.write(csr_addr, self.xregs.read(rd) | rs1);
+                        let zimm = rs1;
+                        let t = self.state.read(csr_addr);
+                        self.state.write(csr_addr, t | zimm);
+                        self.xregs.write(rd, t);
+
+                        if csr_addr == SATP {
+                            self.update_paging();
+                        }
                     }
                     0x7 => {
                         // csrrci
-                        self.xregs.write(rd, self.state.read(csr_addr));
-                        self.state.write(csr_addr, self.xregs.read(rd) & !rs1);
+                        let zimm = rs1;
+                        let t = self.state.read(csr_addr);
+                        self.state.write(csr_addr, t & (!zimm));
+                        self.xregs.write(rd, t);
+
+                        if csr_addr == SATP {
+                            self.update_paging();
+                        }
                     }
                     _ => {}
                 }
