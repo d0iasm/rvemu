@@ -212,11 +212,22 @@ impl Cpu {
         xregs.write(10, 0);
         xregs.write(11, 0x1020);
 
+        let mut state = State::new();
+        let misa: u64 = (2 << 62) | // MXL[1:0]=2 (XLEN is 64)
+            (1 << 18) | // Extensions[18] (Supervisor mode implemented)
+            (1 << 12) | // Extensions[12] (Integer Multiply/Divide extension)
+            (1 << 8) | // Extensions[8] (RV32I/64I/128I base ISA)
+            (1 << 5) | // Extensions[5] (Single-precision floating-point extension)
+            (1 << 3) | // Extensions[3] (Double-precision floating-point extension)
+            (1 << 2) | // Extensions[2] (Compressed extension)
+            1; // Extensions[0] (Atomic extension)
+        state.write(MISA, misa);
+
         Cpu {
             xregs,
             fregs: FRegisters::new(),
             pc: 0,
-            state: State::new(),
+            state,
             mode: Mode::Machine,
             prev_mode: Mode::Machine,
             bus: Bus::new(),
@@ -231,11 +242,12 @@ impl Cpu {
         self.mode = Mode::Machine;
         self.prev_mode = Mode::Machine;
         self.state.reset();
-        // TODO: reset CPU mode to machine or not?
         for i in 0..REGISTERS_COUNT {
             self.xregs.write(i as u64, 0);
             self.fregs.write(i as u64, 0.0);
         }
+        self.xregs.write(10, 0);
+        self.xregs.write(11, 0x1020);
     }
 
     /// Increment the timer register (mtimer) in CLINT.
@@ -364,8 +376,8 @@ impl Cpu {
 
         // Read the MODE field, which selects the current address-translation scheme.
         let mode = self.state.read_bits(SATP, 60..);
-        // Enable the SV39 paging if the value of the mode field is 8.
 
+        // Enable the SV39 paging if the value of the mode field is 8.
         if mode == 8 {
             self.enable_paging = true;
         } else {
