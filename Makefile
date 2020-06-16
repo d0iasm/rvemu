@@ -15,7 +15,7 @@ test-wasm:
 	#wasm-pack test lib/rvemu-wasm --headless --firefox
 
 test-isa:
-	cargo test -- --nocapture
+	RUST_BACKTRACE=1 cargo test -- --nocapture
 
 clean:
 	cargo clean

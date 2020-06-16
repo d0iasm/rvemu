@@ -71,7 +71,7 @@ impl Exception {
         // medeleg and mideleg to indicate that certain exceptions and interrupts should be
         // processed directly by a lower privilege level."
 
-        let exception_pc = cpu.pc - 4;
+        let exception_pc = cpu.pc.wrapping_sub(4);
         cpu.prev_mode = cpu.mode;
 
         let cause = self.exception_code();
