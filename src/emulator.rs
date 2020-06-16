@@ -54,10 +54,10 @@ impl Emulator {
             }
 
             if self.is_debug {
-                let inst32 = self.cpu.fetch32().unwrap();
-                let inst16 = self.cpu.fetch16().unwrap();
+                let inst32 = self.cpu.fetch32();
+                let inst16 = self.cpu.fetch16();
                 dbg!(format!(
-                    "pc: {:#x} , inst32: {:#x}, inst16: {:#x}",
+                    "pc: {:#x} , inst32: {:#?}, inst16: {:#?}",
                     self.cpu.pc, inst32, inst16,
                 ));
             }
@@ -78,11 +78,11 @@ impl Emulator {
             };
 
             match trap {
-                Trap::Requested => {}
-                _ => {
+                Trap::Fatal => {
                     println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
                     return;
                 }
+                _ => {}
             }
         }
     }
