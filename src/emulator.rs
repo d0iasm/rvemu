@@ -53,15 +53,6 @@ impl Emulator {
                 return;
             }
 
-            if self.is_debug {
-                let inst32 = self.cpu.fetch32();
-                let inst16 = self.cpu.fetch16();
-                dbg!(format!(
-                    "pc: {:#x} , inst32: {:#?}, inst16: {:#?}",
-                    self.cpu.pc, inst32, inst16,
-                ));
-            }
-
             // Take an interrupt.
             match self.cpu.check_pending_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut self.cpu),
@@ -73,7 +64,19 @@ impl Emulator {
 
             // Increment a CPU clock. In one cycle, CPU does fetch, decode, and execute.
             let trap = match self.cpu.tick() {
-                Ok(_) => Trap::Requested, // dummy
+                Ok(inst) => {
+                    if self.is_debug {
+                        dbg!(format!(
+                            "pc: {:#x} , inst: {:#x}, is_inst 16? {}",
+                            self.cpu.pc,
+                            inst,
+                            // Check if an instruction is one of the compressed instructions.
+                            (inst & 0xffff_0000) == 0,
+                        ));
+                    }
+                    // Return a dummy trap.
+                    Trap::Requested
+                }
                 Err(exception) => exception.take_trap(&mut self.cpu),
             };
 

@@ -377,6 +377,14 @@ impl Cpu {
         // Read the MODE field, which selects the current address-translation scheme.
         let mode = self.state.read_bits(SATP, 60..);
 
+        println!(
+            "mode {:#x}, ppn {:#x} pagetable {:#x} pc {:#x}",
+            mode,
+            self.state.read_bits(SATP, ..44),
+            self.page_table,
+            self.pc - 4
+        );
+
         // Enable the SV39 paging if the value of the mode field is 8.
         if mode == 8 {
             self.enable_paging = true;
@@ -547,25 +555,26 @@ impl Cpu {
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// nothing.
-    pub fn tick(&mut self) -> Result<(), Exception> {
+    pub fn tick(&mut self) -> Result<u64, Exception> {
         // Fetch.
         let inst16 = self.fetch16()?;
+        let inst;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
                 if inst16 == 0 {
                     // Unimplemented instruction, since all bits are 0.
                     return Err(Exception::IllegalInstruction);
                 }
-                self.tick_c()?
+                inst = self.tick_c()?
             }
-            _ => self.tick_g()?,
+            _ => inst = self.tick_g()?,
         }
-        Ok(())
+        Ok(inst)
     }
 
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
     /// returns nothing. It also increments the program counter by 2 bytes.
-    pub fn tick_c(&mut self) -> Result<(), Exception> {
+    pub fn tick_c(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch16()?;
 
@@ -979,12 +988,12 @@ impl Cpu {
                 return Err(Exception::IllegalInstruction);
             }
         }
-        Ok(())
+        Ok(inst)
     }
 
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
     /// otherwise, returns nothing. It also increments the program counter by 4 bytes.
-    pub fn tick_g(&mut self) -> Result<(), Exception> {
+    pub fn tick_g(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch32()?;
 
@@ -2303,6 +2312,6 @@ impl Cpu {
                 return Err(Exception::IllegalInstruction);
             }
         }
-        Ok(())
+        Ok(inst)
     }
 }
