@@ -126,8 +126,11 @@ $ riscv64-unknown-elf-objcopy -O binary foo foo.text
 ### Linux
 The page [Running 64- and 32-bit RISC-V Linux on QEMU](https://risc-v-getting-started-guide.readthedocs.io/en/latest/linux-qemu.html)
 helps to build a Linux image. When you compile this project in a x86 computer,
-you may need to update `CC := gcc` to `CC := riscv64-unknown-elf-gcc` in
-`riscv-pk/build/Makefile` and `busybear-linux/build/riscv-pk/Makefile`.
+you may need to:
+- update `CC := gcc` to `CC := riscv64-unknown-elf-gcc` in `riscv-pk/build/Makefile`
+- comment out the "build bbl" part in `busybear-linux/scripts/build.sh`
+because the build script for cross compiling in riscv-pk is broken.
+See https://github.com/riscv/riscv-pk/blob/master/configure#L1146-L1148
 
 ## Testing
 You can see the binaries for unit testings in
