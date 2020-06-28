@@ -28,6 +28,18 @@ const SP: u64 = 2;
 /// The page size (4 KiB) for the virtual memory system.
 const PAGE_SIZE: u64 = 4096;
 
+/// Access type that is used in the virtual address translation process. It decides which exception
+/// should raises (InstructionPageFault, LoadPageFault or StoreAMOPageFault).
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum AccessType {
+    /// Raises the exception InstructionPageFault. It is used for an instruction fetch.
+    Instruction,
+    /// Raises the exception LoadPageFault.
+    Load,
+    /// Raises the exception StoreAMOPageFault.
+    Store,
+}
+
 /// The privileged mode.
 #[derive(Debug, PartialEq, PartialOrd, Eq, Copy, Clone)]
 pub enum Mode {
@@ -394,7 +406,7 @@ impl Cpu {
     }
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
-    pub fn translate(&mut self, addr: u64) -> Result<u64, Exception> {
+    pub fn translate(&mut self, addr: u64, access_type: AccessType) -> Result<u64, Exception> {
         if !self.enable_paging {
             return Ok(addr);
         }
@@ -419,6 +431,7 @@ impl Cpu {
             //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
             //    exception corresponding to the original access type.
             pte = self.bus.read64(a + vpn[i as usize] * 8)?;
+
             // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
             //    exception corresponding to the original access type.
             let v = pte & 1;
@@ -426,10 +439,13 @@ impl Cpu {
             let w = (pte >> 2) & 1;
             let x = (pte >> 3) & 1;
             if v == 0 || (r == 0 && w == 1) {
-                // TODO: raise InstructionPageFault, LoadPageFault, or StoreAMOPageFault
-                // depending on the original access type.
-                return Err(Exception::InstructionPageFault);
+                match access_type {
+                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
+                    AccessType::Load => return Err(Exception::LoadPageFault),
+                    AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                }
             }
+
             // 4. Otherwise, the PTE is valid. If pte.r = 1 or pte.x = 1, go to step 5.
             //    Otherwise, this PTE is a pointer to the next level of the page table.
             //    Let i = i − 1. If i < 0, stop and raise a page-fault exception
@@ -442,9 +458,11 @@ impl Cpu {
             let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
             a = ppn * PAGE_SIZE;
             if i < 0 {
-                // TODO: raise InstructionPageFault, LoadPageFault, or StoreAMOPageFault
-                // depending on the original access type.
-                return Err(Exception::InstructionPageFault);
+                match access_type {
+                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
+                    AccessType::Load => return Err(Exception::LoadPageFault),
+                    AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                }
             }
         }
         // TODO: implement step 5
@@ -453,6 +471,109 @@ impl Cpu {
         //    privilege mode and the value of the SUM and MXR fields of the mstatus
         //    register. If not, stop and raise a page-fault exception corresponding
         //    to the original access type.
+
+        // 3.1.6.3 Memory Privilege in mstatus Register
+        // "The MXR (Make eXecutable Readable) bit modifies the privilege with which loads access
+        // virtual memory. When MXR=0, only loads from pages marked readable (R=1 in Figure 4.15)
+        // will succeed. When MXR=1, loads from pages marked either readable or executable
+        // (R=1 or X=1) will succeed. MXR has no effect when page-based virtual memory is not in
+        // effect. MXR is hardwired to 0 if S-mode is not supported."
+        if access_type == AccessType::Instruction && ((pte >> 3) & 1) == 0 {
+            return Err(Exception::InstructionPageFault);
+        }
+        let mxr = self.state.read_bit(MSTATUS, 19);
+        if access_type == AccessType::Load && ((pte >> 1) & 1) == 0 && !((mxr == 1) && ((pte >> 3) & 1) == 0) {
+            return Err(Exception::LoadPageFault);
+        }
+        /*
+        match self.state.read_bit(MSTATUS, 19) {
+            0 => {
+                match access_type {
+                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
+                    //AccessType::Instruction => {}
+                    AccessType::Load => {
+                        // When MXR=0, only loads from pages marked readable will succeed.
+                        //let r = (pte >> 1) & 1;
+                        //if r == 0 {
+                            //return Err(Exception::LoadPageFault);
+                        //}
+                    }
+                    //AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                    AccessType::Store => {}
+                }
+            }
+            1 => {
+                match access_type {
+                    AccessType::Instruction => {
+                        // When MXR=1, loads from pages marked either readable or executable will
+                        // succeed.
+                        //let x = (pte >> 3) & 1;
+                        //if x == 0 {
+                        //return Err(Exception::InstructionPageFault);
+                        //}
+                    }
+                    AccessType::Load => {
+                        // When MXR=1, loads from pages marked either readable or executable will
+                        // succeed.
+                        //let r = (pte >> 1) & 1;
+                        //if r == 0 {
+                        //return Err(Exception::LoadPageFault);
+                        //}
+                    }
+                    //AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                    AccessType::Store => {}
+                }
+            }
+            _ => {
+                // Should not be reached.
+            }
+        }
+        */
+
+        // "The SUM (permit Supervisor User Memory access) bit modifies the privilege with which
+        // S-mode loads and stores access virtual memory. When SUM=0, S-mode memory accesses to
+        // pages that are accessible by U-mode (U=1 in Figure 4.15) will fault. When SUM=1, these
+        // accesses are permitted.  SUM has no effect when page-based virtual memory is not in
+        // effect. Note that, while SUM is ordinarily ignored when not executing in S-mode, it is
+        // in effect when MPRV=1 and MPP=S. SUM is hardwired to 0 if S-mode is not supported."
+
+        /*
+            } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
+              break;
+            } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
+              break;
+            } else if (type == FETCH ? !(pte & PTE_X) :
+                       type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                       !((pte & PTE_R) && (pte & PTE_W))) {
+              break;
+            } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+              break;
+            } else {
+              reg_t ad = PTE_A | ((type == STORE) * PTE_D);
+        */
+
+        /*
+        match access_type {
+            AccessType::Instruction => {
+                let x = (pte >> 3) & 1;
+                if x == 0 {
+                    return Err(Exception::InstructionPageFault);
+                }
+            }
+            AccessType::Load => {
+                let r = (pte >> 1) & 1;
+                if r == 0 {
+                    return Err(Exception::LoadPageFault);
+                }
+            }
+            AccessType::Store => {
+                let w = (pte >> 2) & 1;
+                if w == 0 {
+                    return Err(Exception::StoreAMOPageFault);
+                }
+            }
+        }
+        */
 
         // TODO: implement step 6
         // 6. If i > 0 and pte.ppn[i−1:0] != 0, this is a misaligned superpage; stop and
@@ -509,67 +630,69 @@ impl Cpu {
     /// Read a byte from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn read8(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read8(p_addr)
     }
 
     /// Read 2 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn read16(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read16(p_addr)
     }
 
     /// Read 4 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn read32(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read32(p_addr)
     }
 
     /// Read 8 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn read64(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read64(p_addr)
     }
 
     /// Write a byte to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn write8(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write8(p_addr, val)
     }
 
     /// Write 2 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn write16(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write16(p_addr, val)
     }
 
     /// Write 4 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn write32(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write32(p_addr, val)
     }
 
     /// Write 8 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     pub fn write64(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr)?;
+        let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write64(p_addr, val)
     }
 
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch32(&mut self) -> Result<u64, Exception> {
-        self.read32(self.pc)
+        let p_pc = self.translate(self.pc, AccessType::Instruction)?;
+        self.bus.read32(p_pc)
     }
 
     /// Fetch the next instruction from the memory at the current program counter.
     pub fn fetch16(&mut self) -> Result<u64, Exception> {
-        self.read16(self.pc)
+        let p_pc = self.translate(self.pc, AccessType::Instruction)?;
+        self.bus.read16(p_pc)
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
@@ -1256,8 +1379,14 @@ impl Cpu {
                     (0x2, 0x01) => {
                         // amoswap.w
                         let t = self.read32(self.xregs.read(rs1))?;
+                        println!(
+                            "amoswap.w!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! rs1 {} rs2 {} t {:#x}",
+                            rs1, rs2, t
+                        );
+                        println!("{}", self.xregs);
                         self.bus
                             .write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        println!("{}", self.xregs);
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x01) => {
