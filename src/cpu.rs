@@ -474,17 +474,36 @@ impl Cpu {
         //    va.vpn[i−1:0].
         //    • pa.ppn[LEVELS−1:i] = pte.ppn[LEVELS−1:i].
         let offset = addr & 0xfff;
-        return Ok(if i > 0 {
-            let ppn = [
-                (pte >> 10) & 0x1ff,
-                (pte >> 19) & 0x1ff,
-                (pte >> 28) & 0x03ff_ffff,
-            ];
-            (ppn[2] << 30) | (ppn[1] << 21) | (vpn[0] << 12) | offset
-        } else {
-            let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
-            (ppn << 12) | offset
-        });
+        match i {
+            0 => {
+                let ppn = (pte >> 10) & 0x0fff_ffff_ffff;
+                Ok((ppn << 12) | offset)
+            }
+            1 => {
+                // Superpage translation. A superpage is a memory page of larger size than an
+                // ordinary page (4 KiB). It reduces TLB misses and improves performance.
+                let ppn = [
+                    (pte >> 10) & 0x1ff,
+                    (pte >> 19) & 0x1ff,
+                    (pte >> 28) & 0x03ff_ffff,
+                ];
+                Ok((ppn[2] << 30) | (ppn[1] << 21) | (vpn[0] << 12) | offset)
+            }
+            2 => {
+                // Superpage translation. A superpage is a memory page of larger size than an
+                // ordinary page (4 KiB). It reduces TLB misses and improves performance.
+                let ppn = [
+                    (pte >> 10) & 0x1ff,
+                    (pte >> 19) & 0x1ff,
+                    (pte >> 28) & 0x03ff_ffff,
+                ];
+                Ok((ppn[2] << 30) | (vpn[1] << 21) | (vpn[0] << 12) | offset)
+            }
+            _ => {
+                // TODO: raise exception depending on access type.
+                Err(Exception::InstructionPageFault)
+            }
+        }
     }
 
     /// Read a byte from the system bus with the translation a virtual address to a physical address
