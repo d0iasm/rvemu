@@ -506,7 +506,6 @@ impl Cpu {
             }
         }
 
-        // TODO: implement step 7
         // 7. If pte.a = 0, or if the memory access is a store and pte.d = 0, either raise
         //    a page-fault exception corresponding to the original access type, or:
         //    • Set pte.a to 1 and, if the memory access is a store, also set pte.d to 1.
@@ -518,8 +517,20 @@ impl Cpu {
         let d = (pte >> 7) & 1;
         if a == 0 || (access_type == AccessType::Store && d == 0) {
             // Set pte.a to 1 and, if the memory access is a store, also set pte.d to 1.
-            pte = pte | (1 << 6) | if access_type == AccessType::Store {(1<<7)} else {0};
+            pte = pte
+                | (1 << 6)
+                | if access_type == AccessType::Store {
+                    1 << 7
+                } else {
+                    0
+                };
+
             // TODO: PMA or PMP check.
+
+            // Update the value of address satp.ppn × PAGESIZE + va.vpn[i] × PTESIZE with new pte
+            // value.
+            self.bus
+                .write64(self.page_table + vpn[i as usize] * 8, pte)?;
         }
 
         // 8. The translation is successful. The translated physical address is given as
@@ -544,10 +555,11 @@ impl Cpu {
                 // ordinary page (4 KiB). It reduces TLB misses and improves performance.
                 Ok((ppn[2] << 30) | (vpn[1] << 21) | (vpn[0] << 12) | offset)
             }
-            _ => {
-                // TODO: raise exception depending on access type.
-                Err(Exception::InstructionPageFault)
-            }
+            _ => match access_type {
+                AccessType::Instruction => return Err(Exception::InstructionPageFault),
+                AccessType::Load => return Err(Exception::LoadPageFault),
+                AccessType::Store => return Err(Exception::StoreAMOPageFault),
+            },
         }
     }
 
@@ -1303,21 +1315,13 @@ impl Cpu {
                     (0x2, 0x01) => {
                         // amoswap.w
                         let t = self.read32(self.xregs.read(rs1))?;
-                        println!(
-                            "amoswap.w!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! rs1 {} rs2 {} t {:#x}",
-                            rs1, rs2, t
-                        );
-                        println!("{}", self.xregs);
-                        self.bus
-                            .write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
-                        println!("{}", self.xregs);
+                        self.write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
                         let t = self.read64(self.xregs.read(rs1))?;
-                        self.bus
-                            .write64(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        self.write64(self.xregs.read(rs1), self.xregs.read(rs2))?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x02) => {
@@ -1336,7 +1340,7 @@ impl Cpu {
                         let addr = self.read32(self.xregs.read(rs1) as u64)?;
                         let src = self.read32(self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, 0);
-                        self.bus.write32(addr as u64, src as u64)?;
+                        self.write32(addr as u64, src as u64)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
@@ -1344,7 +1348,7 @@ impl Cpu {
                         let addr = self.read32(self.xregs.read(rs1))?;
                         let src = self.read32(self.xregs.read(rs2))?;
                         self.xregs.write(rd, 0);
-                        self.bus.write64(addr, src)?;
+                        self.write64(addr, src)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
