@@ -478,57 +478,6 @@ impl Cpu {
         // will succeed. When MXR=1, loads from pages marked either readable or executable
         // (R=1 or X=1) will succeed. MXR has no effect when page-based virtual memory is not in
         // effect. MXR is hardwired to 0 if S-mode is not supported."
-        if access_type == AccessType::Instruction && ((pte >> 3) & 1) == 0 {
-            return Err(Exception::InstructionPageFault);
-        }
-        let mxr = self.state.read_bit(MSTATUS, 19);
-        if access_type == AccessType::Load && ((pte >> 1) & 1) == 0 && !((mxr == 1) && ((pte >> 3) & 1) == 0) {
-            return Err(Exception::LoadPageFault);
-        }
-        /*
-        match self.state.read_bit(MSTATUS, 19) {
-            0 => {
-                match access_type {
-                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
-                    //AccessType::Instruction => {}
-                    AccessType::Load => {
-                        // When MXR=0, only loads from pages marked readable will succeed.
-                        //let r = (pte >> 1) & 1;
-                        //if r == 0 {
-                            //return Err(Exception::LoadPageFault);
-                        //}
-                    }
-                    //AccessType::Store => return Err(Exception::StoreAMOPageFault),
-                    AccessType::Store => {}
-                }
-            }
-            1 => {
-                match access_type {
-                    AccessType::Instruction => {
-                        // When MXR=1, loads from pages marked either readable or executable will
-                        // succeed.
-                        //let x = (pte >> 3) & 1;
-                        //if x == 0 {
-                        //return Err(Exception::InstructionPageFault);
-                        //}
-                    }
-                    AccessType::Load => {
-                        // When MXR=1, loads from pages marked either readable or executable will
-                        // succeed.
-                        //let r = (pte >> 1) & 1;
-                        //if r == 0 {
-                        //return Err(Exception::LoadPageFault);
-                        //}
-                    }
-                    //AccessType::Store => return Err(Exception::StoreAMOPageFault),
-                    AccessType::Store => {}
-                }
-            }
-            _ => {
-                // Should not be reached.
-            }
-        }
-        */
 
         // "The SUM (permit Supervisor User Memory access) bit modifies the privilege with which
         // S-mode loads and stores access virtual memory. When SUM=0, S-mode memory accesses to
@@ -536,44 +485,6 @@ impl Cpu {
         // accesses are permitted.  SUM has no effect when page-based virtual memory is not in
         // effect. Note that, while SUM is ordinarily ignored when not executing in S-mode, it is
         // in effect when MPRV=1 and MPP=S. SUM is hardwired to 0 if S-mode is not supported."
-
-        /*
-            } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
-              break;
-            } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
-              break;
-            } else if (type == FETCH ? !(pte & PTE_X) :
-                       type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                                       !((pte & PTE_R) && (pte & PTE_W))) {
-              break;
-            } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
-              break;
-            } else {
-              reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-        */
-
-        /*
-        match access_type {
-            AccessType::Instruction => {
-                let x = (pte >> 3) & 1;
-                if x == 0 {
-                    return Err(Exception::InstructionPageFault);
-                }
-            }
-            AccessType::Load => {
-                let r = (pte >> 1) & 1;
-                if r == 0 {
-                    return Err(Exception::LoadPageFault);
-                }
-            }
-            AccessType::Store => {
-                let w = (pte >> 2) & 1;
-                if w == 0 {
-                    return Err(Exception::StoreAMOPageFault);
-                }
-            }
-        }
-        */
 
         // TODO: implement step 6
         // 6. If i > 0 and pte.ppn[i−1:0] != 0, this is a misaligned superpage; stop and
