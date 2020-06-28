@@ -486,9 +486,25 @@ impl Cpu {
         // effect. Note that, while SUM is ordinarily ignored when not executing in S-mode, it is
         // in effect when MPRV=1 and MPP=S. SUM is hardwired to 0 if S-mode is not supported."
 
-        // TODO: implement step 6
         // 6. If i > 0 and pte.ppn[i−1:0] != 0, this is a misaligned superpage; stop and
         //    raise a page-fault exception corresponding to the original access type.
+        let ppn = [
+            (pte >> 10) & 0x1ff,
+            (pte >> 19) & 0x1ff,
+            (pte >> 28) & 0x03ff_ffff,
+        ];
+        if i > 0 {
+            for j in (0..i).rev() {
+                if ppn[j as usize] != 0 {
+                    // A misaligned superpage.
+                    match access_type {
+                        AccessType::Instruction => return Err(Exception::InstructionPageFault),
+                        AccessType::Load => return Err(Exception::LoadPageFault),
+                        AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                    }
+                }
+            }
+        }
 
         // TODO: implement step 7
         // 7. If pte.a = 0, or if the memory access is a store and pte.d = 0, either raise
@@ -498,6 +514,13 @@ impl Cpu {
         //    corresponding to the original access type.
         //    • This update and the loading of pte in step 2 must be atomic; in particular,
         //    no intervening store to the PTE may be perceived to have occurred in-between.
+        let a = (pte >> 6) & 1;
+        let d = (pte >> 7) & 1;
+        if a == 0 || (access_type == AccessType::Store && d == 0) {
+            // Set pte.a to 1 and, if the memory access is a store, also set pte.d to 1.
+            pte = pte | (1 << 6) | if access_type == AccessType::Store {(1<<7)} else {0};
+            // TODO: PMA or PMP check.
+        }
 
         // 8. The translation is successful. The translated physical address is given as
         //    follows:
@@ -514,21 +537,11 @@ impl Cpu {
             1 => {
                 // Superpage translation. A superpage is a memory page of larger size than an
                 // ordinary page (4 KiB). It reduces TLB misses and improves performance.
-                let ppn = [
-                    (pte >> 10) & 0x1ff,
-                    (pte >> 19) & 0x1ff,
-                    (pte >> 28) & 0x03ff_ffff,
-                ];
                 Ok((ppn[2] << 30) | (ppn[1] << 21) | (vpn[0] << 12) | offset)
             }
             2 => {
                 // Superpage translation. A superpage is a memory page of larger size than an
                 // ordinary page (4 KiB). It reduces TLB misses and improves performance.
-                let ppn = [
-                    (pte >> 10) & 0x1ff,
-                    (pte >> 19) & 0x1ff,
-                    (pte >> 28) & 0x03ff_ffff,
-                ];
                 Ok((ppn[2] << 30) | (vpn[1] << 21) | (vpn[0] << 12) | offset)
             }
             _ => {
