@@ -2246,11 +2246,10 @@ impl Cpu {
                                 // sret
                                 // "The RISC-V Reader" book says:
                                 // "Returns from a supervisor-mode exception handler. Sets the pc to
-                                // CSRs[scpc], the privilege mode to CSRs[sstatus].SPP,
+                                // CSRs[sepc], the privilege mode to CSRs[sstatus].SPP,
                                 // CSRs[sstatus].SIE to CSRs[sstatus].SPIE, CSRs[sstatus].SPIE to
-                                // 1, and CSRs[sstatus].SPP to 0.", but
-                                // the implementation in QEMU and Spike use `mstatus` instead of
-                                // `sstatus`.
+                                // 1, and CSRs[sstatus].SPP to 0.", but the implementation in QEMU
+                                // and Spike use `mstatus` instead of `sstatus`.
                                 self.mode.require(Mode::Supervisor)?;
 
                                 // Set the program coutner to the supervisor exception program
@@ -2277,10 +2276,10 @@ impl Cpu {
                             (0x2, 0x18) => {
                                 // mret
                                 // "The RISC-V Reader" book says:
-                                // "Returns from a machine-mode exception handler. Sets the pc to CSRs[mepc], the privilege mode to
-                                // CSRs[mstatus].MPP, CSRs[mstatus].MIE to CSRs[mstatus].MPIE, and
-                                // CSRs[mstatus].MPIE to 1; and, if user mode is supported, sets
-                                // CSRs[mstatus].MPP to 0".
+                                // "Returns from a machine-mode exception handler. Sets the pc to
+                                // CSRs[mepc], the privilege mode to CSRs[mstatus].MPP,
+                                // CSRs[mstatus].MIE to CSRs[mstatus].MPIE, and CSRs[mstatus].MPIE
+                                // to 1; and, if user mode is supported, sets CSRs[mstatus].MPP to 0".
                                 self.mode.require(Mode::Machine)?;
 
                                 // Set the program coutner to the machine exception program

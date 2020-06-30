@@ -50,6 +50,8 @@ pub const SIE: CsrAddress = 0x104;
 pub const STVEC: CsrAddress = 0x105;
 
 // Supervisor trap handling.
+/// Scratch register for supervisor trap handlers.
+pub const SSCRATCH: CsrAddress = 0x140;
 /// Supervisor exception program counter.
 pub const SEPC: CsrAddress = 0x141;
 /// Supervisor trap cause.
