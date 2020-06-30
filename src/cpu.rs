@@ -2254,7 +2254,7 @@ impl Cpu {
 
                                 // Set the program coutner to the supervisor exception program
                                 // counter (SEPC).
-                                self.pc = self.state.read(SEPC) as u64;
+                                self.pc = self.state.read(SEPC);
 
                                 // TODO: Check TSR field
 
@@ -2284,7 +2284,7 @@ impl Cpu {
 
                                 // Set the program coutner to the machine exception program
                                 // counter (MEPC).
-                                self.pc = self.state.read(MEPC) as u64;
+                                self.pc = self.state.read(MEPC);
 
                                 // Set the current privileged mode depending on a privious privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
