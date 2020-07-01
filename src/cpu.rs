@@ -389,14 +389,6 @@ impl Cpu {
         // Read the MODE field, which selects the current address-translation scheme.
         let mode = self.state.read_bits(SATP, 60..);
 
-        println!(
-            "mode {:#x}, ppn {:#x} pagetable {:#x} pc {:#x}",
-            mode,
-            self.state.read_bits(SATP, ..44),
-            self.page_table,
-            self.pc - 4
-        );
-
         // Enable the SV39 paging if the value of the mode field is 8.
         if mode == 8 {
             self.enable_paging = true;
@@ -529,8 +521,9 @@ impl Cpu {
 
             // Update the value of address satp.ppn × PAGESIZE + va.vpn[i] × PTESIZE with new pte
             // value.
-            self.bus
-                .write64(self.page_table + vpn[i as usize] * 8, pte)?;
+            // TODO: If this is enabled, running xv6 fails.
+            //self.bus
+                //.write64(self.page_table + vpn[i as usize] * 8, pte)?;
         }
 
         // 8. The translation is successful. The translated physical address is given as
