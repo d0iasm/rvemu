@@ -46,7 +46,10 @@ impl Interrupt {
         cpu.prev_mode = cpu.mode;
 
         let cause = self.exception_code();
-        if (cpu.prev_mode <= Mode::Supervisor) && ((cpu.state.read(MIDELEG) >> cause) & 1 != 0) {
+
+        // TODO: check correct delegation.
+        //if (cpu.prev_mode <= Mode::Supervisor) && ((cpu.state.read(MIDELEG) >> cause) & 1 != 0) {
+        if cpu.prev_mode <= Mode::Supervisor {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 
@@ -86,15 +89,15 @@ impl Interrupt {
             // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
             // of a global interrupt-enable bit for supervisor mode (SIE, 1).
             cpu.state
-                .write_bit(MSTATUS, 5, cpu.state.read_bit(MSTATUS, 1));
+                .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
             // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
-            cpu.state.write_bit(MSTATUS, 1, 0);
+            cpu.state.write_bit(SSTATUS, 1, 0);
             // 4.1.1 Supervisor Status Register (sstatus)
             // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
             // 1 otherwise."
             match cpu.prev_mode {
-                Mode::User => cpu.state.write_bit(MSTATUS, 8, 0),
-                _ => cpu.state.write_bit(MSTATUS, 8, 1),
+                Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
+                _ => cpu.state.write_bit(SSTATUS, 8, 1),
             }
         } else {
             // Handle the trap in M-mode.
