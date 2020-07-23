@@ -6,8 +6,6 @@ use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
 use std::num::FpCategory;
-use std::thread;
-use std::time;
 
 use crate::{
     bus::{Bus, DRAM_BASE},
@@ -357,18 +355,15 @@ impl Cpu {
         }
         if (pending & MIP_MTIP) != 0 {
             //TODO: MachineTimerInterrupt causes an error.
-            //dbg!("mtip");
             self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
             //return Some(Interrupt::MachineTimerInterrupt);
         }
 
         if (pending & MIP_SEIP) != 0 {
-            //dbg!("seip {}", irq);
             self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
         if (pending & MIP_SSIP) != 0 {
-            //dbg!("ssip");
             self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
@@ -430,6 +425,7 @@ impl Cpu {
             let r = (pte >> 1) & 1;
             let w = (pte >> 2) & 1;
             let x = (pte >> 3) & 1;
+
             if v == 0 || (r == 0 && w == 1) {
                 match access_type {
                     AccessType::Instruction => return Err(Exception::InstructionPageFault),
@@ -523,7 +519,7 @@ impl Cpu {
             // value.
             // TODO: If this is enabled, running xv6 fails.
             //self.bus
-                //.write64(self.page_table + vpn[i as usize] * 8, pte)?;
+            //.write64(self.page_table + vpn[i as usize] * 8, pte)?;
         }
 
         // 8. The translation is successful. The translated physical address is given as
@@ -1330,18 +1326,14 @@ impl Cpu {
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
-                        let addr = self.read32(self.xregs.read(rs1) as u64)?;
-                        let src = self.read32(self.xregs.read(rs2) as u64)?;
                         self.xregs.write(rd, 0);
-                        self.write32(addr as u64, src as u64)?;
+                        self.write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
-                        let addr = self.read32(self.xregs.read(rs1))?;
-                        let src = self.read32(self.xregs.read(rs2))?;
                         self.xregs.write(rd, 0);
-                        self.write64(addr, src)?;
+                        self.write64(self.xregs.read(rs1), self.xregs.read(rs2))?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
@@ -2301,9 +2293,7 @@ impl Cpu {
                             }
                             (0x5, 0x8) => {
                                 // wfi
-                                // Wait for interrupt. Idels the processor to save eneryg if no enabled interrupts are currently pendings.
-                                // Sleep 100 milliseconds.
-                                thread::sleep(time::Duration::from_millis(100));
+                                // Do nothing.
                             }
                             (_, 0x9) => {}  // sfence.vma
                             (_, 0x11) => {} // hfence.bvma
