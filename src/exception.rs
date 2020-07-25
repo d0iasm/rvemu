@@ -65,20 +65,22 @@ impl Exception {
 
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
-        // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
-        // "By default, all traps at any privilege level are handled in machine mode"
-        // "To increase performance, implementations can provide individual read/write bits within
-        // medeleg and mideleg to indicate that certain exceptions and interrupts should be
-        // processed directly by a lower privilege level."
-
         let exception_pc = cpu.pc.wrapping_sub(4);
         cpu.prev_mode = cpu.mode;
 
         let cause = self.exception_code();
 
-        // TODO: check correct delegation.
-        //if (cpu.prev_mode <= Mode::Supervisor) && ((cpu.state.read(MEDELEG) >> cause) & 1 != 0) {
-        if cpu.prev_mode <= Mode::Supervisor {
+        // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
+        // "By default, all traps at any privilege level are handled in machine mode"
+        // "To increase performance, implementations can provide individual read/write bits within
+        // medeleg and mideleg to indicate that certain exceptions and interrupts should be
+        // processed directly by a lower privilege level."
+        //
+        // "medeleg has a bit position allocated for every synchronous exception shown in Table 3.6
+        // on page 37, with the index of the bit position equal to the value returned in the mcause
+        // register (i.e., setting bit 8 allows user-mode environment calls to be delegated to a
+        // lower-privilege trap handler)."
+        if ((cpu.state.read(MEDELEG) & 0xffff) >> cause) & 1 != 0 {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 
