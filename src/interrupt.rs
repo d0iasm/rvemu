@@ -36,20 +36,21 @@ impl Interrupt {
 
     /// Update CSRs and the program counter depending on an interrupt.
     pub fn take_trap(&self, cpu: &mut Cpu) {
-        // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
-        // "By default, all traps at any privilege level are handled in machine mode"
-        // "To increase performance, implementations can provide individual read/write bits within
-        // medeleg and mideleg to indicate that certain exceptions and interrupts should be
-        // processed directly by a lower privilege level."
-
         let exception_pc = cpu.pc;
         cpu.prev_mode = cpu.mode;
 
         let cause = self.exception_code();
 
-        // TODO: check correct delegation.
-        //if (cpu.prev_mode <= Mode::Supervisor) && ((cpu.state.read(MIDELEG) >> cause) & 1 != 0) {
-        if cpu.prev_mode <= Mode::Supervisor {
+        // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
+        // "By default, all traps at any privilege level are handled in machine mode"
+        // "To increase performance, implementations can provide individual read/write bits within
+        // medeleg and mideleg to indicate that certain exceptions and interrupts should be
+        // processed directly by a lower privilege level."
+        //
+        // "mideleg holds trap delegation bits for individual interrupts, with the layout of bits
+        // matching those in the mip register (i.e., STIP interrupt delegation control is located
+        // in bit 5)."
+        if ((cpu.state.read(MIDELEG) & 0xffff) >> cause) & 1 != 0 {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 
