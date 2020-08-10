@@ -1,6 +1,6 @@
 //! The uart module contains the implementation of a universal asynchronous receiver-transmitter
-//! (UART) for the CLI tool. The device is 16550a UART, which is used in the QEMU virt machine. See more information
-//! in http://byterunner.com/16550.html.
+//! (UART) for the CLI tool. The device is 16550A UART, which is used in the QEMU virt machine.
+//! See more information in http://byterunner.com/16550.html.
 
 use std::io;
 use std::io::prelude::*;
@@ -58,10 +58,11 @@ impl Uart {
         {
             let (uart, _cvar) = &*uart;
             let mut uart = uart.lock().expect("failed to get an UART object");
-            // Transmitter hold register is empty.
+            // Transmitter hold register is empty. It allows input anytime.
             uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_TX;
         }
 
+        // Create a new thread for waiting for input.
         let mut byte = [0; 1];
         let cloned_uart = uart.clone();
         let cloned_interrupting = interrupting.clone();
@@ -80,28 +81,10 @@ impl Uart {
                     uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_RX;
                 }
                 Err(e) => {
-                    println!("{}", e);
+                    println!("input via UART is error: {}", e);
                 }
             }
         });
-
-        /*
-        let cloned_uart = uart.clone();
-        //let cloned_interrupting = interrupting.clone();
-        let _uart_thread_for_write = thread::spawn(move || loop {
-            let (uart, cvar) = &*cloned_uart;
-            let mut uart = uart.lock().expect("failed to get an UART object");
-            // Wait for the thread to start up.
-            while (uart[(UART_LSR - UART_BASE) as usize] & UART_LSR_TX) == 0 {
-                uart = cvar.wait(uart).expect("the mutex is poisoned");
-            }
-            //print!("{}", uart[(UART_THR - UART_BASE) as usize] as char);
-            //io::stdout().flush().expect("failed to flush stdout");
-            //cloned_interrupting.store(true, Ordering::Release);
-            // Data has been receive.
-            //uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_TX;
-        });
-        */
 
         Self { uart, interrupting }
     }
@@ -127,22 +110,20 @@ impl Uart {
 
     /// Write a byte to the transmit holding register.
     pub fn write(&mut self, index: u64, value: u8) {
-        // This is from xv6:
+        // An OS allows to write a byte to a UART when UART_LSR_TX is 1.
+        // e.g. (xv6):
         //   // wait for Transmit Holding Empty to be set in LSR.
         //   while((ReadReg(LSR) & (1 << 5)) == 0)
         //   ;
         //   WriteReg(THR, c);
         //
-        // This is from riscv-pk:
+        // e.g. (riscv-pk):
         //   while ((uart16550[UART_REG_LSR << uart16550_reg_shift] & UART_REG_STATUS_TX) == 0);
         //   uart16550[UART_REG_QUEUE << uart16550_reg_shift] = ch;
         let (uart, _cvar) = &*self.uart;
         let mut uart = uart.lock().expect("failed to get an UART object");
         match index {
             UART_THR => {
-                //uart[(UART_LSR - UART_BASE) as usize] &= !UART_LSR_TX;
-                //cvar.notify_one();
-                //uart[(UART_THR - UART_BASE) as usize] = value;
                 print!("{}", value as char);
                 io::stdout().flush().expect("failed to flush stdout");
             }
