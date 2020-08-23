@@ -80,7 +80,8 @@ impl Exception {
         // on page 37, with the index of the bit position equal to the value returned in the mcause
         // register (i.e., setting bit 8 allows user-mode environment calls to be delegated to a
         // lower-privilege trap handler)."
-        if ((cpu.state.read(MEDELEG) & 0xffff) >> cause) & 1 != 0 {
+        if cpu.mode <= Mode::Supervisor && (((cpu.state.read(MEDELEG) & 0xffff) >> cause) & 1 != 0)
+        {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 

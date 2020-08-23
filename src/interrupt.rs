@@ -50,7 +50,8 @@ impl Interrupt {
         // "mideleg holds trap delegation bits for individual interrupts, with the layout of bits
         // matching those in the mip register (i.e., STIP interrupt delegation control is located
         // in bit 5)."
-        if ((cpu.state.read(MIDELEG) & 0xffff) >> cause) & 1 != 0 {
+        if cpu.mode <= Mode::Supervisor && (((cpu.state.read(MIDELEG) & 0xffff) >> cause) & 1 != 0)
+        {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 
