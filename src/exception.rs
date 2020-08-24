@@ -165,8 +165,14 @@ impl Exception {
                 .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
             // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
             cpu.state.write_bit(MSTATUS, 3, 0);
-            // Set a privious privilege mode for supervisor mode (MPP, 11..13) to 0.
-            cpu.state.write_bits(MSTATUS, 11..13, 0b00);
+            // When a trap is taken from privilege mode y into privilege mode x, xPIE is set
+            // to the value of x IE; x IE is set to 0; and xPP is set to y.
+            match cpu.prev_mode {
+                Mode::User => cpu.state.write_bits(MSTATUS, 11..13, 0b00),
+                Mode::Supervisor => cpu.state.write_bits(MSTATUS, 11..13, 0b01),
+                Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, 0b11),
+                _ => panic!("previous privilege mode is invalid"),
+            }
         }
 
         match self {

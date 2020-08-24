@@ -2244,8 +2244,9 @@ impl Cpu {
 
                                 // Set the current privileged mode depending on a privious privilege mode for supervisor mode (SPP, 8).
                                 self.mode = match self.state.read_bit(SSTATUS, 8) {
+                                    0 => Mode::User,
                                     1 => Mode::Supervisor,
-                                    _ => Mode::User,
+                                    _ => Mode::Debug,
                                 };
                                 // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
                                 self.state
