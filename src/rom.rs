@@ -34,55 +34,6 @@ fn create_dts() -> std::io::Result<()> {
         compatible = "ns16550a";
     };
 
-	virtio_mmio@10008000 {
-		interrupts = <0x8>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10008000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10007000 {
-		interrupts = <0x7>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10007000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10006000 {
-		interrupts = <0x6>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10006000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10005000 {
-		interrupts = <0x5>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10005000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10004000 {
-		interrupts = <0x4>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10004000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10003000 {
-		interrupts = <0x3>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10003000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
-	virtio_mmio@10002000 {
-		interrupts = <0x2>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10002000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
-
 	virtio_mmio@10001000 {
 		interrupts = <0x1>;
 		interrupt-parent = <0x2>;
@@ -99,6 +50,7 @@ fn create_dts() -> std::io::Result<()> {
             device_type = "cpu";
             reg = <0x0>;
             status = "okay";
+            compatible = "riscv";
             riscv,isa = "rv64imafdcsu";
             mmu-type = "riscv,sv39";
             clock-frequency = <0x3b9aca00>;
