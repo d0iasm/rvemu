@@ -298,7 +298,7 @@ impl Cpu {
         } else if self.bus.virtio.is_interrupting() {
             // Access disk by direct memory access (DMA). An interrupt is raised after a disk
             // access is done.
-            Virtio::disk_access(self);
+            Virtio::disk_access(self).expect("failed to access the disk");
             irq = VIRTIO_IRQ;
         } else {
             irq = 0;
@@ -1104,6 +1104,7 @@ impl Cpu {
                     }
                     0x4 => {
                         // lbu
+                        //println!("lbu rs1 {:#x} x[rs1] {:#x} offset {:#x}, addr {:#x}", rs1, self.xregs.read(rs1), offset, addr);
                         let val = self.read8(addr)?;
                         self.xregs.write(rd, val);
                     }
