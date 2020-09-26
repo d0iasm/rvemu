@@ -1,8 +1,10 @@
-//! The virtio module contains a virtualization standard for network and disk device drivers.
+//! The virtio module contains a virtualization standard for a block device.
 //! This is the "legacy" virtio interface.
 //!
 //! The virtio spec:
-//! https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
+//! http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+//! 5.2 Block Device:
+//! http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-2020002
 
 use crate::bus::VIRTIO_BASE;
 use crate::cpu::Cpu;
@@ -15,36 +17,59 @@ pub const VIRTIO_IRQ: u64 = 1;
 const VRING_DESC_SIZE: u64 = 16;
 /// The number of virtio descriptors. It must be a power of two.
 const DESC_NUM: u64 = 8;
+/// The size of a sector.
+const SECTOR_SIZE: u64 = 512;
 
-/// Always return 0x74726976.
+// 4.2.2 MMIO Device Register Layout
+// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+/// Magic value. Always return 0x74726976 (a Little Endian equivalent of the “virt” string).
 pub const VIRTIO_MAGIC: u64 = VIRTIO_BASE + 0x000;
-/// The version. 1 is legacy.
+/// Device version number. 1 is legacy.
 pub const VIRTIO_VERSION: u64 = VIRTIO_BASE + 0x004;
-/// device type; 1 is net, 2 is disk.
+/// Virtio Subsystem Device ID. 1 is network, 2 is block device.
 pub const VIRTIO_DEVICE_ID: u64 = VIRTIO_BASE + 0x008;
-/// Always return 0x554d4551
+/// Virtio Subsystem Vendor ID. Always return 0x554d4551
 pub const VIRTIO_VENDOR_ID: u64 = VIRTIO_BASE + 0x00c;
-/// Device features.
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-150002
+/// Flags representing features the device supports.
 pub const VIRTIO_DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x010;
-/// Driver features.
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-140001
+/// Flags representing device features understood and activated by the driver.
 pub const VIRTIO_DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x020;
-/// Page size for PFN, write-only.
+// 4.2.4 Legacy interface
+// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1210004
+/// Guest page size. The driver writes the guest page size in bytes to the register during
+/// initialization, before any queues are used. This value should be a power of 2 and is used by
+/// the device to calculate the Guest address of the first queue page. Write-only.
 pub const VIRTIO_GUEST_PAGE_SIZE: u64 = VIRTIO_BASE + 0x028;
-/// Select queue, write-only.
+/// Virtual queue index. Writing to this register selects the virtual queue that the following
+/// operations on the QueueNumMax, QueueNum, QueueAlign and QueuePFN registers apply to. The index
+/// number of the first queue is zero (0x0). Write-only.
 pub const VIRTIO_QUEUE_SEL: u64 = VIRTIO_BASE + 0x030;
-/// Max size of current queue, read-only. In QEMU, `VIRTIO_COUNT = 8`.
+/// Maximum virtual queue size. Reading from the register returns the maximum size of the queue the
+/// device is ready to process or zero (0x0) if the queue is not available. This applies to the
+/// queue selected by writing to QueueSel and is allowed only when QueuePFN is set to zero (0x0),
+/// so when the queue is not actively used. Read-only. In QEMU, `VIRTIO_COUNT = 8`.
 pub const VIRTIO_QUEUE_NUM_MAX: u64 = VIRTIO_BASE + 0x034;
-/// Size of current queue, write-only.
+/// Virtual queue size. Queue size is the number of elements in the queue, therefore size of the
+/// descriptor table and both available and used rings. Writing to this register notifies the
+/// device what size of the queue the driver will use. This applies to the queue selected by
+/// writing to QueueSel. Write-only.
 pub const VIRTIO_QUEUE_NUM: u64 = VIRTIO_BASE + 0x038;
-/// Physical page number for queue, read and write.
+/// Guest physical page number of the virtual queue. Writing to this register notifies the device
+/// about location of the virtual queue in the Guest’s physical address space. This value is the
+/// index number of a page starting with the queue Descriptor Table. Value zero (0x0) means
+/// physical address zero (0x00000000) and is illegal. When the driver stops using the queue it
+/// writes zero (0x0) to this register. Reading from this register returns the currently used page
+/// number of the queue, therefore a value other than zero (0x0) means that the queue is in use.
+/// Both read and write accesses apply to the queue selected by writing to QueueSel.
 pub const VIRTIO_QUEUE_PFN: u64 = VIRTIO_BASE + 0x040;
-/// Notify the queue number, write-only.
+// 4.2.2 MMIO Device Register Layout
+// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+/// Queue notifier. Writing a queue index to this register notifies the device that there are new
+/// buffers to process in the queue. Write-only.
 pub const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
-/// Device status, read and write. Reading from this register returns the current device status flags.
-/// Writing non-zero values to this register sets the status flags, indicating the OS/driver
-/// progress. Writing zero (0x0) to this register triggers a device reset.
+/// Device status. Reading from this register returns the current device status flags. Writing
+/// non-zero values to this register sets the status flags, indicating the driver progress. Writing
+/// zero (0x0) to this register triggers a device reset.
 pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
 
 /// "The descriptor table refers to the buffers the driver is using for the device. addr is a
@@ -53,7 +78,7 @@ pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
 /// (“device-writable”), but a chain of descriptors can contain both device-readable and
 /// device-writable buffers."
 ///
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-320005
+/// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-300005
 ///
 /// ```c
 /// struct virtq_desc {
@@ -86,6 +111,7 @@ struct VirtqDesc {
 }
 
 impl VirtqDesc {
+    /// Create a new virtqueue descriptor based on the address that stores the content of the descriptor.
     fn new(cpu: &Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
             addr: cpu.bus.read64(addr)?,
@@ -99,8 +125,9 @@ impl VirtqDesc {
 /// Paravirtualized drivers for IO virtualization.
 pub struct Virtio {
     id: u64,
+    /// 2.2 Feature Bits
+    /// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-130002
     /// Each virtio device offers all the features it understands.
-    /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-130002
     /// 0 to 23: Feature bits for the specific device type
     /// 24 to 40: Feature bits reserved for extensions to the queue and
     ///           feature negotiation mechanisms
@@ -228,13 +255,16 @@ impl Virtio {
         // Second descriptor.
         let desc1 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * desc0.next)?;
 
-        // Read `virtio_blk_outhdr`. Add 8 because of its structure.
-        // struct virtio_blk_outhdr {
-        //   uint32 type;
-        //   uint32 reserved;
-        //   uint64 sector;
-        // } buf0;
-        let blk_sector = cpu.bus.read64(desc0.addr.wrapping_add(8))?;
+        // 5.2.6 Device Operation
+        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-2130006
+        // struct virtio_blk_req {
+        //   le32 type;
+        //   le32 reserved;
+        //   le64 sector;
+        //   u8 data[][512];
+        //   u8 status;
+        // };
+        let sector = cpu.bus.read64(desc0.addr.wrapping_add(8))?;
 
         // Write to a device if the second bit of `flags` is set.
         match (desc1.flags & 2) == 0 {
@@ -242,13 +272,13 @@ impl Virtio {
                 // Read memory data and write it to a disk directly (DMA).
                 for i in 0..desc1.len {
                     let data = cpu.bus.read8(desc1.addr + i)?;
-                    cpu.bus.virtio.write_disk(blk_sector * 512 + i, data);
+                    cpu.bus.virtio.write_disk(sector * SECTOR_SIZE + i, data);
                 }
             }
             false => {
                 // Read disk data and write it to memory directly (DMA).
                 for i in 0..desc1.len {
-                    let data = cpu.bus.virtio.read_disk(blk_sector * 512 + i);
+                    let data = cpu.bus.virtio.read_disk(sector * SECTOR_SIZE + i);
                     cpu.bus.write8(desc1.addr + i, data)?;
                 }
             }
