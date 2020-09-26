@@ -299,11 +299,13 @@ impl Virtio {
             }
         };
 
-        // Write id to `UsedArea`. Add 2 because of its structure.
-        // struct UsedArea {
-        //   uint16 flags;
-        //   uint16 id;
-        //   struct VRingUsedElem elems[NUM];
+        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-400008
+        // struct virtq_used {
+        //   #define VIRTQ_USED_F_NO_NOTIFY  1
+        //   le16 flags;
+        //   le16 idx;
+        //   struct virtq_used_elem ring[ /* Queue Size */];
+        //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
         // };
         let new_id = cpu.bus.virtio.get_new_id();
         cpu.bus.write16(used_addr.wrapping_add(2), new_id % 8)?;
