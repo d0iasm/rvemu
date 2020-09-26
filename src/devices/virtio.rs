@@ -47,30 +47,53 @@ pub const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
 /// progress. Writing zero (0x0) to this register triggers a device reset.
 pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
 
-/// https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio.h#L50-L55
+/// "The descriptor table refers to the buffers the driver is using for the device. addr is a
+/// physical address, and the buffers can be chained via next. Each descriptor describes a buffer
+/// which is read-only for the device (“device-readable”) or write-only for the device
+/// (“device-writable”), but a chain of descriptors can contain both device-readable and
+/// device-writable buffers."
+///
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-320005
+///
 /// ```c
-/// struct VRingDesc {
-///   uint64 addr;
-///   uint32 len;
-///   uint16 flags;
-///   uint16 next;
+/// struct virtq_desc {
+///   /* Address (guest-physical). */
+///   le64 addr;
+///   /* Length. */
+///   le32 len;
+///
+///   /* This marks a buffer as continuing via the next field. */
+///   #define VIRTQ_DESC_F_NEXT   1
+///   /* This marks a buffer as device write-only (otherwise device read-only). */
+///   #define VIRTQ_DESC_F_WRITE     2
+///   /* This means the buffer contains a list of buffer descriptors. */
+///   #define VIRTQ_DESC_F_INDIRECT   4
+///   /* The flags as indicated above. */
+///   le16 flags;
+///   /* Next field if flags & NEXT */
+///   le16 next;
 /// };
 /// ```
-struct VRingDesc {
+struct VirtqDesc {
+    /// 64-bit address.
     addr: u64,
-    len: u32,
-    flags: u16,
-    next: u16,
+    /// 32-bit length.
+    len: u64,
+    /// 16-bit flags.
+    flags: u64,
+    /// 16-bit next.
+    next: u64,
 }
 
-/// https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio.h#L59-L62
-/// struct VRingUsedElem {
-///   uint32 id;   // index of start of completed descriptor chain
-///   uint32 len;
-/// };
-struct VRingUsedElem {
-    id: u32,
-    len: u32,
+impl VirtqDesc {
+    fn new(cpu: &Cpu, addr: u64) -> Result<Self, Exception> {
+        Ok(Self {
+            addr: cpu.bus.read64(addr)?,
+            len: cpu.bus.read32(addr.wrapping_add(8))?,
+            flags: cpu.bus.read16(addr.wrapping_add(12))?,
+            next: cpu.bus.read16(addr.wrapping_add(14))?,
+        })
+    }
 }
 
 /// Paravirtualized drivers for IO virtualization.
@@ -88,6 +111,10 @@ pub struct Virtio {
     queue_num: u32,
     queue_pfn: u32,
     queue_notify: u32,
+    /// "The device status field provides a simple low-level indication of the completed steps of
+    /// this sequence.
+    /// The device MUST initialize device status to 0 upon reset."
+    /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-100001
     status: u32,
     disk: Vec<u8>,
 }
@@ -172,16 +199,16 @@ impl Virtio {
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
-        // See more information in
-        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
-
-        // the spec says that legacy block operations use three
-        // descriptors: one for type/reserved/sector, one for
-        // the data, one for a 1-byte status result.
-
-        // desc = pages -- num * VRingDesc
-        // avail = pages + 0x40 -- 2 * uint16, then num * uint16
-        // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-230005
+        // "Each virtqueue can consist of up to 3 parts:
+        //     Descriptor Area - used for describing buffers
+        //     Driver Area - extra data supplied by driver to the device
+        //     Device Area - extra data supplied by device to driver"
+        //
+        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L101-L103
+        //     desc = pages -- num * VirtqDesc
+        //     avail = pages + 0x40 -- 2 * uint16, then num * uint16
+        //     used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
         let desc_addr = cpu.bus.virtio.desc_addr();
         let avail_addr = cpu.bus.virtio.desc_addr() + 0x40;
         let used_addr = cpu.bus.virtio.desc_addr() + 4096;
@@ -195,24 +222,11 @@ impl Virtio {
             .bus
             .read16(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2))?;
 
-        // Read `VRingDesc`, virtio descriptors.
-        let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
-        let addr0 = cpu.bus.read64(desc_addr0)?;
-        // Add 14 because of `VRingDesc` structure.
-        // struct VRingDesc {
-        //   uint64 addr;
-        //   uint32 len;
-        //   uint16 flags;
-        //   uint16 next
-        // };
-        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next0 = cpu.bus.read16(desc_addr0.wrapping_add(14))?;
+        // First descriptor.
+        let desc0 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * index)?;
 
-        // Read `VRingDesc` again, virtio descriptors.
-        let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
-        let addr1 = cpu.bus.read64(desc_addr1)?;
-        let len1 = cpu.bus.read32(desc_addr1.wrapping_add(8))?;
-        let flags1 = cpu.bus.read16(desc_addr1.wrapping_add(12))?;
+        // Second descriptor.
+        let desc1 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * desc0.next)?;
 
         // Read `virtio_blk_outhdr`. Add 8 because of its structure.
         // struct virtio_blk_outhdr {
@@ -220,22 +234,22 @@ impl Virtio {
         //   uint32 reserved;
         //   uint64 sector;
         // } buf0;
-        let blk_sector = cpu.bus.read64(addr0.wrapping_add(8))?;
+        let blk_sector = cpu.bus.read64(desc0.addr.wrapping_add(8))?;
 
-        // Write to a device if the second bit `flag1` is set.
-        match (flags1 & 2) == 0 {
+        // Write to a device if the second bit of `flags` is set.
+        match (desc1.flags & 2) == 0 {
             true => {
                 // Read memory data and write it to a disk directly (DMA).
-                for i in 0..len1 as u64 {
-                    let data = cpu.bus.read8(addr1 + i)?;
+                for i in 0..desc1.len {
+                    let data = cpu.bus.read8(desc1.addr + i)?;
                     cpu.bus.virtio.write_disk(blk_sector * 512 + i, data);
                 }
             }
             false => {
                 // Read disk data and write it to memory directly (DMA).
-                for i in 0..len1 as u64 {
+                for i in 0..desc1.len {
                     let data = cpu.bus.virtio.read_disk(blk_sector * 512 + i);
-                    cpu.bus.write8(addr1 + i, data)?;
+                    cpu.bus.write8(desc1.addr + i, data)?;
                 }
             }
         };
