@@ -16,7 +16,7 @@ pub const VIRTIO_IRQ: u64 = 1;
 /// The size of `VRingDesc` struct.
 const VRING_DESC_SIZE: u64 = 16;
 /// The number of virtio descriptors. It must be a power of two.
-const DESC_NUM: u64 = 8;
+const QUEUE_SIZE: u64 = 8;
 /// The size of a sector.
 const SECTOR_SIZE: u64 = 512;
 
@@ -236,18 +236,33 @@ impl Virtio {
         //     desc = pages -- num * VirtqDesc
         //     avail = pages + 0x40 -- 2 * uint16, then num * uint16
         //     used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+        //
+        // The actual descriptors (16 bytes each).
         let desc_addr = cpu.bus.virtio.desc_addr();
+        // A ring of available descriptor heads with free-running index.
         let avail_addr = cpu.bus.virtio.desc_addr() + 0x40;
+        // A ring of used descriptor heads with free-running index.
         let used_addr = cpu.bus.virtio.desc_addr() + 4096;
 
-        // avail[0] is flags
-        // avail[1] tells the device how far to look in avail[2...].
+        // 2.4.6 The Virtqueue Available Ring
+        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-360006
+        // struct virtq_avail {
+        //   #define VIRTQ_AVAIL_F_NO_INTERRUPT      1
+        //   le16 flags;
+        //   le16 idx;
+        //   le16 ring[ /* Queue Size */ ];
+        //   le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
+        // };
+        //
+        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L230-L234
+        // "avail[0] is flags
+        //  avail[1] tells the device how far to look in avail[2...].
+        //  avail[2...] are desc[] indices the device should process.
+        //  we only tell device the first index in our chain of descriptors."
         let offset = cpu.bus.read16(avail_addr.wrapping_add(1))?;
-        // avail[2...] are desc[] indices the device should process.
-        // we only tell device the first index in our chain of descriptors.
         let index = cpu
             .bus
-            .read16(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2))?;
+            .read16(avail_addr.wrapping_add(offset % QUEUE_SIZE).wrapping_add(2))?;
 
         // First descriptor.
         let desc0 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * index)?;
