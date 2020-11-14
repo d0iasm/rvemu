@@ -105,26 +105,34 @@ impl XRegisters {
 
 impl fmt::Display for XRegisters {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let abi = [
+            "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ",
+            " s0 ", " s1 ", " a0 ", " a1 ", " a2 ", " a3 ", " a4 ", " a5 ",
+            " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ", " s6 ", " s7 ",
+            " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
+        ];
         let mut output = String::from("");
         for i in (0..REGISTERS_COUNT).step_by(4) {
             output = format!(
                 "{}\n{}",
                 output,
                 format!(
-                    "x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x} x{:02}={:>#18x}",
+                    "x{:02}({})={:>#18x} x{:02}({})={:>#18x} x{:02}({})={:>#18x} x{:02}({})={:>#18x}",
                     i,
+                    abi[i],
                     self.read(i as u64),
                     i + 1,
+                    abi[i + 1],
                     self.read(i as u64 + 1),
                     i + 2,
+                    abi[i + 2],
                     self.read(i as u64 + 2),
                     i + 3,
-                    self.read(i as u64 + 3)
+                    abi[i + 3],
+                    self.read(i as u64 + 3),
                 )
             );
         }
-        // Remove the first new line.
-        output.remove(0);
         write!(f, "{}", output)
     }
 }
@@ -156,20 +164,38 @@ impl FRegisters {
 
 impl fmt::Display for FRegisters {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let abi = [
+            // ft0-7: FP temporaries
+            " ft0", " ft1", " ft2", " ft3", " ft4", " ft5", " ft6", " ft7",
+            // fs0-1: FP saved registers
+            " fs0", " fs1",
+            // fa0-1: FP arguments/return values
+            " fa0", " fa1",
+            // fa2–7: FP arguments
+            " fa2", " fa3", " fa4", " fa5", " fa6", " fa7",
+            // fs2–11: FP saved registers
+            " fs2", " fs3", " fs4", " fs5", " fs6", " fs7", " fs8", " fs9", "fs10", "fs11",
+            // ft8–11: FP temporaries
+            " ft8", " ft9", "ft10", "ft11"
+        ];
         let mut output = String::from("");
         for i in (0..REGISTERS_COUNT).step_by(4) {
             output = format!(
                 "{}\n{}",
                 output,
                 format!(
-                    "f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$} f{:02}={:>width$.prec$}",
+                    "f{:02}({})={:>width$.prec$} f{:02}({})={:>width$.prec$} f{:02}({})={:>width$.prec$} f{:02}({})={:>width$.prec$}",
                     i,
+                    abi[i],
                     self.read(i as u64),
                     i + 1,
+                    abi[i + 1],
                     self.read(i as u64 + 1),
                     i + 2,
+                    abi[i + 2],
                     self.read(i  as u64+ 2),
                     i + 3,
+                    abi[i + 3],
                     self.read(i as u64 + 3),
                     width=18,
                     prec=8,
@@ -1104,7 +1130,6 @@ impl Cpu {
                     }
                     0x4 => {
                         // lbu
-                        //println!("lbu rs1 {:#x} x[rs1] {:#x} offset {:#x}, addr {:#x}", rs1, self.xregs.read(rs1), offset, addr);
                         let val = self.read8(addr)?;
                         self.xregs.write(rd, val);
                     }
