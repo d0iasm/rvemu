@@ -1,10 +1,13 @@
 //! The virtio module contains a virtualization standard for a block device.
 //! This is the "legacy" virtio interface.
 //!
-//! The virtio spec:
-//! http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+//! The spec for Virtual I/O Device (VIRTIO) Version 1.1:
+//!   Web: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html
+//!   PDF: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
+//!
+//! In particular, This module supports a block device.
 //! 5.2 Block Device:
-//! http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-2020002
+//! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
 use crate::bus::VIRTIO_BASE;
 use crate::cpu::Cpu;
@@ -21,7 +24,7 @@ const QUEUE_SIZE: u64 = 8;
 const SECTOR_SIZE: u64 = 512;
 
 // 4.2.2 MMIO Device Register Layout
-// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Magic value. Always return 0x74726976 (a Little Endian equivalent of the “virt” string).
 pub const VIRTIO_MAGIC: u64 = VIRTIO_BASE + 0x000;
 /// Device version number. 1 is legacy.
@@ -35,7 +38,7 @@ pub const VIRTIO_DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x010;
 /// Flags representing device features understood and activated by the driver.
 pub const VIRTIO_DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x020;
 // 4.2.4 Legacy interface
-// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1210004
+// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
 /// Guest page size. The driver writes the guest page size in bytes to the register during
 /// initialization, before any queues are used. This value should be a power of 2 and is used by
 /// the device to calculate the Guest address of the first queue page. Write-only.
@@ -63,14 +66,39 @@ pub const VIRTIO_QUEUE_NUM: u64 = VIRTIO_BASE + 0x038;
 /// Both read and write accesses apply to the queue selected by writing to QueueSel.
 pub const VIRTIO_QUEUE_PFN: u64 = VIRTIO_BASE + 0x040;
 // 4.2.2 MMIO Device Register Layout
-// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-1110002
+// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Queue notifier. Writing a queue index to this register notifies the device that there are new
 /// buffers to process in the queue. Write-only.
 pub const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
+/// Interrupt status. Reading from this register returns a bit mask of events that caused the device interrupt to be
+/// asserted.
+pub const VIRTIO_MMIO_INTERRUPT_STATUS: u64 = VIRTIO_BASE + 0x060;
+/// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this register notifies the device that events causing the interrupt have been handled.
+pub const VIRTIO_MMIO_INTERRUPT_ACK: u64 = VIRTIO_BASE + 0x064;
 /// Device status. Reading from this register returns the current device status flags. Writing
 /// non-zero values to this register sets the status flags, indicating the driver progress. Writing
 /// zero (0x0) to this register triggers a device reset.
 pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
+
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-250001
+///
+/// ```c
+/// struct virtq {
+///   struct virtq_desc desc[ Queue Size ];
+///   struct virtq_avail avail;
+///   u8 pad[ Padding ]; // Padding to the next Queue Align boundary.
+///   struct virtq_used used;
+/// };
+/// ```
+struct Virtq {
+    /// The actual descriptors (16 bytes each)
+    /// The number of descriptors in the table is defined by the queue size for this virtqueue.
+    desc: Vec<VirtqDesc>,
+    /// A ring of available descriptor heads with free-running index.
+    avail: VirtqAvail,
+    /// A ring of used descriptor heads with free-running index.
+    used: VirtqUsed,
+}
 
 /// "The descriptor table refers to the buffers the driver is using for the device. addr is a
 /// physical address, and the buffers can be chained via next. Each descriptor describes a buffer
@@ -78,35 +106,31 @@ pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
 /// (“device-writable”), but a chain of descriptors can contain both device-readable and
 /// device-writable buffers."
 ///
-/// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-300005
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-320005
 ///
 /// ```c
-/// struct virtq_desc {
-///   /* Address (guest-physical). */
-///   le64 addr;
-///   /* Length. */
-///   le32 len;
+/// /* This marks a buffer as continuing via the next field. */
+/// #define VIRTQ_DESC_F_NEXT 1
+/// /* This marks a buffer as device write-only (otherwise device read-only). */
+/// #define VIRTQ_DESC_F_WRITE 2
+/// /* This means the buffer contains a list of buffer descriptors. */
+/// #define VIRTQ_DESC_F_INDIRECT 4
 ///
-///   /* This marks a buffer as continuing via the next field. */
-///   #define VIRTQ_DESC_F_NEXT   1
-///   /* This marks a buffer as device write-only (otherwise device read-only). */
-///   #define VIRTQ_DESC_F_WRITE     2
-///   /* This means the buffer contains a list of buffer descriptors. */
-///   #define VIRTQ_DESC_F_INDIRECT   4
-///   /* The flags as indicated above. */
+/// struct virtq_desc {
+///   le64 addr;
+///   le32 len;
 ///   le16 flags;
-///   /* Next field if flags & NEXT */
 ///   le16 next;
 /// };
 /// ```
 struct VirtqDesc {
-    /// 64-bit address.
+    /// Address (guest-physical).
     addr: u64,
-    /// 32-bit length.
+    /// Length.
     len: u64,
-    /// 16-bit flags.
+    /// The flags as indicated VIRTQ_DESC_F_NEXT/VIRTQ_DESC_F_WRITE/VIRTQ_DESC_F_INDIRECT.
     flags: u64,
-    /// 16-bit next.
+    /// Next field if flags & NEXT.
     next: u64,
 }
 
@@ -120,6 +144,69 @@ impl VirtqDesc {
             next: cpu.bus.read16(addr.wrapping_add(14))?,
         })
     }
+}
+
+/// "The driver uses the available ring to offer buffers to the device: each ring entry refers to
+/// the head of a descriptor chain. It is only written by the driver and read by the device."
+///
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-380006
+///
+/// ```c
+/// #define VIRTQ_AVAIL_F_NO_INTERRUPT 1
+/// struct virtq_avail {
+///   le16 flags;
+///   le16 idx;
+///   le16 ring[ /* Queue Size */ ];
+///   le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
+/// };
+/// ```
+struct VirtqAvail {
+    flags: u16,
+    /// Indicates where the driver would put the next descriptor entry in the ring (modulo the
+    /// queue size). Starts at 0 and increases.
+    idx: u16,
+    ring: Vec<u16>,
+    used_event: u16,
+}
+
+/// "The used ring is where the device returns buffers once it is done with them: it is only
+/// written to by the device, and read by the driver."
+///
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
+///
+/// ```c
+/// #define VIRTQ_USED_F_NO_NOTIFY 1
+/// struct virtq_used {
+///   le16 flags;
+///   le16 idx;
+///   struct virtq_used_elem ring[ /* Queue Size */];
+///   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
+/// };
+/// ```
+struct VirtqUsed {
+    flags: u16,
+    /// Indicates where the device would put the next descriptor entry in the ring (modulo the
+    /// queue size). Starts at 0 and increases.
+    idx: u16,
+    ring: Vec<VirtqUsedElem>,
+    avail_event: u16,
+}
+
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
+///
+/// ```c
+/// struct virtq_used_elem {
+///   le32 id;
+///   le32 len;
+/// };
+/// ```
+struct VirtqUsedElem {
+    /// Index of start of used descriptor chain. Indicates the head entry of the descriptor chain
+    /// describing the buffer (this matches an entry placed in the available ring by the guest
+    /// earlier).
+    id: u32,
+    /// Total length of the descriptor chain which was used (written to).
+    len: u32,
 }
 
 /// Paravirtualized drivers for IO virtualization.
@@ -138,6 +225,7 @@ pub struct Virtio {
     queue_num: u32,
     queue_pfn: u32,
     queue_notify: u32,
+    interrupt_status: u32,
     /// "The device status field provides a simple low-level indication of the completed steps of
     /// this sequence.
     /// The device MUST initialize device status to 0 upon reset."
@@ -157,6 +245,9 @@ impl Virtio {
             queue_num: 0,
             queue_pfn: 0,
             queue_notify: 9999, // TODO: what is the correct initial value?
+            interrupt_status: 0,
+            // "The device MUST initialize device status to 0 upon reset."
+            // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-120002
             status: 0,
             disk: Vec::new(),
         }
@@ -187,6 +278,7 @@ impl Virtio {
             VIRTIO_DRIVER_FEATURES => self.driver_features,
             VIRTIO_QUEUE_NUM_MAX => 8,
             VIRTIO_QUEUE_PFN => self.queue_pfn,
+            VIRTIO_MMIO_INTERRUPT_STATUS => self.interrupt_status,
             VIRTIO_STATUS => self.status,
             _ => 0,
         }
@@ -201,6 +293,13 @@ impl Virtio {
             VIRTIO_QUEUE_NUM => self.queue_num = val,
             VIRTIO_QUEUE_PFN => self.queue_pfn = val,
             VIRTIO_QUEUE_NOTIFY => self.queue_notify = val,
+            VIRTIO_MMIO_INTERRUPT_ACK => {
+                if (val & 0x1) == 1 {
+                    self.interrupt_status &= !0x1;
+                } else {
+                    panic!("unexpected value for VIRTIO_MMIO_INTERRUPT_ACK: {:#x}", val);
+                }
+            }
             VIRTIO_STATUS => self.status = val,
             _ => {}
         }
@@ -226,6 +325,12 @@ impl Virtio {
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
+        // "Used Buffer Notification
+        //     - bit 0 - the interrupt was asserted because the device has used a buffer in at
+        //     least one of the active virtual queues."
+        cpu.bus.virtio.interrupt_status |= 0x1;
+
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-230005
         // "Each virtqueue can consist of up to 3 parts:
         //     Descriptor Area - used for describing buffers
@@ -244,10 +349,10 @@ impl Virtio {
         // A ring of used descriptor heads with free-running index.
         let used_addr = cpu.bus.virtio.desc_addr() + 4096;
 
-        // 2.4.6 The Virtqueue Available Ring
-        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-360006
+        // 2.6.6 The Virtqueue Available Ring
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-380006
         // struct virtq_avail {
-        //   #define VIRTQ_AVAIL_F_NO_INTERRUPT      1
+        //   #define VIRTQ_AVAIL_F_NO_INTERRUPT 1
         //   le16 flags;
         //   le16 idx;
         //   le16 ring[ /* Queue Size */ ];
@@ -270,8 +375,13 @@ impl Virtio {
         // Second descriptor.
         let desc1 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * desc0.next)?;
 
+        // Third descriptor address.
+        let desc2_addr = cpu.bus.read64(desc_addr + VRING_DESC_SIZE * desc1.next)?;
+        // Tell success.
+        cpu.bus.write8(desc2_addr, 0)?;
+
         // 5.2.6 Device Operation
-        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-2130006
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
         // struct virtio_blk_req {
         //   le32 type;
         //   le32 reserved;
@@ -299,9 +409,10 @@ impl Virtio {
             }
         };
 
-        // http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-400008
+        // 2.6.8 The Virtqueue Used Ring
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
         // struct virtq_used {
-        //   #define VIRTQ_USED_F_NO_NOTIFY  1
+        //   #define VIRTQ_USED_F_NO_NOTIFY 1
         //   le16 flags;
         //   le16 idx;
         //   struct virtq_used_elem ring[ /* Queue Size */];
