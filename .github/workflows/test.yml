@@ -35,12 +35,8 @@ jobs:
     - name: Run xv6
       run: |
         make
-        timeout 60 bash -c './target/release/rvemu-cli -k bin/xv6/kernel.bin -f bin/xv6/fs.img > out'
-        grep -q "init: starting sh" ./out > /dev/null
-        if [ $? -eq 0 ] ; then
-          echo "succeed to run xv6"
-          exit 0
-        else
-          echo "fail"
-          exit 1
-        fi
+        ./target/release/rvemu-cli -k bin/xv6/kernel.bin -f bin/xv6/fs.img > out &
+        pid=$!
+        sleep 60
+        kill $pid
+        grep -q "init: starting sh" ./out
