@@ -1,3 +1,0 @@
-main:
-  nop
-  jal main
