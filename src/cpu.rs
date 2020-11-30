@@ -106,10 +106,9 @@ impl XRegisters {
 impl fmt::Display for XRegisters {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let abi = [
-            "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ",
-            " s0 ", " s1 ", " a0 ", " a1 ", " a2 ", " a3 ", " a4 ", " a5 ",
-            " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ", " s6 ", " s7 ",
-            " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
+            "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
+            " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
+            " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
         ];
         let mut output = String::from("");
         for i in (0..REGISTERS_COUNT).step_by(4) {
@@ -168,15 +167,13 @@ impl fmt::Display for FRegisters {
             // ft0-7: FP temporaries
             " ft0", " ft1", " ft2", " ft3", " ft4", " ft5", " ft6", " ft7",
             // fs0-1: FP saved registers
-            " fs0", " fs1",
-            // fa0-1: FP arguments/return values
-            " fa0", " fa1",
-            // fa2–7: FP arguments
+            " fs0", " fs1", // fa0-1: FP arguments/return values
+            " fa0", " fa1", // fa2–7: FP arguments
             " fa2", " fa3", " fa4", " fa5", " fa6", " fa7",
             // fs2–11: FP saved registers
             " fs2", " fs3", " fs4", " fs5", " fs6", " fs7", " fs8", " fs9", "fs10", "fs11",
             // ft8–11: FP temporaries
-            " ft8", " ft9", "ft10", "ft11"
+            " ft8", " ft9", "ft10", "ft11",
         ];
         let mut output = String::from("");
         for i in (0..REGISTERS_COUNT).step_by(4) {
