@@ -416,7 +416,7 @@ impl Cpu {
     }
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
-    pub fn translate(&mut self, addr: u64, access_type: AccessType) -> Result<u64, Exception> {
+    fn translate(&mut self, addr: u64, access_type: AccessType) -> Result<u64, Exception> {
         if !self.enable_paging || self.mode == Mode::Machine {
             return Ok(addr);
         }
@@ -576,56 +576,56 @@ impl Cpu {
 
     /// Read a byte from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read8(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn read8(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read8(p_addr)
     }
 
     /// Read 2 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read16(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn read16(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read16(p_addr)
     }
 
     /// Read 4 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read32(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn read32(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read32(p_addr)
     }
 
     /// Read 8 bytes from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn read64(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn read64(&mut self, v_addr: u64) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         self.bus.read64(p_addr)
     }
 
     /// Write a byte to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write8(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
+    fn write8(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write8(p_addr, val)
     }
 
     /// Write 2 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write16(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
+    fn write16(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write16(p_addr, val)
     }
 
     /// Write 4 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write32(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
+    fn write32(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write32(p_addr, val)
     }
 
     /// Write 8 bytes to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    pub fn write64(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
+    fn write64(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write64(p_addr, val)
     }
@@ -758,7 +758,9 @@ impl Cpu {
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
                         self.write64(addr, self.xregs.read(rd_rs2_short))?;
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             1 => {
@@ -909,10 +911,14 @@ impl Cpu {
                                                 as u64,
                                         );
                                     }
-                                    _ => {}
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction);
+                                    }
                                 }
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x5 => {
@@ -969,7 +975,9 @@ impl Cpu {
                             self.pc = self.pc.wrapping_add(offset).wrapping_sub(2);
                         }
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             2 => {
@@ -1070,7 +1078,9 @@ impl Cpu {
                         let addr = self.xregs.read(2).wrapping_add(uimm);
                         self.write64(addr, self.xregs.read(rs2))?;
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             _ => {
@@ -1082,7 +1092,7 @@ impl Cpu {
 
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
     /// otherwise, returns nothing. It also increments the program counter by 4 bytes.
-    pub fn tick_g(&mut self) -> Result<u64, Exception> {
+    fn tick_g(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch32()?;
 
@@ -1140,7 +1150,9 @@ impl Cpu {
                         let val = self.read32(addr)?;
                         self.xregs.write(rd, val);
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x07 => {
@@ -1162,7 +1174,9 @@ impl Cpu {
                         let val = f64::from_bits(self.read64(addr)?);
                         self.fregs.write(rd, val);
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x0F => {
@@ -1173,7 +1187,9 @@ impl Cpu {
                 match funct3 {
                     0x0 => {} // fence
                     0x1 => {} // fence.i
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x13 => {
@@ -1216,12 +1232,16 @@ impl Cpu {
                                 rd,
                                 (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64,
                             ),
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x6 => self.xregs.write(rd, self.xregs.read(rs1) | imm), // ori
                     0x7 => self.xregs.write(rd, self.xregs.read(rs1) & imm), // andi
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x17 => {
@@ -1268,10 +1288,14 @@ impl Cpu {
                                     (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
                                 );
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x23 => {
@@ -1284,7 +1308,9 @@ impl Cpu {
                     0x1 => self.write16(addr, self.xregs.read(rs2))?, // sh
                     0x2 => self.write32(addr, self.xregs.read(rs2))?, // sw
                     0x3 => self.write64(addr, self.xregs.read(rs2))?, // sd
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x27 => {
@@ -1300,7 +1326,9 @@ impl Cpu {
                         .bus
                         .write32(addr, (self.fregs.read(rs2) as f32).to_bits() as u64)?, // fsw
                     0x3 => self.write64(addr, self.fregs.read(rs2).to_bits() as u64)?, // fsd
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x2F => {
@@ -1459,7 +1487,9 @@ impl Cpu {
                         self.write64(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)))?;
                         self.xregs.write(rd, t);
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x33 => {
@@ -1608,7 +1638,9 @@ impl Cpu {
                             },
                         );
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 };
             }
             0x37 => {
@@ -1731,7 +1763,9 @@ impl Cpu {
                             },
                         );
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x43 => {
@@ -1755,7 +1789,9 @@ impl Cpu {
                             .read(rs1)
                             .mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
                     ), // fmadd.d
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x47 => {
@@ -1779,7 +1815,9 @@ impl Cpu {
                             .read(rs1)
                             .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
                     ), // fmsub.d
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x4B => {
@@ -1801,7 +1839,9 @@ impl Cpu {
                         rd,
                         (-self.fregs.read(rs1)).mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
                     ), // fnmadd.d
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x4F => {
@@ -1824,7 +1864,9 @@ impl Cpu {
                         (-self.fregs.read(rs1))
                             .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
                     ), // fnmsub.d
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x53 => {
@@ -1913,7 +1955,9 @@ impl Cpu {
                                 self.fregs
                                     .write(rd, f32::from_bits((sign1 ^ sign2) | other) as f64);
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x11 => {
@@ -1932,7 +1976,9 @@ impl Cpu {
                                 self.fregs
                                     .write(rd, f64::from_bits((sign1 ^ sign2) | other));
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x14 => {
@@ -1943,7 +1989,9 @@ impl Cpu {
                             0x1 => self
                                 .fregs
                                 .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.s
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x15 => {
@@ -1954,7 +2002,9 @@ impl Cpu {
                             0x1 => self
                                 .fregs
                                 .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.d
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x20 => self.fregs.write(rd, self.fregs.read(rs1)), // fcvt.s.d
@@ -1989,7 +2039,9 @@ impl Cpu {
                                     0
                                 },
                             ), // feq.s
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x51 => {
@@ -2018,7 +2070,9 @@ impl Cpu {
                                     0
                                 },
                             ), // feq.d
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x60 => {
@@ -2036,7 +2090,9 @@ impl Cpu {
                             0x3 => self
                                 .xregs
                                 .write(rd, (self.fregs.read(rs1) as f32).round() as u64), // fcvt.lu.s
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x61 => {
@@ -2049,7 +2105,9 @@ impl Cpu {
                                 .write(rd, ((self.fregs.read(rs1).round() as u32) as i32) as u64), // fcvt.wu.d
                             0x2 => self.xregs.write(rd, self.fregs.read(rs1).round() as u64), // fcvt.l.d
                             0x3 => self.xregs.write(rd, self.fregs.read(rs1).round() as u64), // fcvt.lu.d
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x68 => {
@@ -2064,7 +2122,9 @@ impl Cpu {
                             0x3 => self
                                 .fregs
                                 .write(rd, ((self.xregs.read(rs1) as u64) as f32) as f64), // fcvt.s.lu
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x69 => {
@@ -2073,7 +2133,9 @@ impl Cpu {
                             0x1 => self.fregs.write(rd, (self.xregs.read(rs1) as u32) as f64), // fcvt.d.wu
                             0x2 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fcvt.d.l
                             0x3 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fcvt.d.lu
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x70 => {
@@ -2103,7 +2165,9 @@ impl Cpu {
                                     FpCategory::Nan => self.xregs.write(rd, 9),
                                 }
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x71 => {
@@ -2133,14 +2197,18 @@ impl Cpu {
                                     FpCategory::Nan => self.xregs.write(rd, 9),
                                 }
                             }
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x78 => self
                         .fregs
                         .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64), // fmv.w.x
                     0x79 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fmv.d.x
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x63 => {
@@ -2188,7 +2256,9 @@ impl Cpu {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             0x67 => {
@@ -2236,7 +2306,9 @@ impl Cpu {
                                     Mode::Machine => {
                                         return Err(Exception::EnvironmentCallFromMMode);
                                     }
-                                    _ => {}
+                                    _ => {
+                                        return Err(Exception::IllegalInstruction);
+                                    }
                                 }
                             }
                             (0x1, 0x0) => {
@@ -2321,7 +2393,9 @@ impl Cpu {
                             (_, 0x9) => {}  // sfence.vma
                             (_, 0x11) => {} // hfence.bvma
                             (_, 0x51) => {} // hfence.gvma
-                            _ => {}
+                            _ => {
+                                return Err(Exception::IllegalInstruction);
+                            }
                         }
                     }
                     0x1 => {
@@ -2386,7 +2460,9 @@ impl Cpu {
                             self.update_paging();
                         }
                     }
-                    _ => {}
+                    _ => {
+                        return Err(Exception::IllegalInstruction);
+                    }
                 }
             }
             _ => {

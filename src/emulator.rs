@@ -85,6 +85,9 @@ impl Emulator {
                     println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
                     return;
                 }
+                Trap::Invisible => {
+                    println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
+                }
                 _ => {}
             }
         }
