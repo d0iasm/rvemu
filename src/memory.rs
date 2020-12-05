@@ -2,8 +2,8 @@
 
 use crate::bus::DRAM_BASE;
 
-/// Default memory size (128MiB).
-pub const MEMORY_SIZE: u64 = 1024 * 1024 * 128;
+/// Default memory size (1GiB).
+pub const MEMORY_SIZE: u64 = 1024 * 1024 * 1024;
 
 /// The memory used by the emulator.
 #[derive(Debug)]

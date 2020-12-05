@@ -3,7 +3,7 @@
 
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
 use crate::exception::Exception;
-use crate::memory::Memory;
+use crate::memory::{Memory, MEMORY_SIZE};
 use crate::rom::Rom;
 
 /// The address which the debug information includes.
@@ -91,7 +91,7 @@ impl Bus {
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             return Ok(self.uart.read(addr) as u64);
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read8(addr));
         }
         Err(Exception::InstructionAccessFault)
@@ -105,7 +105,7 @@ impl Bus {
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read16(addr));
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read16(addr));
         }
         Err(Exception::InstructionAccessFault)
@@ -129,7 +129,7 @@ impl Bus {
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.read(addr) as u64);
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read32(addr));
         }
         Err(Exception::InstructionAccessFault)
@@ -147,7 +147,7 @@ impl Bus {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
             return Ok(self.clint.read(addr));
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read64(addr));
         }
         Err(Exception::InstructionAccessFault)
@@ -162,7 +162,7 @@ impl Bus {
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             return Ok(self.uart.write(addr, val as u8));
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write8(addr, val));
         }
         // TODO: The type of an exception InstructionAccessFault is correct?
@@ -174,7 +174,7 @@ impl Bus {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
             return Ok(());
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write16(addr, val));
         }
         Err(Exception::InstructionAccessFault)
@@ -191,7 +191,7 @@ impl Bus {
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.write(addr, val as u32));
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write32(addr, val));
         }
         Err(Exception::InstructionAccessFault)
@@ -206,7 +206,7 @@ impl Bus {
             // TODO: make write64 for plic.
             return Ok(self.plic.write32(addr, val as u32));
         }
-        if DRAM_BASE <= addr {
+        if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write64(addr, val));
         }
         Err(Exception::InstructionAccessFault)
