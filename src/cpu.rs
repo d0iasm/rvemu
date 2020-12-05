@@ -662,7 +662,7 @@ impl Cpu {
     }
 
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
-    /// returns nothing. It also increments the program counter by 2 bytes.
+    /// returns a fetched instruction. It also increments the program counter by 2 bytes.
     pub fn tick_c(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch16()?;
@@ -671,10 +671,8 @@ impl Cpu {
         self.pc += 2;
 
         // 2. Decode.
-        let opcode = inst & 0b11;
-        let funct3 = (inst >> 13) & 0b111;
-        //let funct4 = (inst & 0xf000) >> 12;
-        //let funct6 = (inst & 0xfc00) >> 10;
+        let opcode = inst & 0x3;
+        let funct3 = (inst >> 13) & 0x7;
 
         // 3. Execute.
         match opcode {
@@ -682,22 +680,17 @@ impl Cpu {
                 // Quadrant 0.
                 // Compressed instructions have 3-bit field for popular registers,
                 // which correspond to registers x8 to x15.
-                let rd_rs2_short = ((inst >> 2) & 0b111) + 8;
-                let rs1_short = ((inst >> 7) & 0b111) + 8;
+                let rd_rs2_short = ((inst >> 2) & 0x7) + 8;
+                let rs1_short = ((inst >> 7) & 0x7) + 8;
 
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
                         // nzuimm[5:4|9:6|2|3] = inst[12:11|10:7|6|5]
-                        let mut nzuimm = ((inst >> 1) & 0x3c0) // imm[9:6]
-                            | ((inst >> 7) & 0x30) // imm[5:4]
-                            | ((inst >> 2) & 0x8) // imm[3]
-                            | ((inst >> 4) & 0x4); // imm[2]
-                        nzuimm = match (inst & 0x3c0) == 0 {
-                            true => nzuimm,
-                            // Sign-extended.
-                            false => (0xfc00 | nzuimm) as i16 as i64 as u64,
-                        };
+                        let nzuimm = ((inst >> 1) & 0x3c0) // znuimm[9:6]
+                            | ((inst >> 7) & 0x30) // znuimm[5:4]
+                            | ((inst >> 2) & 0x8) // znuimm[3]
+                            | ((inst >> 4) & 0x4); // znuimm[2]
                         if nzuimm == 0 {
                             return Err(Exception::IllegalInstruction);
                         }
@@ -1091,7 +1084,7 @@ impl Cpu {
     }
 
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
-    /// otherwise, returns nothing. It also increments the program counter by 4 bytes.
+    /// otherwise, returns a fetched instruction. It also increments the program counter by 4 bytes.
     fn tick_g(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch32()?;
