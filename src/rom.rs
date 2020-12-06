@@ -22,7 +22,7 @@ fn create_dts() -> std::io::Result<()> {
     model = "riscv-virtio,qemu";
 
     chosen {
-        bootargs = [00];
+        bootargs = "root=/dev/vda ro console=ttyS0";
         stdout-path = "/uart@10000000";
     };
 
