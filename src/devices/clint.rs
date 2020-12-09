@@ -6,7 +6,7 @@
 // "SiFive Interrupt Cookbook Version 1.0"
 // https://sifive.cdn.prismic.io/sifive/0d163928-2128-42be-a75a-464df65e04e0_sifive-interrupt-cookbook.pdf
 //
-// QEMU SiFive CLINT:
+// QEMU SiFive CLINT used in the virt machine:
 // - https://github.com/qemu/qemu/blob/master/hw/intc/sifive_clint.c
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
@@ -115,7 +115,7 @@ impl Clint {
             CLINT_MSIP => self.msip = v as u32,
             CLINT_MTIMECMP => self.mtimecmp = v,
             CLINT_MTIME => self.mtime = v,
-            _ => return Err(Exception::LoadAccessFault),
+            _ => return Err(Exception::StoreAMOAccessFault),
         }
 
         Ok(())

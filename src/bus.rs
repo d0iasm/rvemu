@@ -124,7 +124,7 @@ impl Bus {
             return self.clint.read(addr, 32);
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.read32(addr) as u64);
+            return self.plic.read32(addr);
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.read(addr) as u64);
@@ -145,7 +145,7 @@ impl Bus {
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             // TODO: make read64 for plic.
-            return Ok(self.plic.read32(addr) as u64);
+            return self.plic.read32(addr);
         }
         if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read64(addr));
@@ -186,7 +186,7 @@ impl Bus {
             return self.clint.write(addr, val, 32);
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
-            return Ok(self.plic.write32(addr, val as u32));
+            return self.plic.write32(addr, val as u32);
         }
         if VIRTIO_BASE <= addr && addr < VIRTIO_BASE + VIRTIO_SIZE {
             return Ok(self.virtio.write(addr, val as u32));
@@ -204,7 +204,7 @@ impl Bus {
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             // TODO: make write64 for plic.
-            return Ok(self.plic.write32(addr, val as u32));
+            return self.plic.write32(addr, val as u32);
         }
         if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write64(addr, val));
