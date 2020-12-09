@@ -34,6 +34,10 @@ pub const FRB: CsrAddress = 0x002;
 /// Floating-point control and status register (frm + fflags).
 pub const FCSR: CsrAddress = 0x003;
 
+// User Counter/Timers.
+/// Timer for RDTIME instruction.
+pub const TIME: CsrAddress = 0xc01;
+
 /////////////////////////////////////
 // Supervisor-level CSR addresses //
 ////////////////////////////////////
