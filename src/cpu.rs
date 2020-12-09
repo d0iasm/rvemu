@@ -581,7 +581,7 @@ impl Cpu {
         }
     }
 
-    /// Read data from the system bus with the translation a virtual address to a physical address
+    /// Read `size`-bit data from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     fn read(&mut self, v_addr: u64, size: u8) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
@@ -594,7 +594,7 @@ impl Cpu {
         }
     }
 
-    /// Write data to the system bus with the translation a virtual address to a physical address
+    /// Write `size`-bit data to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     fn write(&mut self, v_addr: u64, value: u64, size: u8) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
@@ -607,26 +607,14 @@ impl Cpu {
         }
     }
 
-    /// Fetch the next instruction from the memory at the current program counter.
+    /// Fetch the `size`-bit next instruction from the memory at the current program counter.
     pub fn fetch(&mut self, size: u8) -> Result<u64, Exception> {
         let p_pc = self.translate(self.pc, AccessType::Instruction)?;
         match size {
             16 => self.bus.read16(p_pc),
-            32 => self.bus.read16(p_pc),
+            32 => self.bus.read32(p_pc),
             _ => Err(Exception::InstructionAccessFault),
         }
-    }
-
-    /// Fetch the next instruction from the memory at the current program counter.
-    pub fn fetch32(&mut self) -> Result<u64, Exception> {
-        let p_pc = self.translate(self.pc, AccessType::Instruction)?;
-        self.bus.read32(p_pc)
-    }
-
-    /// Fetch the next instruction from the memory at the current program counter.
-    pub fn fetch16(&mut self) -> Result<u64, Exception> {
-        let p_pc = self.translate(self.pc, AccessType::Instruction)?;
-        self.bus.read16(p_pc)
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
@@ -1074,7 +1062,7 @@ impl Cpu {
     /// otherwise, returns a fetched instruction. It also increments the program counter by 4 bytes.
     fn tick_g(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
-        let inst = self.fetch32()?;
+        let inst = self.fetch(32)?;
 
         // Add 4 bytes to the program counter.
         self.pc += 4;
