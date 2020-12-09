@@ -317,8 +317,10 @@ impl Cpu {
         // Check external interrupt for uart and virtio.
         let irq;
         if self.bus.uart.is_interrupting() {
+            //println!("uart: check_pending_interrupt!");
             irq = UART_IRQ;
         } else if self.bus.virtio.is_interrupting() {
+            //println!("virtio: check_pending_interrupt!");
             // Access disk by direct memory access (DMA). An interrupt is raised after a disk
             // access is done.
             Virtio::disk_access(self).expect("failed to access the disk");
@@ -369,28 +371,33 @@ impl Cpu {
         */
 
         if (pending & MIP_MEIP) != 0 {
+            //println!("meip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
             return Some(Interrupt::MachineExternalInterrupt);
         }
         if (pending & MIP_MSIP) != 0 {
+            //println!("msip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MIP_MSIP);
             return Some(Interrupt::MachineSoftwareInterrupt);
         }
         if (pending & MIP_MTIP) != 0 {
+            //println!("mtip: check_pending_interrupt!");
             //TODO: MachineTimerInterrupt causes an error.
             self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
             //return Some(Interrupt::MachineTimerInterrupt);
         }
-
         if (pending & MIP_SEIP) != 0 {
+            //println!("seip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
         if (pending & MIP_SSIP) != 0 {
+            //println!("ssip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
         if (pending & MIP_STIP) != 0 {
+            //println!("stip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MIP_STIP);
             return Some(Interrupt::SupervisorTimerInterrupt);
         }
@@ -574,60 +581,40 @@ impl Cpu {
         }
     }
 
-    /// Read a byte from the system bus with the translation a virtual address to a physical address
+    /// Read data from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    fn read8(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn read(&mut self, v_addr: u64, size: u8) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
-        self.bus.read8(p_addr)
+        match size {
+            8 => self.bus.read8(p_addr),
+            16 => self.bus.read16(p_addr),
+            32 => self.bus.read32(p_addr),
+            64 => self.bus.read64(p_addr),
+            _ => Err(Exception::LoadAccessFault),
+        }
     }
 
-    /// Read 2 bytes from the system bus with the translation a virtual address to a physical address
+    /// Write data to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
-    fn read16(&mut self, v_addr: u64) -> Result<u64, Exception> {
+    fn write(&mut self, v_addr: u64, value: u64, size: u8) -> Result<(), Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
-        self.bus.read16(p_addr)
+        match size {
+            8 => self.bus.write8(p_addr, value),
+            16 => self.bus.write16(p_addr, value),
+            32 => self.bus.write32(p_addr, value),
+            64 => self.bus.write64(p_addr, value),
+            _ => Err(Exception::StoreAMOAccessFault),
+        }
     }
 
-    /// Read 4 bytes from the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn read32(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Load)?;
-        self.bus.read32(p_addr)
-    }
-
-    /// Read 8 bytes from the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn read64(&mut self, v_addr: u64) -> Result<u64, Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Load)?;
-        self.bus.read64(p_addr)
-    }
-
-    /// Write a byte to the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn write8(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Store)?;
-        self.bus.write8(p_addr, val)
-    }
-
-    /// Write 2 bytes to the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn write16(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Store)?;
-        self.bus.write16(p_addr, val)
-    }
-
-    /// Write 4 bytes to the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn write32(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Store)?;
-        self.bus.write32(p_addr, val)
-    }
-
-    /// Write 8 bytes to the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
-    fn write64(&mut self, v_addr: u64, val: u64) -> Result<(), Exception> {
-        let p_addr = self.translate(v_addr, AccessType::Store)?;
-        self.bus.write64(p_addr, val)
+    /// Fetch the next instruction from the memory at the current program counter.
+    pub fn fetch(&mut self, size: u8) -> Result<u64, Exception> {
+        let p_pc = self.translate(self.pc, AccessType::Instruction)?;
+        match size {
+            16 => self.bus.read16(p_pc),
+            32 => self.bus.read16(p_pc),
+            _ => Err(Exception::InstructionAccessFault),
+        }
     }
 
     /// Fetch the next instruction from the memory at the current program counter.
@@ -646,7 +633,7 @@ impl Cpu {
     /// nothing.
     pub fn tick(&mut self) -> Result<u64, Exception> {
         // Fetch.
-        let inst16 = self.fetch16()?;
+        let inst16 = self.fetch(16)?;
         let inst;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
@@ -665,7 +652,7 @@ impl Cpu {
     /// returns a fetched instruction. It also increments the program counter by 2 bytes.
     pub fn tick_c(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
-        let inst = self.fetch16()?;
+        let inst = self.fetch(16)?;
 
         // Add 2 bytes to the program counter.
         self.pc += 2;
@@ -703,7 +690,7 @@ impl Cpu {
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let val =
-                            f64::from_bits(self.read64(self.xregs.read(2).wrapping_add(uimm))?);
+                            f64::from_bits(self.read(self.xregs.read(2).wrapping_add(uimm), 64)?);
                         self.fregs.write(rd_rs2_short, val);
                     }
                     0x2 => {
@@ -712,7 +699,7 @@ impl Cpu {
                         let uimm = ((inst << 1) & 0x40) // imm[6]
                             | ((inst >> 7) & 0x38) // imm[5:3]
                             | ((inst >> 4) & 0x4); // imm[2]
-                        let val = self.read32(self.xregs.read(rs1_short).wrapping_add(uimm))?;
+                        let val = self.read(self.xregs.read(rs1_short).wrapping_add(uimm), 32)?;
                         self.xregs.write(rd_rs2_short, val as i32 as i64 as u64);
                     }
                     0x3 => {
@@ -720,7 +707,7 @@ impl Cpu {
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
-                        let val = self.read64(self.xregs.read(rs1_short).wrapping_add(uimm))?;
+                        let val = self.read(self.xregs.read(rs1_short).wrapping_add(uimm), 64)?;
                         self.xregs.write(rd_rs2_short, val);
                     }
                     0x4 => {
@@ -732,7 +719,7 @@ impl Cpu {
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write64(addr, self.fregs.read(rd_rs2_short).to_bits() as u64)?;
+                        self.write(addr, self.fregs.read(rd_rs2_short).to_bits() as u64, 64)?;
                     }
                     0x6 => {
                         // c.sw
@@ -741,7 +728,7 @@ impl Cpu {
                             | ((inst >> 7) & 0x38) // imm[5:3]
                             | ((inst >> 4) & 0x4); // imm[2]
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write32(addr, self.xregs.read(rd_rs2_short))?;
+                        self.write(addr, self.xregs.read(rd_rs2_short), 32)?;
                     }
                     0x7 => {
                         // c.sd
@@ -749,7 +736,7 @@ impl Cpu {
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write64(addr, self.xregs.read(rd_rs2_short))?;
+                        self.write(addr, self.xregs.read(rd_rs2_short), 64)?;
                     }
                     _ => {
                         return Err(Exception::IllegalInstruction);
@@ -991,7 +978,7 @@ impl Cpu {
                         let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x20) // imm[5]
                             | ((inst >> 2) & 0x18); // imm[4:3]
-                        let val = f64::from_bits(self.read64(self.xregs.read(rd_rs1) + uimm)?);
+                        let val = f64::from_bits(self.read(self.xregs.read(rd_rs1) + uimm, 64)?);
                         self.fregs.write(rd_rs1, val);
                     }
                     0x2 => {
@@ -1000,7 +987,7 @@ impl Cpu {
                         let uimm = ((inst << 4) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x20) // imm[5]
                             | ((inst >> 2) & 0x1c); // imm[4:2]
-                        let val = self.read32(self.xregs.read(2).wrapping_add(uimm))?;
+                        let val = self.read(self.xregs.read(2).wrapping_add(uimm), 32)?;
                         self.xregs.write(rd_rs1, val as i32 as i64 as u64);
                     }
                     0x3 => {
@@ -1009,7 +996,7 @@ impl Cpu {
                         let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x20) // imm[5]
                             | ((inst >> 2) & 0x18); // imm[4:3]
-                        let val = self.read64(self.xregs.read(2).wrapping_add(uimm))?;
+                        let val = self.read(self.xregs.read(2).wrapping_add(uimm), 64)?;
                         self.xregs.write(rd_rs1, val);
                     }
                     0x4 => {
@@ -1051,7 +1038,7 @@ impl Cpu {
                         let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(2).wrapping_add(uimm);
-                        self.write64(addr, self.fregs.read(rs2).to_bits() as u64)?;
+                        self.write(addr, self.fregs.read(rs2).to_bits() as u64, 64)?;
                     }
                     0x6 => {
                         // c.swsp
@@ -1060,7 +1047,7 @@ impl Cpu {
                         let uimm = ((inst >> 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x3c); // imm[5:2]
                         let addr = self.xregs.read(2).wrapping_add(uimm);
-                        self.write32(addr, self.xregs.read(rs2))?;
+                        self.write(addr, self.xregs.read(rs2), 32)?;
                     }
                     0x7 => {
                         // c.sdsp
@@ -1069,7 +1056,7 @@ impl Cpu {
                         let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let addr = self.xregs.read(2).wrapping_add(uimm);
-                        self.write64(addr, self.xregs.read(rs2))?;
+                        self.write(addr, self.xregs.read(rs2), 64)?;
                     }
                     _ => {
                         return Err(Exception::IllegalInstruction);
@@ -1110,37 +1097,37 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // lb
-                        let val = self.read8(addr)?;
+                        let val = self.read(addr, 8)?;
                         self.xregs.write(rd, val as i8 as i64 as u64);
                     }
                     0x1 => {
                         // lh
-                        let val = self.read16(addr)?;
+                        let val = self.read(addr, 16)?;
                         self.xregs.write(rd, val as i16 as i64 as u64);
                     }
                     0x2 => {
                         // lw
-                        let val = self.read32(addr)?;
+                        let val = self.read(addr, 32)?;
                         self.xregs.write(rd, val as i32 as i64 as u64);
                     }
                     0x3 => {
                         // ld
-                        let val = self.read64(addr)?;
+                        let val = self.read(addr, 64)?;
                         self.xregs.write(rd, val);
                     }
                     0x4 => {
                         // lbu
-                        let val = self.read8(addr)?;
+                        let val = self.read(addr, 8)?;
                         self.xregs.write(rd, val);
                     }
                     0x5 => {
                         // lhu
-                        let val = self.read16(addr)?;
+                        let val = self.read(addr, 16)?;
                         self.xregs.write(rd, val);
                     }
                     0x6 => {
                         // lwu
-                        let val = self.read32(addr)?;
+                        let val = self.read(addr, 32)?;
                         self.xregs.write(rd, val);
                     }
                     _ => {
@@ -1159,12 +1146,12 @@ impl Cpu {
                 match funct3 {
                     0x2 => {
                         // flw
-                        let val = f64::from_bits(self.read64(addr)? as u64);
+                        let val = f64::from_bits(self.read(addr, 64)? as u64);
                         self.fregs.write(rd, val);
                     }
                     0x3 => {
                         // fld
-                        let val = f64::from_bits(self.read64(addr)?);
+                        let val = f64::from_bits(self.read(addr, 64)?);
                         self.fregs.write(rd, val);
                     }
                     _ => {
@@ -1297,10 +1284,10 @@ impl Cpu {
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64) | ((inst >> 7) & 0x1f);
                 let addr = self.xregs.read(rs1).wrapping_add(imm);
                 match funct3 {
-                    0x0 => self.write8(addr, self.xregs.read(rs2))?, // sb
-                    0x1 => self.write16(addr, self.xregs.read(rs2))?, // sh
-                    0x2 => self.write32(addr, self.xregs.read(rs2))?, // sw
-                    0x3 => self.write64(addr, self.xregs.read(rs2))?, // sd
+                    0x0 => self.write(addr, self.xregs.read(rs2), 8)?, // sb
+                    0x1 => self.write(addr, self.xregs.read(rs2), 16)?, // sh
+                    0x2 => self.write(addr, self.xregs.read(rs2), 32)?, // sw
+                    0x3 => self.write(addr, self.xregs.read(rs2), 64)?, // sd
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
@@ -1315,10 +1302,8 @@ impl Cpu {
                     | ((inst & 0x00000f80) >> 7);
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
-                    0x2 => self
-                        .bus
-                        .write32(addr, (self.fregs.read(rs2) as f32).to_bits() as u64)?, // fsw
-                    0x3 => self.write64(addr, self.fregs.read(rs2).to_bits() as u64)?, // fsd
+                    0x2 => self.write(addr, (self.fregs.read(rs2) as f32).to_bits() as u64, 32)?, // fsw
+                    0x3 => self.write(addr, self.fregs.read(rs2).to_bits() as u64, 64)?, // fsd
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
@@ -1334,150 +1319,164 @@ impl Cpu {
                     // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = self.read32(self.xregs.read(rs1))?;
-                        self.write32(self.xregs.read(rs1), t.wrapping_add(self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 32)?;
+                        self.write(
+                            self.xregs.read(rs1),
+                            t.wrapping_add(self.xregs.read(rs2)),
+                            32,
+                        )?;
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), t.wrapping_add(self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(
+                            self.xregs.read(rs1),
+                            t.wrapping_add(self.xregs.read(rs2)),
+                            64,
+                        )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = self.read32(self.xregs.read(rs1))?;
-                        self.write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        let t = self.read(self.xregs.read(rs1), 32)?;
+                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), 32)?;
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x02) => {
                         // lr.w
-                        let addr = self.read32(self.xregs.read(rs1))?;
+                        let addr = self.read(self.xregs.read(rs1), 32)?;
                         self.xregs.write(rd, addr);
                     }
                     (0x3, 0x02) => {
                         // lr.d
-                        let addr = self.read32(self.xregs.read(rs1))?;
+                        let addr = self.read(self.xregs.read(rs1), 32)?;
                         self.xregs.write(rd, addr);
                     }
                     (0x2, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.w
                         self.xregs.write(rd, 0);
-                        self.write32(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), 32)?;
                     }
                     (0x3, 0x03) => {
                         // TODO: write a nonzero error code if the store fails.
                         // sc.d
                         self.xregs.write(rd, 0);
-                        self.write64(self.xregs.read(rs1), self.xregs.read(rs2))?;
+                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), 64)?;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = self.read32(self.xregs.read(rs1))? as u32;
-                        self.write32(
+                        let t = self.read(self.xregs.read(rs1), 32)? as u32;
+                        self.write(
                             self.xregs.read(rs1),
                             (t ^ (self.xregs.read(rs2) as u32)) as u64,
+                            32,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), t ^ self.xregs.read(rs2))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), t ^ self.xregs.read(rs2), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = self.read32(self.xregs.read(rs1))? as i32;
-                        self.write32(
+                        let t = self.read(self.xregs.read(rs1), 32)? as i32;
+                        self.write(
                             self.xregs.read(rs1),
                             (t | (self.xregs.read(rs2) as i32)) as u32 as u64,
+                            32,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), t | self.xregs.read(rs2))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), t | self.xregs.read(rs2), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = self.read32(self.xregs.read(rs1))? as i32;
-                        self.write32(
+                        let t = self.read(self.xregs.read(rs1), 32)? as i32;
+                        self.write(
                             self.xregs.read(rs1),
                             (t & (self.xregs.read(rs2) as i32)) as u32 as u64,
+                            32,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), t & self.xregs.read(rs1))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), t & self.xregs.read(rs1), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = self.read32(self.xregs.read(rs1))? as i32;
-                        self.write32(
+                        let t = self.read(self.xregs.read(rs1), 32)? as i32;
+                        self.write(
                             self.xregs.read(rs1),
                             cmp::min(t, self.xregs.read(rs2) as i32) as u32 as u64,
+                            32,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = self.read64(self.xregs.read(rs1))? as i64;
-                        self.write64(
+                        let t = self.read(self.xregs.read(rs1), 64)? as i64;
+                        self.write(
                             self.xregs.read(rs1),
                             cmp::min(t, self.xregs.read(rs2) as i64) as u64,
+                            64,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = self.read32(self.xregs.read(rs1))? as i32;
-                        self.write32(
+                        let t = self.read(self.xregs.read(rs1), 32)? as i32;
+                        self.write(
                             self.xregs.read(rs1),
                             cmp::max(t, self.xregs.read(rs2) as i32) as u64,
+                            32,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = self.read32(self.xregs.read(rs1))?;
-                        self.write32(self.xregs.read(rs1), cmp::min(t, self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 32)?;
+                        self.write(self.xregs.read(rs1), cmp::min(t, self.xregs.read(rs2)), 32)?;
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), cmp::min(t, self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), cmp::min(t, self.xregs.read(rs2)), 64)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = self.read32(self.xregs.read(rs1))?;
-                        self.write32(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 32)?;
+                        self.write(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)), 32)?;
                         self.xregs.write(rd, t);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = self.read64(self.xregs.read(rs1))?;
-                        self.write64(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)))?;
+                        let t = self.read(self.xregs.read(rs1), 64)?;
+                        self.write(self.xregs.read(rs1), cmp::max(t, self.xregs.read(rs2)), 64)?;
                         self.xregs.write(rd, t);
                     }
                     _ => {
