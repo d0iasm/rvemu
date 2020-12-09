@@ -82,11 +82,11 @@ impl Bus {
 
     /// Read a byte from the system bus.
     pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(0);
-        }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read8(addr));
+        }
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            return self.clint.read(addr, 8);
         }
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
             return Ok(self.uart.read(addr) as u64);
@@ -99,11 +99,11 @@ impl Bus {
 
     /// Read 2 bytes from the system bus.
     pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(0);
-        }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read16(addr));
+        }
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            return self.clint.read(addr, 16);
         }
         if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read16(addr));
@@ -113,15 +113,15 @@ impl Bus {
 
     /// Read 4 bytes from the system bus.
     pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(0);
-        }
         if DEBUG_BASE <= addr && addr < DEBUG_BASE + DEBUG_SIZE {
             // Nothing for now.
             return Ok(0);
         }
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read32(addr));
+        }
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            return self.clint.read(addr, 32);
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.read32(addr) as u64);
@@ -140,12 +140,12 @@ impl Bus {
         if MROM_BASE <= addr && addr < MROM_BASE + MROM_SIZE {
             return Ok(self.rom.read64(addr));
         }
+        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
+            return self.clint.read(addr, 64);
+        }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             // TODO: make read64 for plic.
             return Ok(self.plic.read32(addr) as u64);
-        }
-        if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(self.clint.read(addr));
         }
         if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.read64(addr));
@@ -156,7 +156,7 @@ impl Bus {
     /// Write a byte to the system bus.
     pub fn write8(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(());
+            return self.clint.write(addr, val, 8);
         }
         // TODO: Replace the following code with PMP check (Physical Memory Protection)?
         if UART_BASE <= addr && addr < UART_BASE + UART_SIZE {
@@ -172,7 +172,7 @@ impl Bus {
     /// Write 2 bytes to the system bus.
     pub fn write16(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(());
+            return self.clint.write(addr, val, 16);
         }
         if DRAM_BASE <= addr && addr < DRAM_BASE + MEMORY_SIZE {
             return Ok(self.dram.write16(addr, val));
@@ -183,7 +183,7 @@ impl Bus {
     /// Write 4 bytes to the system bus.
     pub fn write32(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(());
+            return self.clint.write(addr, val, 32);
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             return Ok(self.plic.write32(addr, val as u32));
@@ -200,7 +200,7 @@ impl Bus {
     /// Write 8 bytes to the system bus.
     pub fn write64(&mut self, addr: u64, val: u64) -> Result<(), Exception> {
         if CLINT_BASE <= addr && addr < CLINT_BASE + CLINT_SIZE {
-            return Ok(self.clint.write(addr, val));
+            return self.clint.write(addr, val, 64);
         }
         if PLIC_BASE <= addr && addr < PLIC_BASE + PLIC_SIZE {
             // TODO: make write64 for plic.
