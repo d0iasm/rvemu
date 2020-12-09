@@ -16,8 +16,8 @@ fn create_dts() -> std::io::Result<()> {
     let content = r#"/dts-v1/;
 
 / {
-    #address-cells = <2>;
-    #size-cells = <2>;
+    #address-cells = <0x02>;
+    #size-cells = <0x02>;
     compatible = "riscv-virtio";
     model = "riscv-virtio,qemu";
 
@@ -28,39 +28,46 @@ fn create_dts() -> std::io::Result<()> {
 
     uart@10000000 {
         interrupts = <0xa>;
-        interrupt-parent = <0x2>;
+        interrupt-parent = <0x03>;
         clock-frequency = <0x384000>;
         reg = <0x0 0x10000000 0x0 0x100>;
         compatible = "ns16550a";
     };
 
-	virtio_mmio@10001000 {
-		interrupts = <0x1>;
-		interrupt-parent = <0x2>;
-		reg = <0x0 0x10001000 0x0 0x1000>;
-		compatible = "virtio,mmio";
-	};
+    virtio_mmio@10001000 {
+        interrupts = <0x01>;
+        interrupt-parent = <0x03>;
+        reg = <0x0 0x10001000 0x0 0x1000>;
+        compatible = "virtio,mmio";
+    };
 
     cpus {
-        #address-cells = <0x1>;
-        #size-cells = <0x0>;
+        #address-cells = <0x01>;
+        #size-cells = <0x00>;
         timebase-frequency = <0x989680>;
 
+        cpu-map {
+            cluster0 {
+                core0 {
+                    cpu = <0x01>;
+                };
+            };
+        };
+
         cpu@0 {
+            phandle = <0x01>;
             device_type = "cpu";
-            reg = <0x0>;
+            reg = <0x00>;
             status = "okay";
             compatible = "riscv";
             riscv,isa = "rv64imafdcsu";
-            mmu-type = "riscv,sv39";
-            clock-frequency = <0x3b9aca00>;
+            mmu-type = "riscv,sv48";
 
             interrupt-controller {
-                #interrupt-cells = <0x1>;
+                #interrupt-cells = <0x01>;
                 interrupt-controller;
                 compatible = "riscv,cpu-intc";
-                linux,phandle = <0x1>;
-                phandle = <0x1>;
+                phandle = <0x02>;
             };
         };
     };
@@ -70,31 +77,29 @@ fn create_dts() -> std::io::Result<()> {
 		reg = <0x0 0x80000000 0x0 0x8000000>;
 	};
 
-	soc {
-		#address-cells = <0x2>;
-		#size-cells = <0x2>;
-		compatible = "riscv-virtio-soc";
-		ranges;
+    soc {
+        #address-cells = <0x02>;
+        #size-cells = <0x02>;
+        compatible = "simple-bus";
+        ranges;
 
-		interrupt-controller@c000000 {
-			linux,phandle = <0x2>;
-			phandle = <0x2>;
-			riscv,ndev = <0xa>;
-			riscv,max-priority = <0x7>;
-			reg-names = "control";
-			reg = <0x0 0xc000000 0x0 0x4000000>;
-			interrupts-extended = <0x1 0xb 0x1 0x9>;
-			interrupt-controller;
-			compatible = "riscv,plic0";
-			#interrupt-cells = <0x1>;
-		};
+        interrupt-controller@c000000 {
+            phandle = <0x03>;
+            riscv,ndev = <0x35>;
+            reg = <0x00 0xc000000 0x00 0x4000000>;
+            interrupts-extended = <0x02 0x0b 0x02 0x09>;
+            interrupt-controller;
+            compatible = "riscv,plic0";
+            #interrupt-cells = <0x01>;
+            #address-cells = <0x00>;
+        };
 
-		clint@2000000 {
-			interrupts-extended = <0x1 0x3 0x1 0x7>;
-			reg = <0x0 0x2000000 0x0 0x10000>;
-			compatible = "riscv,clint0";
-		};
-	};
+        clint@2000000 {
+            interrupts-extended = <0x02 0x03 0x02 0x07>;
+            reg = <0x00 0x2000000 0x00 0x10000>;
+            compatible = "riscv,clint0";
+        };
+    };
 };"#;
 
     let mut dts = File::create(DTS_FILE_NAME)?;
