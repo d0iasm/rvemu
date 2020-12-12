@@ -1363,35 +1363,67 @@ impl Cpu {
                     }
                     (0x2, 0x02) => {
                         // lr.w
-                        let value = self.read(self.xregs.read(rs1), WORD)?;
-                        self.reservation_set = self.xregs.read(rs1);
+                        let addr = self.xregs.read(rs1);
+                        // "For LR and SC, the A extension requires that the address held in rs1 be
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned for
+                        // 64-bit words and four-byte aligned for 32-bit words)."
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let value = self.read(addr, WORD)?;
+                        self.reservation_set = addr;
                         self.xregs.write(rd, value as i32 as i64 as u64);
                     }
                     (0x3, 0x02) => {
                         // lr.d
-                        let value = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.reservation_set = self.xregs.read(rs1);
+                        let addr = self.xregs.read(rs1);
+                        // "For LR and SC, the A extension requires that the address held in rs1 be
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned for
+                        // 64-bit words and four-byte aligned for 32-bit words)."
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let value = self.read(addr, DOUBLEWORD)?;
+                        self.reservation_set = addr;
                         self.xregs.write(rd, value);
                     }
                     (0x2, 0x03) => {
                         // sc.w
-                        if self.reservation_set == self.xregs.read(rs1) {
-                            self.write(self.xregs.read(rs1), self.xregs.read(rs2), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        // "For LR and SC, the A extension requires that the address held in rs1 be
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned for
+                        // 64-bit words and four-byte aligned for 32-bit words)."
+                        if addr % 4 != 0 {
+                            return Err(Exception::StoreAMOAddressMisaligned);
+                        }
+                        if self.reservation_set == addr {
+                            self.write(addr, self.xregs.read(rs2), WORD)?;
                             self.xregs.write(rd, 0);
-                            self.reservation_set = 0;
                         } else {
                             self.xregs.write(rd, 1);
                         };
+                        // "Regardless of success or failure, executing an SC.W instruction
+                        // invalidates any reservation held by this hart. "
+                        self.reservation_set = 0;
                     }
                     (0x3, 0x03) => {
                         // sc.d
-                        if self.reservation_set == self.xregs.read(rs1) {
-                            self.write(self.xregs.read(rs1), self.xregs.read(rs2), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        // "For LR and SC, the A extension requires that the address held in rs1 be
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned for
+                        // 64-bit words and four-byte aligned for 32-bit words)."
+                        if addr % 8 != 0 {
+                            return Err(Exception::StoreAMOAddressMisaligned);
+                        }
+                        if self.reservation_set == addr {
+                            self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?;
                             self.xregs.write(rd, 0);
-                            self.reservation_set = 0;
                         } else {
                             self.xregs.write(rd, 1);
-                        };
+                        }
+                        // "Regardless of success or failure, executing an SC.W instruction
+                        // invalidates any reservation held by this hart. "
+                        self.reservation_set = 0;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
