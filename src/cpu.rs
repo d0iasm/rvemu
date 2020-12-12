@@ -1327,38 +1327,53 @@ impl Cpu {
                 let _aq = (funct7 & 0b0000010) >> 1; // acquire access
                 let _rl = funct7 & 0b0000001; // release access
                 match (funct3, funct5) {
-                    // TODO: if the address is not naturally aligned, a misaligned address
-                    // exception or an access exception will be generated.
                     (0x2, 0x00) => {
                         // amoadd.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        // "For AMOs, the A extension requires that the address held in rs1 be
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned
+                        // for 64-bit words and four-byte aligned for 32-bit words). If the
+                        // address is not naturally aligned, an address-misaligned exception or
+                        // an access-fault exception will be generated."
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            t.wrapping_add(self.xregs.read(rs2)),
+                            addr,
+                            t.wrapping_add(self.xregs.read(rs2) & 0xffffffff),
                             WORD,
                         )?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(
-                            self.xregs.read(rs1),
-                            t.wrapping_add(self.xregs.read(rs2)),
-                            DOUBLEWORD,
-                        )?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, t.wrapping_add(self.xregs.read(rs2)), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
-                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
+                        self.write(addr, self.xregs.read(rs2), WORD)?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x02) => {
@@ -1427,9 +1442,13 @@ impl Cpu {
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
+                            addr,
                             (t as i32 ^ (self.xregs.read(rs2) as i32)) as i64 as u64,
                             WORD,
                         )?;
@@ -1437,15 +1456,23 @@ impl Cpu {
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(self.xregs.read(rs1), t ^ self.xregs.read(rs2), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, t ^ self.xregs.read(rs2), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
+                            addr,
                             (t as i32 | (self.xregs.read(rs2) as i32)) as i64 as u64,
                             WORD,
                         )?;
@@ -1453,15 +1480,23 @@ impl Cpu {
                     }
                     (0x3, 0x08) => {
                         // amoor.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(self.xregs.read(rs1), t | self.xregs.read(rs2), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, t | self.xregs.read(rs2), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
+                            addr,
                             (t as i32 & (self.xregs.read(rs2) as i32)) as u32 as u64,
                             WORD,
                         )?;
@@ -1469,88 +1504,116 @@ impl Cpu {
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(self.xregs.read(rs1), t & self.xregs.read(rs1), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, t & self.xregs.read(rs1), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::min(t as i32, self.xregs.read(rs2) as i32) as u32 as u64,
+                            addr,
+                            cmp::min(t as i32, self.xregs.read(rs2) as i32) as i64 as u64,
                             WORD,
                         )?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)? as i64;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::min(t, self.xregs.read(rs2) as i64) as u64,
+                            addr,
+                            cmp::min(t as i64, self.xregs.read(rs2) as i64) as u64,
                             DOUBLEWORD,
                         )?;
                         self.xregs.write(rd, t as u64);
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::max(t as i32, self.xregs.read(rs2) as i32) as u64,
+                            addr,
+                            cmp::max(t as i32, self.xregs.read(rs2) as i32) as i64 as u64,
                             WORD,
                         )?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::max(t, self.xregs.read(rs2)),
+                            addr,
+                            cmp::max(t as i64, self.xregs.read(rs2) as i64) as u64,
                             DOUBLEWORD,
                         )?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x18) => {
                         // amominu.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::min(t, self.xregs.read(rs2)),
+                            addr,
+                            cmp::min(t as u32, self.xregs.read(rs2) as u32) as u64,
                             WORD,
                         )?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(
-                            self.xregs.read(rs1),
-                            cmp::min(t, self.xregs.read(rs2)),
-                            DOUBLEWORD,
-                        )?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, cmp::min(t, self.xregs.read(rs2)), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
-                        let t = self.read(self.xregs.read(rs1), WORD)?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 4 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, WORD)?;
                         self.write(
-                            self.xregs.read(rs1),
-                            cmp::max(t, self.xregs.read(rs2)),
+                            addr,
+                            cmp::max(t as u32, self.xregs.read(rs2) as u32) as u64,
                             WORD,
                         )?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
-                        let t = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
-                        self.write(
-                            self.xregs.read(rs1),
-                            cmp::max(t, self.xregs.read(rs2)),
-                            DOUBLEWORD,
-                        )?;
+                        let addr = self.xregs.read(rs1);
+                        if addr % 8 != 0 {
+                            return Err(Exception::LoadAddressMisaligned);
+                        }
+                        let t = self.read(addr, DOUBLEWORD)?;
+                        self.write(addr, cmp::max(t, self.xregs.read(rs2)), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     _ => {
