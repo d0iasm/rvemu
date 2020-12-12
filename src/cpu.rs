@@ -231,9 +231,12 @@ pub struct Cpu {
     /// System bus.
     pub bus: Bus,
     /// SV39 paging flag.
-    pub enable_paging: bool,
+    enable_paging: bool,
     /// Physical page number (PPN) × PAGE_SIZE (4096).
-    pub page_table: u64,
+    page_table: u64,
+    /// A set of bytes that subsumes the bytes in the addressed word used in
+    /// load-reserved/store-conditional instructions.
+    reservation_set: u64,
 }
 
 impl Cpu {
@@ -275,6 +278,7 @@ impl Cpu {
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
+            reservation_set: 0,
         }
     }
 
@@ -1319,6 +1323,7 @@ impl Cpu {
             0x2F => {
                 // R-type (RV32A and RV64A)
                 let funct5 = (funct7 & 0b1111100) >> 2;
+                // TODO: Handle `aq` and `rl`.
                 let _aq = (funct7 & 0b0000010) >> 1; // acquire access
                 let _rl = funct7 & 0b0000001; // release access
                 match (funct3, funct5) {
@@ -1332,7 +1337,7 @@ impl Cpu {
                             t.wrapping_add(self.xregs.read(rs2)),
                             WORD,
                         )?;
-                        self.xregs.write(rd, t);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
@@ -1348,7 +1353,7 @@ impl Cpu {
                         // amoswap.w
                         let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(self.xregs.read(rs1), self.xregs.read(rs2), WORD)?;
-                        self.xregs.write(rd, t);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
@@ -1359,34 +1364,44 @@ impl Cpu {
                     (0x2, 0x02) => {
                         // lr.w
                         let value = self.read(self.xregs.read(rs1), WORD)?;
+                        self.reservation_set = self.xregs.read(rs1);
                         self.xregs.write(rd, value as i32 as i64 as u64);
                     }
                     (0x3, 0x02) => {
                         // lr.d
                         let value = self.read(self.xregs.read(rs1), DOUBLEWORD)?;
+                        self.reservation_set = self.xregs.read(rs1);
                         self.xregs.write(rd, value);
                     }
                     (0x2, 0x03) => {
-                        // TODO: write a nonzero error code if the store fails.
                         // sc.w
-                        self.xregs.write(rd, 0);
-                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), WORD)?;
+                        if self.reservation_set == self.xregs.read(rs1) {
+                            self.write(self.xregs.read(rs1), self.xregs.read(rs2), WORD)?;
+                            self.xregs.write(rd, 0);
+                            self.reservation_set = 0;
+                        } else {
+                            self.xregs.write(rd, 1);
+                        };
                     }
                     (0x3, 0x03) => {
-                        // TODO: write a nonzero error code if the store fails.
                         // sc.d
-                        self.xregs.write(rd, 0);
-                        self.write(self.xregs.read(rs1), self.xregs.read(rs2), DOUBLEWORD)?;
+                        if self.reservation_set == self.xregs.read(rs1) {
+                            self.write(self.xregs.read(rs1), self.xregs.read(rs2), DOUBLEWORD)?;
+                            self.xregs.write(rd, 0);
+                            self.reservation_set = 0;
+                        } else {
+                            self.xregs.write(rd, 1);
+                        };
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
-                        let t = self.read(self.xregs.read(rs1), WORD)? as u32;
+                        let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(
                             self.xregs.read(rs1),
-                            (t ^ (self.xregs.read(rs2) as u32)) as u64,
+                            (t as i32 ^ (self.xregs.read(rs2) as i32)) as i64 as u64,
                             WORD,
                         )?;
-                        self.xregs.write(rd, t as u64);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
@@ -1396,13 +1411,13 @@ impl Cpu {
                     }
                     (0x2, 0x08) => {
                         // amoor.w
-                        let t = self.read(self.xregs.read(rs1), WORD)? as i32;
+                        let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(
                             self.xregs.read(rs1),
-                            (t | (self.xregs.read(rs2) as i32)) as u32 as u64,
+                            (t as i32 | (self.xregs.read(rs2) as i32)) as i64 as u64,
                             WORD,
                         )?;
-                        self.xregs.write(rd, t as u64);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x08) => {
                         // amoor.d
@@ -1412,13 +1427,13 @@ impl Cpu {
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
-                        let t = self.read(self.xregs.read(rs1), WORD)? as i32;
+                        let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(
                             self.xregs.read(rs1),
-                            (t & (self.xregs.read(rs2) as i32)) as u32 as u64,
+                            (t as i32 & (self.xregs.read(rs2) as i32)) as u32 as u64,
                             WORD,
                         )?;
-                        self.xregs.write(rd, t as u64);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
@@ -1428,13 +1443,13 @@ impl Cpu {
                     }
                     (0x2, 0x10) => {
                         // amomin.w
-                        let t = self.read(self.xregs.read(rs1), WORD)? as i32;
+                        let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(
                             self.xregs.read(rs1),
-                            cmp::min(t, self.xregs.read(rs2) as i32) as u32 as u64,
+                            cmp::min(t as i32, self.xregs.read(rs2) as i32) as u32 as u64,
                             WORD,
                         )?;
-                        self.xregs.write(rd, t as u64);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x10) => {
                         // amomin.d
@@ -1448,13 +1463,13 @@ impl Cpu {
                     }
                     (0x2, 0x14) => {
                         // amomax.w
-                        let t = self.read(self.xregs.read(rs1), WORD)? as i32;
+                        let t = self.read(self.xregs.read(rs1), WORD)?;
                         self.write(
                             self.xregs.read(rs1),
-                            cmp::max(t, self.xregs.read(rs2) as i32) as u64,
+                            cmp::max(t as i32, self.xregs.read(rs2) as i32) as u64,
                             WORD,
                         )?;
-                        self.xregs.write(rd, t as u64);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x14) => {
                         // amomax.d
@@ -1474,7 +1489,7 @@ impl Cpu {
                             cmp::min(t, self.xregs.read(rs2)),
                             WORD,
                         )?;
-                        self.xregs.write(rd, t);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x18) => {
                         // amominu.d
@@ -1494,7 +1509,7 @@ impl Cpu {
                             cmp::max(t, self.xregs.read(rs2)),
                             WORD,
                         )?;
-                        self.xregs.write(rd, t);
+                        self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
