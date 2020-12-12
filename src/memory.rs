@@ -33,14 +33,14 @@ impl Memory {
         self.dram[index] = val as u8
     }
 
-    /// Write 2 bytes to the memory.
+    /// Write 2 bytes to the memory with little endian.
     pub fn write16(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
         self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
     }
 
-    /// Write 4 bytes to the memory.
+    /// Write 4 bytes to the memory with little endian.
     pub fn write32(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
@@ -49,7 +49,7 @@ impl Memory {
         self.dram[index + 3] = ((val >> 24) & 0xff) as u8;
     }
 
-    /// Write 8 bytes to the memory.
+    /// Write 8 bytes to the memory with little endian.
     pub fn write64(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
@@ -68,27 +68,24 @@ impl Memory {
         self.dram[index] as u64
     }
 
-    /// Read 2 bytes from the memory.
+    /// Read 2 bytes from the memory with little endian.
     pub fn read16(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
-        // little endian
         return (self.dram[index] as u64) | ((self.dram[index + 1] as u64) << 8);
     }
 
-    /// Read 4 bytes from the memory.
+    /// Read 4 bytes from the memory with little endian.
     pub fn read32(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
-        // little endian
         return (self.dram[index] as u64)
             | ((self.dram[index + 1] as u64) << 8)
             | ((self.dram[index + 2] as u64) << 16)
             | ((self.dram[index + 3] as u64) << 24);
     }
 
-    /// Read 8 bytes from the memory.
+    /// Read 8 bytes from the memory with little endian.
     pub fn read64(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
-        // little endian
         return (self.dram[index] as u64)
             | ((self.dram[index + 1] as u64) << 8)
             | ((self.dram[index + 2] as u64) << 16)

@@ -1,7 +1,6 @@
-//! The plic module contains the platform-level interrupt controller (PLIC).
-//! The plic connects all external interrupts in the system to all hart
-//! contexts in the system, via the external interrupt source in each hart.
-//! It's the global interrupt controller in a RISC-V system.
+//! The plic module contains the platform-level interrupt controller (PLIC). The plic connects all
+//! external interrupts in the system to all hart contexts in the system, via the external interrupt
+//! source in each hart. It's the global interrupt controller in a RISC-V system.
 
 // Reference:
 // "SiFive Interrupt Cookbook Version 1.0"

@@ -1,7 +1,5 @@
 //! The cpu module contains the privileged mode, registers, and CPU.
 
-pub const REGISTERS_COUNT: usize = 32;
-
 use std::cmp;
 use std::cmp::PartialEq;
 use std::fmt;
@@ -22,6 +20,9 @@ use crate::{
 
 /// The stack pointer.
 const SP: u64 = 2;
+
+/// The number of registers.
+const REGISTERS_COUNT: usize = 32;
 
 /// The page size (4 KiB) for the virtual memory system.
 const PAGE_SIZE: u64 = 4096;
@@ -95,6 +96,19 @@ impl XRegisters {
         let mut xregs = [0; REGISTERS_COUNT];
         // The stack pointer is set in the default maximum mamory size + the start address of dram.
         xregs[SP as usize] = MEMORY_SIZE + DRAM_BASE;
+        // From riscv-pk:
+        // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
+        //   save a0 and a1; arguments from previous boot loader stage:
+        //   // li x10, 0
+        //   // li x11, 0
+        //
+        // void init_first_hart(uintptr_t hartid, uintptr_t dtb)
+        //   x10 (a0): hartid
+        //   x11 (a1): pointer to dtb
+        //
+        // So, we need to set registers register to the state as they are when a bootloader finished.
+        xregs[10] = 0;
+        xregs[11] = 0x1020;
         Self { xregs }
     }
 
@@ -236,49 +250,23 @@ pub struct Cpu {
     page_table: u64,
     /// A set of bytes that subsumes the bytes in the addressed word used in
     /// load-reserved/store-conditional instructions.
-    reservation_set: u64,
+    reservation_set: Vec<u64>,
 }
 
 impl Cpu {
     /// Create a new `Cpu` object.
     pub fn new() -> Cpu {
-        // From riscv-pk:
-        // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
-        //   save a0 and a1; arguments from previous boot loader stage:
-        //   // li x10, 0
-        //   // li x11, 0
-        //
-        // void init_first_hart(uintptr_t hartid, uintptr_t dtb)
-        //   x10 (a0): hartid
-        //   x11 (a1): pointer to dtb
-        //
-        // So, we need to set registers register to the state as they are when a bootloader finished.
-        let mut xregs = XRegisters::new();
-        xregs.write(10, 0);
-        xregs.write(11, 0x1020);
-
-        let mut state = State::new();
-        let misa: u64 = (2 << 62) | // MXL[1:0]=2 (XLEN is 64)
-            (1 << 18) | // Extensions[18] (Supervisor mode implemented)
-            (1 << 12) | // Extensions[12] (Integer Multiply/Divide extension)
-            (1 << 8) | // Extensions[8] (RV32I/64I/128I base ISA)
-            (1 << 5) | // Extensions[5] (Single-precision floating-point extension)
-            (1 << 3) | // Extensions[3] (Double-precision floating-point extension)
-            (1 << 2) | // Extensions[2] (Compressed extension)
-            1; // Extensions[0] (Atomic extension)
-        state.write(MISA, misa);
-
         Cpu {
-            xregs,
+            xregs: XRegisters::new(),
             fregs: FRegisters::new(),
             pc: 0,
-            state,
+            state: State::new(),
             mode: Mode::Machine,
             prev_mode: Mode::Machine,
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
-            reservation_set: 0,
+            reservation_set: Vec::new(),
         }
     }
 
@@ -292,8 +280,6 @@ impl Cpu {
             self.xregs.write(i as u64, 0);
             self.fregs.write(i as u64, 0.0);
         }
-        self.xregs.write(10, 0);
-        self.xregs.write(11, 0x1020);
     }
 
     /// Increment the timer register (mtimer) in CLINT.
@@ -610,6 +596,12 @@ impl Cpu {
     /// Write `size`-bit data to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     fn write(&mut self, v_addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        // "The SC must fail if a write from some other device to the bytes accessed by the LR can
+        // be observed to occur between the LR and SC."
+        if self.reservation_set.contains(&v_addr) {
+            self.reservation_set.retain(|&x| x != v_addr);
+        }
+
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         match size {
             BYTE => self.bus.write8(p_addr, value),
@@ -1169,9 +1161,9 @@ impl Cpu {
             }
             0x0F => {
                 // I-type (RV32I)
-                // fence instructions are not supportted yet because this emulator executes a
-                // inst sequentially on a single thread.
-                // fence i is a part of the Zifencei extension.
+                // fence instructions are not supportted yet because this emulator executes an
+                // instruction sequentially on a single thread.
+                // fence.i is a part of the Zifencei extension.
                 match funct3 {
                     0x0 => {} // fence
                     0x1 => {} // fence.i
@@ -1386,8 +1378,8 @@ impl Cpu {
                             return Err(Exception::LoadAddressMisaligned);
                         }
                         let value = self.read(addr, WORD)?;
-                        self.reservation_set = addr;
                         self.xregs.write(rd, value as i32 as i64 as u64);
+                        self.reservation_set.push(addr);
                     }
                     (0x3, 0x02) => {
                         // lr.d
@@ -1399,8 +1391,8 @@ impl Cpu {
                             return Err(Exception::LoadAddressMisaligned);
                         }
                         let value = self.read(addr, DOUBLEWORD)?;
-                        self.reservation_set = addr;
                         self.xregs.write(rd, value);
+                        self.reservation_set.push(addr);
                     }
                     (0x2, 0x03) => {
                         // sc.w
@@ -1411,15 +1403,16 @@ impl Cpu {
                         if addr % 4 != 0 {
                             return Err(Exception::StoreAMOAddressMisaligned);
                         }
-                        if self.reservation_set == addr {
+                        if self.reservation_set.contains(&addr) {
+                            // "Regardless of success or failure, executing an SC.W instruction
+                            // invalidates any reservation held by this hart. "
+                            self.reservation_set.retain(|&x| x != addr);
                             self.write(addr, self.xregs.read(rs2), WORD)?;
                             self.xregs.write(rd, 0);
                         } else {
+                            self.reservation_set.retain(|&x| x != addr);
                             self.xregs.write(rd, 1);
                         };
-                        // "Regardless of success or failure, executing an SC.W instruction
-                        // invalidates any reservation held by this hart. "
-                        self.reservation_set = 0;
                     }
                     (0x3, 0x03) => {
                         // sc.d
@@ -1430,15 +1423,14 @@ impl Cpu {
                         if addr % 8 != 0 {
                             return Err(Exception::StoreAMOAddressMisaligned);
                         }
-                        if self.reservation_set == addr {
+                        if self.reservation_set.contains(&addr) {
+                            self.reservation_set.retain(|&x| x != addr);
                             self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?;
                             self.xregs.write(rd, 0);
                         } else {
+                            self.reservation_set.retain(|&x| x != addr);
                             self.xregs.write(rd, 1);
                         }
-                        // "Regardless of success or failure, executing an SC.W instruction
-                        // invalidates any reservation held by this hart. "
-                        self.reservation_set = 0;
                     }
                     (0x2, 0x04) => {
                         // amoxor.w

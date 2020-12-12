@@ -1,6 +1,6 @@
-//! The clint module contains the core-local interruptor (CLINT). The CLINT
-//! block holds memory-mapped control and status registers associated with
-//! software and timer interrupts. It generates per-hart software interrupts and timer.
+//! The clint module contains the core-local interruptor (CLINT). The CLINT block holds
+//! memory-mapped control and status registers associated with software and timer interrupts. It
+//! generates per-hart software interrupts and timer.
 
 // Reference:
 // "SiFive Interrupt Cookbook Version 1.0"
