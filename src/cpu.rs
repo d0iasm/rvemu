@@ -1339,12 +1339,12 @@ impl Cpu {
                     }
                     (0x2, 0x02) => {
                         // lr.w
-                        let addr = self.read(self.xregs.read(rs1), 32)?;
-                        self.xregs.write(rd, addr);
+                        let value = self.read(self.xregs.read(rs1), 32)?;
+                        self.xregs.write(rd, value as i32 as i64 as u64);
                     }
                     (0x3, 0x02) => {
                         // lr.d
-                        let addr = self.read(self.xregs.read(rs1), 32)?;
+                        let addr = self.read(self.xregs.read(rs1), 64)?;
                         self.xregs.write(rd, addr);
                     }
                     (0x2, 0x03) => {
