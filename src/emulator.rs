@@ -47,9 +47,9 @@ impl Emulator {
     pub fn start(&mut self) {
         let mut count = 0;
         loop {
-            // This is for unit tests to finish the execution.
+            // This is a workaround for unit tests to finish the execution.
             count += 1;
-            if self.is_test && count < 10000 {
+            if self.is_test && count > 10000 {
                 return;
             }
 
