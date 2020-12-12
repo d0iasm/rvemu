@@ -29,17 +29,17 @@ impl Emulator {
     }
 
     /// Set binary data to the beginning of the DRAM from the emulator console.
-    pub fn set_dram(&mut self, data: Vec<u8>) {
-        self.cpu.bus.set_dram(data);
+    pub fn initialize_dram(&mut self, data: Vec<u8>) {
+        self.cpu.bus.initialize_dram(data);
     }
 
     /// Set binary data to the virtio disk from the emulator console.
-    pub fn set_disk(&mut self, data: Vec<u8>) {
-        self.cpu.bus.set_disk(data);
+    pub fn initialize_disk(&mut self, data: Vec<u8>) {
+        self.cpu.bus.initialize_disk(data);
     }
 
     /// Set the program counter to the CPU field.
-    pub fn set_pc(&mut self, pc: u64) {
+    pub fn initialize_pc(&mut self, pc: u64) {
         self.cpu.pc = pc;
     }
 

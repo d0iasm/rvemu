@@ -85,6 +85,7 @@ impl Clint {
 
     /// Read `size`-bit data from a register located at `addr` in CLINT.
     pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+        // TODO: Access to addr + 1/2/3 bytes
         let value = match addr {
             CLINT_MSIP => self.msip as u64,
             CLINT_MTIMECMP => self.mtimecmp,
@@ -103,6 +104,7 @@ impl Clint {
 
     /// Write `size`-bit data to a register located at `addr` in CLINT.
     pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        // TODO: Access to addr + 1/2/3 bytes
         let v = match size {
             8 => value & 0xff,
             16 => value & 0xffff,

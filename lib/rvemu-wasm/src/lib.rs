@@ -94,11 +94,11 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
     utils::set_panic_hook();
 
     let mut emu = emulator::Emulator::new();
-    emu.set_dram(kernel);
+    emu.initialize_dram(kernel);
     if let Some(fsimg) = fsimg {
-        emu.set_disk(fsimg);
+        emu.initialize_disk(fsimg);
     }
-    emu.set_pc(DRAM_BASE);
+    emu.initialize_pc(DRAM_BASE);
 
     set_executing();
 

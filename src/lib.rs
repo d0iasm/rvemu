@@ -16,9 +16,9 @@
 //!     // Create an emulator object.
 //!     let mut emu = Emulator::new();
 //!     // Place the binary data in the beginning of DRAM.
-//!     emu.set_dram(data);
+//!     emu.initialize_dram(data);
 //!     // Set the program counter to 0x8000_0000, which is the address DRAM starts.
-//!     emu.set_pc(DRAM_BASE);
+//!     emu.initialize_pc(DRAM_BASE);
 //!     // Start the emulator.
 //!     emu.start();
 //!

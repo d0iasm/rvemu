@@ -3,6 +3,9 @@
 use std::fmt;
 use std::ops::{Bound, Range, RangeBounds};
 
+use crate::cpu::Cpu;
+use crate::devices::clint::CLINT_MTIME;
+
 pub type CsrAddress = u16;
 
 pub const MXLEN: usize = 64;

@@ -263,7 +263,7 @@ impl Virtio {
     }
 
     /// Set the binary in the virtio disk.
-    pub fn set_disk(&mut self, binary: Vec<u8>) {
+    pub fn initialize(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());
     }
 

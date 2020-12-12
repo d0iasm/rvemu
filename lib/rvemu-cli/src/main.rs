@@ -61,9 +61,9 @@ fn main() -> io::Result<()> {
     }
 
     let mut emu = Emulator::new();
-    emu.set_dram(kernel_data);
-    emu.set_disk(img_data);
-    emu.set_pc(DRAM_BASE);
+    emu.initialize_dram(kernel_data);
+    emu.initialize_disk(img_data);
+    emu.initialize_pc(DRAM_BASE);
 
     if matches.occurrences_of("debug") == 1 {
         emu.is_debug = true;

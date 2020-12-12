@@ -21,13 +21,8 @@ impl Memory {
         }
     }
 
-    /// Return the code size in the memory.
-    pub fn size(&self) -> u64 {
-        self.code_size
-    }
-
     /// Set the binary in the memory.
-    pub fn set_dram(&mut self, binary: Vec<u8>) {
+    pub fn initialize(&mut self, binary: Vec<u8>) {
         self.code_size = binary.len() as u64;
         self.dram.splice(..binary.len(), binary.iter().cloned());
     }
@@ -41,30 +36,30 @@ impl Memory {
     /// Write 2 bytes to the memory.
     pub fn write16(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val >> 8) & 0xFF) as u8;
+        self.dram[index] = (val & 0xff) as u8;
+        self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
     }
 
     /// Write 4 bytes to the memory.
     pub fn write32(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val >> 8) & 0xFF) as u8;
-        self.dram[index + 2] = ((val >> 16) & 0xFF) as u8;
-        self.dram[index + 3] = ((val >> 24) & 0xFF) as u8;
+        self.dram[index] = (val & 0xff) as u8;
+        self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
+        self.dram[index + 2] = ((val >> 16) & 0xff) as u8;
+        self.dram[index + 3] = ((val >> 24) & 0xff) as u8;
     }
 
     /// Write 8 bytes to the memory.
     pub fn write64(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
-        self.dram[index] = (val & 0xFF) as u8;
-        self.dram[index + 1] = ((val >> 8) & 0xFF) as u8;
-        self.dram[index + 2] = ((val >> 16) & 0xFF) as u8;
-        self.dram[index + 3] = ((val >> 24) & 0xFF) as u8;
-        self.dram[index + 4] = ((val >> 32) & 0xFF) as u8;
-        self.dram[index + 5] = ((val >> 40) & 0xFF) as u8;
-        self.dram[index + 6] = ((val >> 48) & 0xFF) as u8;
-        self.dram[index + 7] = ((val >> 56) & 0xFF) as u8;
+        self.dram[index] = (val & 0xff) as u8;
+        self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
+        self.dram[index + 2] = ((val >> 16) & 0xff) as u8;
+        self.dram[index + 3] = ((val >> 24) & 0xff) as u8;
+        self.dram[index + 4] = ((val >> 32) & 0xff) as u8;
+        self.dram[index + 5] = ((val >> 40) & 0xff) as u8;
+        self.dram[index + 6] = ((val >> 48) & 0xff) as u8;
+        self.dram[index + 7] = ((val >> 56) & 0xff) as u8;
     }
 
     /// Read a byte from the memory.

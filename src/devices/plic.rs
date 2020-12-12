@@ -43,7 +43,8 @@ pub struct Plic {
     /// The xv6 uses only 2 devices, uart and virtio, so the array contains 2 elements for now.
     priority: [u32; 2],
     /// Interrupt pending bits. If bit 1 is set, a global interrupt 1 is pending.
-    /// A pending bit in the PLIC core can be cleared by setting the associated enable bit then performing a claim.
+    /// A pending bit in the PLIC core can be cleared by setting the associated enable bit then
+    /// performing a claim.
     pending: u32,
     /// S-mode enables registers that each global interrupt can be enabled by setting the
     /// corresponding to.
@@ -57,8 +58,8 @@ pub struct Plic {
     /// The number of `hart` is expected under 5 for now.
     spriority: [u32; 5],
     /// S-mode claim/complete register, which returns the ID of the highest-priority pending
-    /// interrupt or zero if there is no pending interrupt. A successful claim also atomically clears the
-    /// corresponding pending bit on the interrupt source.
+    /// interrupt or zero if there is no pending interrupt. A successful claim also atomically
+    /// clears the corresponding pending bit on the interrupt source.
     sclaim: [u32; 5],
 }
 
@@ -75,7 +76,19 @@ impl Plic {
         }
     }
 
-    /// Read 4 bytes from the PLIC only if the address is valid. Otherwise, returns 0.
+    /*
+    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+        let value = match addr {
+            PLIC_BASE => self.msip as u64,
+            PLIC => self.mtimecmp,
+            CLINT_MTIME => self.mtime,
+            _ => return Err(Exception::LoadAccessFault),
+        };
+
+    }
+    */
+
+    /// Read 32-bit data from a register located at `addr` in PLIC.
     pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
         if PLIC_SOURCE_PRIORITY <= addr && addr <= PLIC_SOURCE_PRIORITY + 0x000ffc {
             // TODO: handle other source devices.
@@ -101,11 +114,10 @@ impl Plic {
             let index = (addr - PLIC_SCLAIM) / 0x2000;
             return Ok(self.sclaim[index as usize] as u64);
         }
-        println!("plic read: {:#x}", addr);
         Err(Exception::LoadAccessFault)
     }
 
-    /// Write 4 bytes to the PLIC only if the address is valid.
+    /// Write 32-bit data to a register located at `addr` in PLIC.
     pub fn write32(&mut self, addr: u64, val: u32) -> Result<(), Exception> {
         if PLIC_SOURCE_PRIORITY <= addr && addr <= PLIC_BASE + 0x000FFC {
             // TODO: handle other source devices.
@@ -137,8 +149,6 @@ impl Plic {
             self.sclaim[index as usize] = val;
             return Ok(());
         }
-        println!("plic write: {:#x}", PLIC_BASE + UART_IRQ * 4);
-        println!("plic write: {:#x} -> {:#x}", addr, val);
         Err(Exception::StoreAMOAccessFault)
     }
 }

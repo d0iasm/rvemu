@@ -16,15 +16,15 @@ pub const MROM_BASE: u64 = 0x1000;
 /// The size of the mask ROM.
 pub const MROM_SIZE: u64 = 0x11000;
 
-/// The address which the core-local interruptor (CLINT) starts. It contains the timer and
-/// generates per-hart software interrupts and timer
-/// interrupts.
+/// The address which the core-local interruptor (CLINT) starts. It contains the timer and generates
+/// per-hart software interrupts and timer interrupts.
 pub const CLINT_BASE: u64 = 0x200_0000;
 /// The size of CLINT.
 pub const CLINT_SIZE: u64 = 0x10000;
 
-/// The address which the platform-level interrupt controller (PLIC) starts. The PLIC connects all external interrupts in the
-/// system to all hart contexts in the system, via the external interrupt source in each hart.
+/// The address which the platform-level interrupt controller (PLIC) starts. The PLIC connects all
+/// external interrupts in the system to all hart contexts in the system, via the external interrupt
+/// source in each hart.
 pub const PLIC_BASE: u64 = 0xc00_0000;
 /// The size of PLIC.
 pub const PLIC_SIZE: u64 = 0x4000000;
@@ -65,19 +65,14 @@ impl Bus {
         }
     }
 
-    /// Return the size of source code in the dram.
-    pub fn dram_size(&self) -> u64 {
-        self.dram.size()
-    }
-
     /// Set the binary data to the memory.
-    pub fn set_dram(&mut self, data: Vec<u8>) {
-        self.dram.set_dram(data);
+    pub fn initialize_dram(&mut self, data: Vec<u8>) {
+        self.dram.initialize(data);
     }
 
     /// Set the binary data to the virtIO disk.
-    pub fn set_disk(&mut self, data: Vec<u8>) {
-        self.virtio.set_disk(data);
+    pub fn initialize_disk(&mut self, data: Vec<u8>) {
+        self.virtio.initialize(data);
     }
 
     /// Read a byte from the system bus.
