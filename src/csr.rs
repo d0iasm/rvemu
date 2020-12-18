@@ -199,6 +199,11 @@ impl State {
         Self { csrs }
     }
 
+    /// Increment the value in the TIME register.
+    pub fn increment_time(&mut self) {
+        self.write(TIME, self.read(TIME).wrapping_add(1));
+    }
+
     /// Read the val from the CSR.
     pub fn read(&self, addr: CsrAddress) -> u64 {
         match addr {

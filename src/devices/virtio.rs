@@ -256,6 +256,7 @@ impl Virtio {
     /// Return true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
         if self.queue_notify != 9999 {
+            println!("virtio interrupt");
             self.queue_notify = 9999;
             return true;
         }
@@ -269,6 +270,7 @@ impl Virtio {
 
     /// Read 4 bytes from virtio only if the addr is valid. Otherwise, return 0.
     pub fn read(&self, addr: u64) -> u32 {
+        println!("virtio read");
         match addr {
             VIRTIO_MAGIC => 0x74726976,     // read-only
             VIRTIO_VERSION => 0x1,          // read-only
@@ -286,6 +288,7 @@ impl Virtio {
 
     /// Write 4 bytes to virtio only if the addr is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: u64, val: u32) {
+        println!("virtio write");
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
             VIRTIO_GUEST_PAGE_SIZE => self.page_size = val,
@@ -325,6 +328,7 @@ impl Virtio {
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
+        println!("virtio disk_access");
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
         // "Used Buffer Notification
         //     - bit 0 - the interrupt was asserted because the device has used a buffer in at

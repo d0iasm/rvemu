@@ -3,20 +3,20 @@
 use crate::bus::DRAM_BASE;
 
 /// Default memory size (1GiB).
-pub const MEMORY_SIZE: u64 = 1024 * 1024 * 1024;
+pub const DRAM_SIZE: u64 = 1024 * 1024 * 1024;
 
 /// The memory used by the emulator.
 #[derive(Debug)]
-pub struct Memory {
+pub struct Dram {
     pub dram: Vec<u8>,
     code_size: u64,
 }
 
-impl Memory {
+impl Dram {
     /// Create a new memory object with default memory size.
-    pub fn new() -> Memory {
+    pub fn new() -> Self {
         Self {
-            dram: vec![0; MEMORY_SIZE as usize],
+            dram: vec![0; DRAM_SIZE as usize],
             code_size: 0,
         }
     }

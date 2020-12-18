@@ -13,9 +13,9 @@ use crate::{
         uart::UART_IRQ,
         virtio::{Virtio, VIRTIO_IRQ},
     },
+    dram::DRAM_SIZE,
     exception::Exception,
     interrupt::Interrupt,
-    memory::MEMORY_SIZE,
 };
 
 /// The stack pointer.
@@ -95,7 +95,7 @@ impl XRegisters {
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
         // The stack pointer is set in the default maximum mamory size + the start address of dram.
-        xregs[SP as usize] = MEMORY_SIZE + DRAM_BASE;
+        xregs[SP as usize] = DRAM_BASE + DRAM_SIZE;
         // From riscv-pk:
         // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
         //   save a0 and a1; arguments from previous boot loader stage:
@@ -621,8 +621,9 @@ impl Cpu {
     /// the instruction executed in this cycle.
     pub fn execute(&mut self) -> Result<u64, Exception> {
         // Increment the timer register (mtimer) in Clint.
-        // TIME register in CSR is also updated by this method.
         self.bus.clint.increment(&mut self.state);
+        // Increment the value in the TIME register in CSR.
+        self.state.increment_time();
 
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
