@@ -59,11 +59,8 @@ impl Emulator {
                 None => {}
             }
 
-            // Increment a CPU timer for a timer interrupt.
-            self.cpu.timer_increment();
-
-            // Increment a CPU clock. In one cycle, CPU does fetch, decode, and execute.
-            let trap = match self.cpu.tick() {
+            // Execute a fetched instruction.
+            let trap = match self.cpu.execute() {
                 Ok(inst) => {
                     if self.is_debug {
                         dbg!(format!(

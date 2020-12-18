@@ -282,11 +282,6 @@ impl Cpu {
         }
     }
 
-    /// Increment the timer register (mtimer) in CLINT.
-    pub fn timer_increment(&mut self) {
-        self.bus.clint.increment(&mut self.state);
-    }
-
     /// Check interrupt flags for all devices that can interrupt.
     pub fn check_pending_interrupt(&mut self) -> Option<Interrupt> {
         // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global interrupts to multiple harts.
@@ -623,8 +618,12 @@ impl Cpu {
     }
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
-    /// nothing.
-    pub fn tick(&mut self) -> Result<u64, Exception> {
+    /// the instruction executed in this cycle.
+    pub fn execute(&mut self) -> Result<u64, Exception> {
+        // Increment the timer register (mtimer) in Clint.
+        // TIME register in CSR is also updated by this method.
+        self.bus.clint.increment(&mut self.state);
+
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
         let inst;
@@ -634,16 +633,16 @@ impl Cpu {
                     // Unimplemented instruction, since all bits are 0.
                     return Err(Exception::IllegalInstruction);
                 }
-                inst = self.tick_c()?
+                inst = self.execute_compressed()?
             }
-            _ => inst = self.tick_g()?,
+            _ => inst = self.execute_general()?,
         }
         Ok(inst)
     }
 
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
     /// returns a fetched instruction. It also increments the program counter by 2 bytes.
-    pub fn tick_c(&mut self) -> Result<u64, Exception> {
+    pub fn execute_compressed(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch(HALFWORD)?;
 
@@ -1072,7 +1071,7 @@ impl Cpu {
 
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
     /// otherwise, returns a fetched instruction. It also increments the program counter by 4 bytes.
-    fn tick_g(&mut self) -> Result<u64, Exception> {
+    fn execute_general(&mut self) -> Result<u64, Exception> {
         // 1. Fetch.
         let inst = self.fetch(WORD)?;
 

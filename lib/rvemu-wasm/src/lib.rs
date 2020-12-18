@@ -117,11 +117,8 @@ pub fn emulator_start(kernel: Vec<u8>, fsimg: Option<Vec<u8>>) {
                 None => {}
             }
 
-            // Increment a CPU timer for a timer interrupt.
-            emu.cpu.timer_increment();
-
-            // Increment a CPU clock. In one cycle, CPU does fetch, decode, and execute.
-            let trap = match emu.cpu.tick() {
+            // Execute a fetched instruction.
+            let trap = match emu.cpu.execute() {
                 Ok(_) => Trap::Requested, // dummy
                 Err(exception) => exception.take_trap(&mut emu.cpu),
             };
