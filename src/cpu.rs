@@ -1645,6 +1645,7 @@ impl Cpu {
                     }
                     (0x1, 0x01) => {
                         // mulh
+                        // signed × signed
                         self.xregs.write(
                             rd,
                             ((self.xregs.read(rs1) as i64 as i128)
@@ -1653,8 +1654,8 @@ impl Cpu {
                         );
                     }
                     (0x2, 0x00) => {
+                        // slt
                         self.xregs.write(
-                            // slt
                             rd,
                             if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
                                 1
@@ -1665,15 +1666,13 @@ impl Cpu {
                     }
                     (0x2, 0x01) => {
                         // mulhsu
-                        let x = self.xregs.read(rs1) as i64;
-                        let y = self.xregs.read(rs2);
-                        let z;
-                        if x < 0 {
-                            z = (!(-x as u64 as u128).wrapping_mul(y as u128)).wrapping_add(1);
-                        } else {
-                            z = (x as u64 as u128).wrapping_mul(y as u128);
-                        }
-                        self.xregs.write(rd, (z >> 64) as u64);
+                        // signed × unsigned
+                        self.xregs.write(
+                            rd,
+                            ((self.xregs.read(rs1) as i64 as i128 as u128)
+                                .wrapping_mul(self.xregs.read(rs2) as u128)
+                                >> 64) as u64,
+                        );
                     }
                     (0x3, 0x00) => {
                         // sltu
@@ -1688,6 +1687,7 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
+                        // unsigned × unsigned
                         self.xregs.write(
                             rd,
                             ((self.xregs.read(rs1) as u128)
