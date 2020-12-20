@@ -1620,18 +1620,29 @@ impl Cpu {
                 // In RV64I, only the low 6 bits of rs2 are considered for the shift amount."
                 let shamt = ((self.xregs.read(rs2) & 0x3f) as u64) as u32;
                 match (funct3, funct7) {
-                    (0x0, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2))), // add
-                    (0x0, 0x01) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1).wrapping_mul(self.xregs.read(rs2))), // mul
-                    (0x0, 0x20) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2))), // sub
-                    (0x1, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1).wrapping_shl(shamt)), // sll
+                    (0x0, 0x00) => {
+                        // add
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2)));
+                    }
+                    (0x0, 0x01) => {
+                        // mul
+                        self.xregs.write(
+                            rd,
+                            (self.xregs.read(rs1) as i64).wrapping_mul(self.xregs.read(rs2) as i64)
+                                as u64,
+                        );
+                    }
+                    (0x0, 0x20) => {
+                        // sub
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2)));
+                    }
+                    (0x1, 0x00) => {
+                        // sll
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1).wrapping_shl(shamt));
+                    }
                     (0x1, 0x01) => {
                         // mulh
                         self.xregs.write(
@@ -1641,15 +1652,17 @@ impl Cpu {
                                 >> 64) as u64,
                         );
                     }
-                    (0x2, 0x00) => self.xregs.write(
-                        // slt
-                        rd,
-                        if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
-                            1
-                        } else {
-                            0
-                        },
-                    ),
+                    (0x2, 0x00) => {
+                        self.xregs.write(
+                            // slt
+                            rd,
+                            if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
+                                1
+                            } else {
+                                0
+                            },
+                        );
+                    }
                     (0x2, 0x01) => {
                         // mulhsu
                         let x = self.xregs.read(rs1) as i64;
@@ -1682,9 +1695,11 @@ impl Cpu {
                                 >> 64) as u64,
                         );
                     }
-                    (0x4, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1) ^ self.xregs.read(rs2)), // xor
+                    (0x4, 0x00) => {
+                        // xor
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1) ^ self.xregs.read(rs2));
+                    }
                     (0x4, 0x01) => {
                         // div
                         self.xregs.write(
@@ -1703,9 +1718,11 @@ impl Cpu {
                             },
                         );
                     }
-                    (0x5, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1).wrapping_shr(shamt)), // srl
+                    (0x5, 0x00) => {
+                        // srl
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1).wrapping_shr(shamt));
+                    }
                     (0x5, 0x01) => {
                         // divu
                         self.xregs.write(
@@ -1724,27 +1741,35 @@ impl Cpu {
                             },
                         );
                     }
-                    (0x5, 0x20) => self
-                        .xregs
-                        .write(rd, (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64), // sra
-                    (0x6, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1) | self.xregs.read(rs2)), // or
-                    (0x6, 0x01) => self.xregs.write(
+                    (0x5, 0x20) => {
+                        // sra
+                        self.xregs
+                            .write(rd, (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64);
+                    }
+                    (0x6, 0x00) => {
+                        // or
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1) | self.xregs.read(rs2));
+                    }
+                    (0x6, 0x01) => {
                         // rem
-                        rd,
-                        match self.xregs.read(rs2) {
-                            0 => self.xregs.read(rs1),
-                            _ => {
-                                let dividend = self.xregs.read(rs1) as i64;
-                                let divisor = self.xregs.read(rs2) as i64;
-                                dividend.wrapping_rem(divisor) as u64
-                            }
-                        },
-                    ),
-                    (0x7, 0x00) => self
-                        .xregs
-                        .write(rd, self.xregs.read(rs1) & self.xregs.read(rs2)), // and
+                        self.xregs.write(
+                            rd,
+                            match self.xregs.read(rs2) {
+                                0 => self.xregs.read(rs1),
+                                _ => {
+                                    let dividend = self.xregs.read(rs1) as i64;
+                                    let divisor = self.xregs.read(rs2) as i64;
+                                    dividend.wrapping_rem(divisor) as u64
+                                }
+                            },
+                        );
+                    }
+                    (0x7, 0x00) => {
+                        // and
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1) & self.xregs.read(rs2));
+                    }
                     (0x7, 0x01) => {
                         // remu
                         self.xregs.write(
