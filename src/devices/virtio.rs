@@ -10,7 +10,7 @@
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
 use crate::bus::VIRTIO_BASE;
-use crate::cpu::Cpu;
+use crate::cpu::{Cpu, BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::exception::Exception;
 
 /// The interrupt request of virtio.
@@ -136,12 +136,12 @@ struct VirtqDesc {
 
 impl VirtqDesc {
     /// Create a new virtqueue descriptor based on the address that stores the content of the descriptor.
-    fn new(cpu: &Cpu, addr: u64) -> Result<Self, Exception> {
+    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
-            addr: cpu.bus.read64(addr)?,
-            len: cpu.bus.read32(addr.wrapping_add(8))?,
-            flags: cpu.bus.read16(addr.wrapping_add(12))?,
-            next: cpu.bus.read16(addr.wrapping_add(14))?,
+            addr: cpu.bus.read(addr, DOUBLEWORD)?,
+            len: cpu.bus.read(addr.wrapping_add(8), WORD)?,
+            flags: cpu.bus.read(addr.wrapping_add(12), HALFWORD)?,
+            next: cpu.bus.read(addr.wrapping_add(14), HALFWORD)?,
         })
     }
 }
@@ -256,7 +256,6 @@ impl Virtio {
     /// Return true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
         if self.queue_notify != 9999 {
-            println!("virtio interrupt");
             self.queue_notify = 9999;
             return true;
         }
@@ -270,7 +269,6 @@ impl Virtio {
 
     /// Read 4 bytes from virtio only if the addr is valid. Otherwise, return 0.
     pub fn read(&self, addr: u64) -> u32 {
-        println!("virtio read");
         match addr {
             VIRTIO_MAGIC => 0x74726976,     // read-only
             VIRTIO_VERSION => 0x1,          // read-only
@@ -288,7 +286,6 @@ impl Virtio {
 
     /// Write 4 bytes to virtio only if the addr is valid. Otherwise, does nothing.
     pub fn write(&mut self, addr: u64, val: u32) {
-        println!("virtio write");
         match addr {
             VIRTIO_DEVICE_FEATURES => self.driver_features = val,
             VIRTIO_GUEST_PAGE_SIZE => self.page_size = val,
@@ -328,7 +325,6 @@ impl Virtio {
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
-        println!("virtio disk_access");
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
         // "Used Buffer Notification
         //     - bit 0 - the interrupt was asserted because the device has used a buffer in at
@@ -368,10 +364,11 @@ impl Virtio {
         //  avail[1] tells the device how far to look in avail[2...].
         //  avail[2...] are desc[] indices the device should process.
         //  we only tell device the first index in our chain of descriptors."
-        let offset = cpu.bus.read16(avail_addr.wrapping_add(1))?;
-        let index = cpu
-            .bus
-            .read16(avail_addr.wrapping_add(offset % QUEUE_SIZE).wrapping_add(2))?;
+        let offset = cpu.bus.read(avail_addr.wrapping_add(1), HALFWORD)?;
+        let index = cpu.bus.read(
+            avail_addr.wrapping_add(offset % QUEUE_SIZE).wrapping_add(2),
+            HALFWORD,
+        )?;
 
         // First descriptor.
         let desc0 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * index)?;
@@ -380,9 +377,11 @@ impl Virtio {
         let desc1 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * desc0.next)?;
 
         // Third descriptor address.
-        let desc2_addr = cpu.bus.read64(desc_addr + VRING_DESC_SIZE * desc1.next)?;
+        let desc2_addr = cpu
+            .bus
+            .read(desc_addr + VRING_DESC_SIZE * desc1.next, DOUBLEWORD)?;
         // Tell success.
-        cpu.bus.write8(desc2_addr, 0)?;
+        cpu.bus.write(desc2_addr, 0, BYTE)?;
 
         // 5.2.6 Device Operation
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
@@ -393,14 +392,14 @@ impl Virtio {
         //   u8 data[][512];
         //   u8 status;
         // };
-        let sector = cpu.bus.read64(desc0.addr.wrapping_add(8))?;
+        let sector = cpu.bus.read(desc0.addr.wrapping_add(8), DOUBLEWORD)?;
 
         // Write to a device if the second bit of `flags` is set.
         match (desc1.flags & 2) == 0 {
             true => {
                 // Read memory data and write it to a disk directly (DMA).
                 for i in 0..desc1.len {
-                    let data = cpu.bus.read8(desc1.addr + i)?;
+                    let data = cpu.bus.read(desc1.addr + i, BYTE)?;
                     cpu.bus.virtio.write_disk(sector * SECTOR_SIZE + i, data);
                 }
             }
@@ -408,7 +407,7 @@ impl Virtio {
                 // Read disk data and write it to memory directly (DMA).
                 for i in 0..desc1.len {
                     let data = cpu.bus.virtio.read_disk(sector * SECTOR_SIZE + i);
-                    cpu.bus.write8(desc1.addr + i, data)?;
+                    cpu.bus.write(desc1.addr + i, data, BYTE)?;
                 }
             }
         };
@@ -423,7 +422,8 @@ impl Virtio {
         //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
         // };
         let new_id = cpu.bus.virtio.get_new_id();
-        cpu.bus.write16(used_addr.wrapping_add(2), new_id % 8)?;
+        cpu.bus
+            .write(used_addr.wrapping_add(2), new_id % 8, HALFWORD)?;
         Ok(())
     }
 }

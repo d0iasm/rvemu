@@ -28,13 +28,13 @@ const REGISTERS_COUNT: usize = 32;
 const PAGE_SIZE: u64 = 4096;
 
 /// 8 bits. 1 byte.
-const BYTE: u8 = 8;
+pub const BYTE: u8 = 8;
 /// 16 bits. 2 bytes.
-const HALFWORD: u8 = 16;
+pub const HALFWORD: u8 = 16;
 /// 32 bits. 4 bytes.
-const WORD: u8 = 32;
+pub const WORD: u8 = 32;
 /// 64 bits. 8 bytes.
-const DOUBLEWORD: u8 = 64;
+pub const DOUBLEWORD: u8 = 64;
 
 /// Access type that is used in the virtual address translation process. It decides which exception
 /// should raises (InstructionPageFault, LoadPageFault or StoreAMOPageFault).
@@ -327,7 +327,7 @@ impl Cpu {
             // TODO: assume that hart is 0
             // TODO: write a value to MCLAIM if the mode is machine
             self.bus
-                .write32(PLIC_SCLAIM, irq)
+                .write(PLIC_SCLAIM, irq, WORD)
                 .expect("failed to write an IRQ to the PLIC_SCLAIM");
             self.state.write(MIP, self.state.read(MIP) | MIP_SEIP);
         }
@@ -441,7 +441,7 @@ impl Cpu {
             // 2. Let pte be the value of the PTE at address a+va.vpn[i]×PTESIZE. (For Sv32,
             //    PTESIZE=4.) If accessing pte violates a PMA or PMP check, raise an access
             //    exception corresponding to the original access type.
-            pte = self.bus.read64(a + vpn[i as usize] * 8)?;
+            pte = self.bus.read(a + vpn[i as usize] * 8, DOUBLEWORD)?;
 
             // 3. If pte.v = 0, or if pte.r = 0 and pte.w = 1, stop and raise a page-fault
             //    exception corresponding to the original access type.
@@ -580,10 +580,10 @@ impl Cpu {
     fn read(&mut self, v_addr: u64, size: u8) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         match size {
-            BYTE => self.bus.read8(p_addr),
-            HALFWORD => self.bus.read16(p_addr),
-            WORD => self.bus.read32(p_addr),
-            DOUBLEWORD => self.bus.read64(p_addr),
+            BYTE => self.bus.read(p_addr, BYTE),
+            HALFWORD => self.bus.read(p_addr, HALFWORD),
+            WORD => self.bus.read(p_addr, WORD),
+            DOUBLEWORD => self.bus.read(p_addr, DOUBLEWORD),
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -599,10 +599,10 @@ impl Cpu {
 
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         match size {
-            BYTE => self.bus.write8(p_addr, value),
-            HALFWORD => self.bus.write16(p_addr, value),
-            WORD => self.bus.write32(p_addr, value),
-            DOUBLEWORD => self.bus.write64(p_addr, value),
+            BYTE => self.bus.write(p_addr, value, BYTE),
+            HALFWORD => self.bus.write(p_addr, value, HALFWORD),
+            WORD => self.bus.write(p_addr, value, WORD),
+            DOUBLEWORD => self.bus.write(p_addr, value, DOUBLEWORD),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
@@ -610,10 +610,17 @@ impl Cpu {
     /// Fetch the `size`-bit next instruction from the memory at the current program counter.
     pub fn fetch(&mut self, size: u8) -> Result<u64, Exception> {
         let p_pc = self.translate(self.pc, AccessType::Instruction)?;
-        match size {
-            HALFWORD => self.bus.read16(p_pc),
-            WORD => self.bus.read32(p_pc),
+        // The result of the read method can be `Exception::LoadAccessFault`. In fetch(), an error
+        // should be `Exception::InstructionAccessFault`.
+        let result = match size {
+            HALFWORD => self.bus.read(p_pc, HALFWORD),
+            WORD => self.bus.read(p_pc, WORD),
             _ => Err(Exception::InstructionAccessFault),
+        };
+
+        match result {
+            Ok(value) => Ok(value),
+            Err(_) => Err(Exception::InstructionAccessFault),
         }
     }
 

@@ -1,6 +1,7 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
 use crate::dram::{Dram, DRAM_SIZE};
 use crate::exception::Exception;
@@ -82,11 +83,34 @@ impl Bus {
         self.virtio.initialize(data);
     }
 
+    /// Load a `size`-bit data from the system bus.
+    pub fn read(&mut self, addr: u64, size: u8) -> Result<u64, Exception> {
+        match size {
+            BYTE => self.read8(addr),
+            HALFWORD => self.read16(addr),
+            WORD => self.read32(addr),
+            DOUBLEWORD => self.read64(addr),
+            _ => Err(Exception::LoadAccessFault),
+        }
+    }
+
+    /// Store a `size`-bit data to the system bus.
+    pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        // TODO: PMP check (Physical Memory Protection)?
+        match size {
+            BYTE => self.write8(addr, value),
+            HALFWORD => self.write16(addr, value),
+            WORD => self.write32(addr, value),
+            DOUBLEWORD => self.write64(addr, value),
+            _ => Err(Exception::StoreAMOAccessFault),
+        }
+    }
+
     /// Read a byte from the system bus.
-    pub fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
+    fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read8(addr)),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, 8),
+            CLINT_BASE..=CLINT_END => self.clint.read(addr, BYTE),
             UART_BASE..=UART_END => Ok(self.uart.read(addr) as u64),
             DRAM_BASE..=DRAM_END => Ok(self.dram.read8(addr)),
             _ => Err(Exception::LoadAccessFault),
@@ -94,21 +118,21 @@ impl Bus {
     }
 
     /// Read 2 bytes from the system bus.
-    pub fn read16(&self, addr: u64) -> Result<u64, Exception> {
+    fn read16(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read16(addr)),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, 16),
+            CLINT_BASE..=CLINT_END => self.clint.read(addr, HALFWORD),
             DRAM_BASE..=DRAM_END => Ok(self.dram.read16(addr)),
             _ => Err(Exception::LoadAccessFault),
         }
     }
 
     /// Read 4 bytes from the system bus.
-    pub fn read32(&self, addr: u64) -> Result<u64, Exception> {
+    fn read32(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
             DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
             MROM_BASE..=MROM_END => Ok(self.rom.read32(addr)),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, 32),
+            CLINT_BASE..=CLINT_END => self.clint.read(addr, WORD),
             PLIC_BASE..=PLIC_END => self.plic.read32(addr),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
             DRAM_BASE..=DRAM_END => Ok(self.dram.read32(addr)),
@@ -117,10 +141,10 @@ impl Bus {
     }
 
     /// Read 8 bytes from the system bus.
-    pub fn read64(&self, addr: u64) -> Result<u64, Exception> {
+    fn read64(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read64(addr)),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, 64),
+            CLINT_BASE..=CLINT_END => self.clint.read(addr, DOUBLEWORD),
             PLIC_BASE..=PLIC_END => self.plic.read32(addr), // TODO: support read64 for PLIC.
             DRAM_BASE..=DRAM_END => Ok(self.dram.read64(addr)),
             _ => Err(Exception::LoadAccessFault),
@@ -128,10 +152,9 @@ impl Bus {
     }
 
     /// Write a byte to the system bus.
-    pub fn write8(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
-        // TODO: Replace the following code with PMP check (Physical Memory Protection)?
+    fn write8(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, 8),
+            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, BYTE),
             UART_BASE..=UART_END => Ok(self.uart.write(addr, value as u8)),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write8(addr, value)),
             _ => Err(Exception::StoreAMOAccessFault),
@@ -139,18 +162,18 @@ impl Bus {
     }
 
     /// Write 2 bytes to the system bus.
-    pub fn write16(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
+    fn write16(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, 16),
+            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, HALFWORD),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write16(addr, value)),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
 
     /// Write 4 bytes to the system bus.
-    pub fn write32(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
+    fn write32(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, 32),
+            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, WORD),
             PLIC_BASE..=PLIC_END => self.plic.write32(addr, value as u32),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write32(addr, value)),
@@ -159,9 +182,9 @@ impl Bus {
     }
 
     /// Write 8 bytes to the system bus.
-    pub fn write64(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
+    fn write64(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, 64),
+            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, DOUBLEWORD),
             PLIC_BASE..=PLIC_END => self.plic.write32(addr, value as u32), // TODO: support plic64
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write64(addr, value)),
