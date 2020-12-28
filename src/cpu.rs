@@ -2,6 +2,7 @@
 
 use std::cmp;
 use std::cmp::PartialEq;
+use std::collections::BTreeMap;
 use std::fmt;
 use std::num::FpCategory;
 
@@ -35,6 +36,14 @@ pub const HALFWORD: u8 = 16;
 pub const WORD: u8 = 32;
 /// 64 bits. 8 bytes.
 pub const DOUBLEWORD: u8 = 64;
+
+macro_rules! inst_count {
+    ($cpu:ident, $inst_name:expr) => {
+        if $cpu.is_count {
+            *$cpu.inst_counter.entry($inst_name.to_string()).or_insert(0) += 1;
+        }
+    };
+}
 
 /// Access type that is used in the virtual address translation process. It decides which exception
 /// should raises (InstructionPageFault, LoadPageFault or StoreAMOPageFault).
@@ -251,6 +260,10 @@ pub struct Cpu {
     /// A set of bytes that subsumes the bytes in the addressed word used in
     /// load-reserved/store-conditional instructions.
     reservation_set: Vec<u64>,
+    /// Counter of each instructions for debug.
+    pub inst_counter: BTreeMap<String, u64>,
+    /// The count flag. Count the number of each instruction executed.
+    pub is_count: bool,
 }
 
 impl Cpu {
@@ -267,6 +280,8 @@ impl Cpu {
             enable_paging: false,
             page_table: 0,
             reservation_set: Vec::new(),
+            inst_counter: BTreeMap::new(),
+            is_count: false,
         }
     }
 
@@ -673,6 +688,8 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
+                        inst_count!(self, "c.addi4spn");
+
                         // nzuimm[5:4|9:6|2|3] = inst[12:11|10:7|6|5]
                         let nzuimm = ((inst >> 1) & 0x3c0) // znuimm[9:6]
                             | ((inst >> 7) & 0x30) // znuimm[5:4]
@@ -686,6 +703,8 @@ impl Cpu {
                     }
                     0x1 => {
                         // c.fld
+                        inst_count!(self, "c.fld");
+
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
@@ -1097,43 +1116,57 @@ impl Cpu {
         // 3. Execute.
         match opcode {
             0x03 => {
-                // I-type
+                // RV32I and RV64I
                 // imm[11:0] = inst[31:20]
                 let offset = ((inst as i32 as i64) >> 20) as u64;
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x0 => {
                         // lb
+                        inst_count!(self, "lb");
+
                         let val = self.read(addr, BYTE)?;
                         self.xregs.write(rd, val as i8 as i64 as u64);
                     }
                     0x1 => {
                         // lh
+                        inst_count!(self, "lh");
+
                         let val = self.read(addr, HALFWORD)?;
                         self.xregs.write(rd, val as i16 as i64 as u64);
                     }
                     0x2 => {
                         // lw
+                        inst_count!(self, "lw");
+
                         let val = self.read(addr, WORD)?;
                         self.xregs.write(rd, val as i32 as i64 as u64);
                     }
                     0x3 => {
                         // ld
+                        inst_count!(self, "ld");
+
                         let val = self.read(addr, DOUBLEWORD)?;
                         self.xregs.write(rd, val);
                     }
                     0x4 => {
                         // lbu
+                        inst_count!(self, "lbu");
+
                         let val = self.read(addr, BYTE)?;
                         self.xregs.write(rd, val);
                     }
                     0x5 => {
                         // lhu
+                        inst_count!(self, "lhu");
+
                         let val = self.read(addr, HALFWORD)?;
                         self.xregs.write(rd, val);
                     }
                     0x6 => {
                         // lwu
+                        inst_count!(self, "lwu");
+
                         let val = self.read(addr, WORD)?;
                         self.xregs.write(rd, val);
                     }
@@ -1143,21 +1176,22 @@ impl Cpu {
                 }
             }
             0x07 => {
-                // I-type (RV32F and RV64F)
+                // RV32D and RV64D
                 // imm[11:0] = inst[31:20]
-                let offset = match (inst & 0x80000000) == 0 {
-                    true => 0,
-                    false => 0xffffffff_fffff800,
-                } | ((inst >> 20) & 0x000007ff);
-                let addr = (self.xregs.read(rs1).wrapping_add(offset)) & 0xffffffff;
+                let offset = ((inst as i32 as i64) >> 20) as u64;
+                let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x2 => {
                         // flw
+                        inst_count!(self, "flw");
+
                         let val = f32::from_bits(self.read(addr, WORD)? as u32);
                         self.fregs.write(rd, val as f64);
                     }
                     0x3 => {
                         // fld
+                        inst_count!(self, "fld");
+
                         let val = f64::from_bits(self.read(addr, DOUBLEWORD)?);
                         self.fregs.write(rd, val);
                     }
@@ -1166,102 +1200,155 @@ impl Cpu {
                     }
                 }
             }
-            0x0F => {
-                // I-type (RV32I)
+            0x0f => {
+                // RV32I and RV64I
                 // fence instructions are not supportted yet because this emulator executes an
                 // instruction sequentially on a single thread.
                 // fence.i is a part of the Zifencei extension.
                 match funct3 {
-                    0x0 => {} // fence
-                    0x1 => {} // fence.i
+                    0x0 => {
+                        // fence
+                        inst_count!(self, "fence");
+                    }
+                    0x1 => {
+                        // fence.i
+                        inst_count!(self, "fence.i");
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x13 => {
-                // I-type (RV32I and RV64I)
+                // RV32I and RV64I
                 // imm[11:0] = inst[31:20]
-                let imm = ((inst & 0xfff00000) as i32 as i64 >> 20) as u64;
+                let imm = ((inst as i32 as i64) >> 20) as u64;
                 // shamt size is 5 bits for RV32I and 6 bits for RV64I.
-                // let shamt = (inst & 0x01F00000) >> 20; // This is for RV32I
-                let shamt = ((inst & 0x03f00000) >> 20) as u32;
+                let shamt = ((inst >> 20) & 0x3f) as u32;
                 let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => {
                         // addi
+                        inst_count!(self, "addi");
+
                         self.xregs.write(rd, self.xregs.read(rs1).wrapping_add(imm));
                     }
-                    0x1 => self.xregs.write(rd, self.xregs.read(rs1) << shamt), // slli
-                    0x2 => self.xregs.write(
+                    0x1 => {
+                        // slli
+                        inst_count!(self, "slli");
+
+                        self.xregs
+                            .write(rd, self.xregs.read(rs1).wrapping_shl(shamt));
+                    }
+                    0x2 => {
                         // slti
-                        rd,
-                        if (self.xregs.read(rs1) as i64) < (imm as i64) {
-                            1
-                        } else {
-                            0
-                        },
-                    ),
+                        inst_count!(self, "slti");
+
+                        self.xregs.write(
+                            rd,
+                            if (self.xregs.read(rs1) as i64) < (imm as i64) {
+                                1
+                            } else {
+                                0
+                            },
+                        );
+                    }
                     0x3 => {
                         // sltiu
+                        inst_count!(self, "sltiu");
+
                         self.xregs
                             .write(rd, if self.xregs.read(rs1) < imm { 1 } else { 0 });
                     }
-                    0x4 => self.xregs.write(rd, self.xregs.read(rs1) ^ imm), // xori
+                    0x4 => {
+                        // xori
+                        inst_count!(self, "xori");
+
+                        self.xregs.write(rd, self.xregs.read(rs1) ^ imm);
+                    }
                     0x5 => {
                         match funct6 {
-                            // srli
-                            0x00 => self
-                                .xregs
-                                .write(rd, self.xregs.read(rs1).wrapping_shr(shamt)),
-                            // srai
-                            0x10 => self.xregs.write(
-                                rd,
-                                (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64,
-                            ),
+                            0x00 => {
+                                // srli
+                                inst_count!(self, "srli");
+
+                                self.xregs
+                                    .write(rd, self.xregs.read(rs1).wrapping_shr(shamt));
+                            }
+                            0x10 => {
+                                // srai
+                                inst_count!(self, "srai");
+
+                                self.xregs.write(
+                                    rd,
+                                    (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64,
+                                );
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
                         }
                     }
-                    0x6 => self.xregs.write(rd, self.xregs.read(rs1) | imm), // ori
-                    0x7 => self.xregs.write(rd, self.xregs.read(rs1) & imm), // andi
+                    0x6 => {
+                        // ori
+                        inst_count!(self, "ori");
+
+                        self.xregs.write(rd, self.xregs.read(rs1) | imm);
+                    }
+                    0x7 => {
+                        // andi
+                        inst_count!(self, "andi");
+
+                        self.xregs.write(rd, self.xregs.read(rs1) & imm);
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x17 => {
-                // U-type (RV32I)
+                // RV32I
+                // auipc
+                inst_count!(self, "auipc");
+
                 // AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling
                 // in the lowest 12 bits with zeros.
+                // imm[31:12] = inst[31:12]
                 let imm = (inst & 0xfffff000) as i32 as i64 as u64;
-                // auipc
                 self.xregs
                     .write(rd, self.pc.wrapping_add(imm).wrapping_sub(4));
             }
-            0x1B => {
-                // I-type (RV64I only)
+            0x1b => {
+                // RV64I
+                // imm[11:0] = inst[31:20]
                 let imm = ((inst as i32 as i64) >> 20) as u64;
                 // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
                 let shamt = (imm & 0x1f) as u32;
                 match funct3 {
                     0x0 => {
                         // addiw
+                        inst_count!(self, "addiw");
+
                         self.xregs.write(
                             rd,
                             self.xregs.read(rs1).wrapping_add(imm) as i32 as i64 as u64,
                         );
                     }
-                    0x1 => self.xregs.write(
+                    0x1 => {
                         // slliw
-                        rd,
-                        self.xregs.read(rs1).wrapping_shl(shamt) as i32 as i64 as u64,
-                    ),
+                        inst_count!(self, "slliw");
+
+                        self.xregs.write(
+                            rd,
+                            self.xregs.read(rs1).wrapping_shl(shamt) as i32 as i64 as u64,
+                        );
+                    }
                     0x5 => {
                         match funct7 {
                             0x00 => {
                                 // srliw
+                                inst_count!(self, "srliw");
+
                                 self.xregs.write(
                                     rd,
                                     (self.xregs.read(rs1) as u32).wrapping_shr(shamt) as i32 as i64
@@ -1270,6 +1357,8 @@ impl Cpu {
                             }
                             0x20 => {
                                 // sraiw
+                                inst_count!(self, "sraiw");
+
                                 self.xregs.write(
                                     rd,
                                     (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
@@ -1286,41 +1375,66 @@ impl Cpu {
                 }
             }
             0x23 => {
-                // S-type (RV32I)
-                // imm[11:5|4:0] = inst[31:25|11:7]
-                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64) | ((inst >> 7) & 0x1f);
-                let addr = self.xregs.read(rs1).wrapping_add(imm);
+                // RV32I
+                // offset[11:5|4:0] = inst[31:25|11:7]
+                let offset =
+                    (((inst & 0xfe000000) as i32 as i64 >> 20) as u64) | ((inst >> 7) & 0x1f);
+                let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
-                    0x0 => self.write(addr, self.xregs.read(rs2), BYTE)?, // sb
-                    0x1 => self.write(addr, self.xregs.read(rs2), HALFWORD)?, // sh
-                    0x2 => self.write(addr, self.xregs.read(rs2), WORD)?, // sw
-                    0x3 => self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?, // sd
+                    0x0 => {
+                        // sb
+                        inst_count!(self, "sb");
+
+                        self.write(addr, self.xregs.read(rs2) & 0xff, BYTE)?
+                    }
+                    0x1 => {
+                        // sh
+                        inst_count!(self, "sh");
+
+                        self.write(addr, self.xregs.read(rs2) & 0xffff, HALFWORD)?
+                    }
+                    0x2 => {
+                        // sw
+                        inst_count!(self, "sw");
+
+                        self.write(addr, self.xregs.read(rs2) & 0xffffffff, WORD)?
+                    }
+                    0x3 => {
+                        // sd
+                        inst_count!(self, "sd");
+
+                        self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x27 => {
-                // S-type (RV32F and RV64F)
-                let offset = match (inst & 0x80000000) == 0 {
-                    true => 0,
-                    false => 0xffffffff_ffff800,
-                } | ((inst & 0xfe000000) >> 20)
-                    | ((inst & 0x00000f80) >> 7);
+                // RV32F and RV64F
+                // offset[11:5|4:0] = inst[31:25|11:7]
+                let offset = ((((inst as i32 as i64) >> 20) as u64) & 0xfe0) | ((inst >> 7) & 0x1f);
                 let addr = self.xregs.read(rs1).wrapping_add(offset);
                 match funct3 {
                     0x2 => {
                         // fsw
+                        inst_count!(self, "fsw");
+
                         self.write(addr, (self.fregs.read(rs2) as f32).to_bits() as u64, WORD)?
                     }
-                    0x3 => self.write(addr, self.fregs.read(rs2).to_bits() as u64, DOUBLEWORD)?, // fsd
+                    0x3 => {
+                        // fsd
+                        inst_count!(self, "fsd");
+
+                        self.write(addr, self.fregs.read(rs2).to_bits() as u64, DOUBLEWORD)?
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
-            0x2F => {
-                // R-type (RV32A and RV64A)
+            0x2f => {
+                // RV32A and RV64A
                 let funct5 = (funct7 & 0b1111100) >> 2;
                 // TODO: Handle `aq` and `rl`.
                 let _aq = (funct7 & 0b0000010) >> 1; // acquire access
@@ -1328,6 +1442,8 @@ impl Cpu {
                 match (funct3, funct5) {
                     (0x2, 0x00) => {
                         // amoadd.w
+                        inst_count!(self, "amoadd.w");
+
                         let addr = self.xregs.read(rs1);
                         // "For AMOs, the A extension requires that the address held in rs1 be
                         // naturally aligned to the size of the operand (i.e., eight-byte aligned
@@ -1347,6 +1463,8 @@ impl Cpu {
                     }
                     (0x3, 0x00) => {
                         // amoadd.d
+                        inst_count!(self, "amoadd.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1357,6 +1475,8 @@ impl Cpu {
                     }
                     (0x2, 0x01) => {
                         // amoswap.w
+                        inst_count!(self, "amoswap.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1367,6 +1487,8 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // amoswap.d
+                        inst_count!(self, "amoswap.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1377,6 +1499,8 @@ impl Cpu {
                     }
                     (0x2, 0x02) => {
                         // lr.w
+                        inst_count!(self, "lr.w");
+
                         let addr = self.xregs.read(rs1);
                         // "For LR and SC, the A extension requires that the address held in rs1 be
                         // naturally aligned to the size of the operand (i.e., eight-byte aligned for
@@ -1390,6 +1514,8 @@ impl Cpu {
                     }
                     (0x3, 0x02) => {
                         // lr.d
+                        inst_count!(self, "lr.d");
+
                         let addr = self.xregs.read(rs1);
                         // "For LR and SC, the A extension requires that the address held in rs1 be
                         // naturally aligned to the size of the operand (i.e., eight-byte aligned for
@@ -1403,6 +1529,8 @@ impl Cpu {
                     }
                     (0x2, 0x03) => {
                         // sc.w
+                        inst_count!(self, "sc.w");
+
                         let addr = self.xregs.read(rs1);
                         // "For LR and SC, the A extension requires that the address held in rs1 be
                         // naturally aligned to the size of the operand (i.e., eight-byte aligned for
@@ -1423,6 +1551,8 @@ impl Cpu {
                     }
                     (0x3, 0x03) => {
                         // sc.d
+                        inst_count!(self, "sc.d");
+
                         let addr = self.xregs.read(rs1);
                         // "For LR and SC, the A extension requires that the address held in rs1 be
                         // naturally aligned to the size of the operand (i.e., eight-byte aligned for
@@ -1441,6 +1571,8 @@ impl Cpu {
                     }
                     (0x2, 0x04) => {
                         // amoxor.w
+                        inst_count!(self, "amoxor.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1455,6 +1587,8 @@ impl Cpu {
                     }
                     (0x3, 0x04) => {
                         // amoxor.d
+                        inst_count!(self, "amoxor.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1465,6 +1599,8 @@ impl Cpu {
                     }
                     (0x2, 0x08) => {
                         // amoor.w
+                        inst_count!(self, "amoor.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1479,6 +1615,8 @@ impl Cpu {
                     }
                     (0x3, 0x08) => {
                         // amoor.d
+                        inst_count!(self, "amoor.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1489,6 +1627,8 @@ impl Cpu {
                     }
                     (0x2, 0x0c) => {
                         // amoand.w
+                        inst_count!(self, "amoand.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1503,6 +1643,8 @@ impl Cpu {
                     }
                     (0x3, 0x0c) => {
                         // amoand.d
+                        inst_count!(self, "amoand.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1513,6 +1655,8 @@ impl Cpu {
                     }
                     (0x2, 0x10) => {
                         // amomin.w
+                        inst_count!(self, "amomin.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1527,6 +1671,8 @@ impl Cpu {
                     }
                     (0x3, 0x10) => {
                         // amomin.d
+                        inst_count!(self, "amomin.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1541,6 +1687,8 @@ impl Cpu {
                     }
                     (0x2, 0x14) => {
                         // amomax.w
+                        inst_count!(self, "amomax.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1555,6 +1703,8 @@ impl Cpu {
                     }
                     (0x3, 0x14) => {
                         // amomax.d
+                        inst_count!(self, "amomax.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1569,6 +1719,8 @@ impl Cpu {
                     }
                     (0x2, 0x18) => {
                         // amominu.w
+                        inst_count!(self, "amominu.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1583,6 +1735,8 @@ impl Cpu {
                     }
                     (0x3, 0x18) => {
                         // amominu.d
+                        inst_count!(self, "amominu.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1593,6 +1747,8 @@ impl Cpu {
                     }
                     (0x2, 0x1c) => {
                         // amomaxu.w
+                        inst_count!(self, "amomaxu.w");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1607,6 +1763,8 @@ impl Cpu {
                     }
                     (0x3, 0x1c) => {
                         // amomaxu.d
+                        inst_count!(self, "amomaxu.d");
+
                         let addr = self.xregs.read(rs1);
                         if addr % 8 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
@@ -1621,7 +1779,7 @@ impl Cpu {
                 }
             }
             0x33 => {
-                // R-type (RV64I and RV64M)
+                // RV64I and RV64M
                 // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic right
                 // shifts on the value in register rs1 by the shift amount held in register rs2.
                 // In RV64I, only the low 6 bits of rs2 are considered for the shift amount."
@@ -1629,11 +1787,15 @@ impl Cpu {
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // add
+                        inst_count!(self, "add");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2)));
                     }
                     (0x0, 0x01) => {
                         // mul
+                        inst_count!(self, "mul");
+
                         self.xregs.write(
                             rd,
                             (self.xregs.read(rs1) as i64).wrapping_mul(self.xregs.read(rs2) as i64)
@@ -1642,16 +1804,22 @@ impl Cpu {
                     }
                     (0x0, 0x20) => {
                         // sub
+                        inst_count!(self, "sub");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2)));
                     }
                     (0x1, 0x00) => {
                         // sll
+                        inst_count!(self, "sll");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1).wrapping_shl(shamt));
                     }
                     (0x1, 0x01) => {
                         // mulh
+                        inst_count!(self, "mulh");
+
                         // signed × signed
                         self.xregs.write(
                             rd,
@@ -1662,6 +1830,8 @@ impl Cpu {
                     }
                     (0x2, 0x00) => {
                         // slt
+                        inst_count!(self, "slt");
+
                         self.xregs.write(
                             rd,
                             if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
@@ -1673,6 +1843,8 @@ impl Cpu {
                     }
                     (0x2, 0x01) => {
                         // mulhsu
+                        inst_count!(self, "mulhsu");
+
                         // signed × unsigned
                         self.xregs.write(
                             rd,
@@ -1683,6 +1855,8 @@ impl Cpu {
                     }
                     (0x3, 0x00) => {
                         // sltu
+                        inst_count!(self, "sltu");
+
                         self.xregs.write(
                             rd,
                             if self.xregs.read(rs1) < self.xregs.read(rs2) {
@@ -1694,6 +1868,8 @@ impl Cpu {
                     }
                     (0x3, 0x01) => {
                         // mulhu
+                        inst_count!(self, "mulhu");
+
                         // unsigned × unsigned
                         self.xregs.write(
                             rd,
@@ -1704,11 +1880,15 @@ impl Cpu {
                     }
                     (0x4, 0x00) => {
                         // xor
+                        inst_count!(self, "xor");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1) ^ self.xregs.read(rs2));
                     }
                     (0x4, 0x01) => {
                         // div
+                        inst_count!(self, "div");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1727,11 +1907,15 @@ impl Cpu {
                     }
                     (0x5, 0x00) => {
                         // srl
+                        inst_count!(self, "srl");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1).wrapping_shr(shamt));
                     }
                     (0x5, 0x01) => {
                         // divu
+                        inst_count!(self, "divu");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1750,16 +1934,22 @@ impl Cpu {
                     }
                     (0x5, 0x20) => {
                         // sra
+                        inst_count!(self, "sra");
+
                         self.xregs
                             .write(rd, (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64);
                     }
                     (0x6, 0x00) => {
                         // or
+                        inst_count!(self, "or");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1) | self.xregs.read(rs2));
                     }
                     (0x6, 0x01) => {
                         // rem
+                        inst_count!(self, "rem");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1774,11 +1964,15 @@ impl Cpu {
                     }
                     (0x7, 0x00) => {
                         // and
+                        inst_count!(self, "and");
+
                         self.xregs
                             .write(rd, self.xregs.read(rs1) & self.xregs.read(rs2));
                     }
                     (0x7, 0x01) => {
                         // remu
+                        inst_count!(self, "remu");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1797,19 +1991,24 @@ impl Cpu {
                 };
             }
             0x37 => {
-                // U-type (RV32I)
-                // LUI places the U-immediate value in the top 20 bits of the destination
-                // register rd, filling in the lowest 12 bits with zeros.
+                // RV32I
+                // lui
+                inst_count!(self, "lui");
+
+                // "LUI places the U-immediate value in the top 20 bits of the destination
+                // register rd, filling in the lowest 12 bits with zeros."
                 self.xregs
-                    .write(rd, (inst & 0xfffff000) as i32 as i64 as u64); // lui
+                    .write(rd, (inst & 0xfffff000) as i32 as i64 as u64);
             }
-            0x3B => {
-                // R-type (RV64I and RV64M)
+            0x3b => {
+                // RV64I and RV64M
                 // The shift amount is given by rs2[4:0].
                 let shamt = (self.xregs.read(rs2) & 0x1f) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // addw
+                        inst_count!(self, "addw");
+
                         self.xregs.write(
                             rd,
                             self.xregs.read(rs1).wrapping_add(self.xregs.read(rs2)) as i32 as i64
@@ -1818,6 +2017,8 @@ impl Cpu {
                     }
                     (0x0, 0x01) => {
                         // mulw
+                        inst_count!(self, "mulw");
+
                         let n1 = self.xregs.read(rs1) as i32;
                         let n2 = self.xregs.read(rs2) as i32;
                         let result = n1.wrapping_mul(n2);
@@ -1825,6 +2026,8 @@ impl Cpu {
                     }
                     (0x0, 0x20) => {
                         // subw
+                        inst_count!(self, "subw");
+
                         self.xregs.write(
                             rd,
                             ((self.xregs.read(rs1).wrapping_sub(self.xregs.read(rs2))) as i32)
@@ -1833,6 +2036,8 @@ impl Cpu {
                     }
                     (0x1, 0x00) => {
                         // sllw
+                        inst_count!(self, "sllw");
+
                         self.xregs.write(
                             rd,
                             (self.xregs.read(rs1) as u32).wrapping_shl(shamt) as i32 as i64 as u64,
@@ -1840,6 +2045,8 @@ impl Cpu {
                     }
                     (0x4, 0x01) => {
                         // divw
+                        inst_count!(self, "divw");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1858,6 +2065,8 @@ impl Cpu {
                     }
                     (0x5, 0x00) => {
                         // srlw
+                        inst_count!(self, "srlw");
+
                         self.xregs.write(
                             rd,
                             (self.xregs.read(rs1) as u32).wrapping_shr(shamt) as i32 as i64 as u64,
@@ -1865,6 +2074,8 @@ impl Cpu {
                     }
                     (0x5, 0x01) => {
                         // divuw
+                        inst_count!(self, "divuw");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1883,6 +2094,8 @@ impl Cpu {
                     }
                     (0x5, 0x20) => {
                         // sraw
+                        inst_count!(self, "sraw");
+
                         self.xregs.write(
                             rd,
                             (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
@@ -1890,6 +2103,8 @@ impl Cpu {
                     }
                     (0x6, 0x01) => {
                         // remw
+                        inst_count!(self, "remw");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1904,6 +2119,8 @@ impl Cpu {
                     }
                     (0x7, 0x01) => {
                         // remuw
+                        inst_count!(self, "remuw");
+
                         self.xregs.write(
                             rd,
                             match self.xregs.read(rs2) {
@@ -1922,13 +2139,15 @@ impl Cpu {
                 }
             }
             0x43 => {
-                // R4-type (RV32F and RV64F)
+                // RV32F and RV64F
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmadd.s
+                        inst_count!(self, "fmadd.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32)
@@ -1936,25 +2155,32 @@ impl Cpu {
                                 as f64,
                         );
                     }
-                    0x1 => self.fregs.write(
-                        rd,
-                        self.fregs
-                            .read(rs1)
-                            .mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
-                    ), // fmadd.d
+                    0x1 => {
+                        // fmadd.d
+                        inst_count!(self, "fmadd.d");
+
+                        self.fregs.write(
+                            rd,
+                            self.fregs
+                                .read(rs1)
+                                .mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
+                        );
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x47 => {
-                // R4-type (RV32F and RV64F)
+                // RV32F and RV64F
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fmsub.s
+                        inst_count!(self, "fmsub.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32)
@@ -1962,25 +2188,32 @@ impl Cpu {
                                 as f64,
                         );
                     }
-                    0x1 => self.fregs.write(
-                        rd,
-                        self.fregs
-                            .read(rs1)
-                            .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
-                    ), // fmsub.d
+                    0x1 => {
+                        // fmsub.d
+                        inst_count!(self, "fmsub.d");
+
+                        self.fregs.write(
+                            rd,
+                            self.fregs
+                                .read(rs1)
+                                .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
+                        );
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
-            0x4B => {
-                // R4-type (RV32F and RV64F)
+            0x4b => {
+                // RV32F and RV64F
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmadd.s
+                        inst_count!(self, "fnmadd.s");
+
                         self.fregs.write(
                             rd,
                             (-self.fregs.read(rs1) as f32)
@@ -1988,23 +2221,31 @@ impl Cpu {
                                 as f64,
                         );
                     }
-                    0x1 => self.fregs.write(
-                        rd,
-                        (-self.fregs.read(rs1)).mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
-                    ), // fnmadd.d
+                    0x1 => {
+                        // fnmadd.d
+                        inst_count!(self, "fnmadd.d");
+
+                        self.fregs.write(
+                            rd,
+                            (-self.fregs.read(rs1))
+                                .mul_add(self.fregs.read(rs2), self.fregs.read(rs3)),
+                        );
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
-            0x4F => {
-                // R4-type (RV32F and RV64F)
+            0x4f => {
+                // RV32F and RV64F
                 // TODO: support the rounding mode encoding (rm).
                 let rs3 = ((inst & 0xf8000000) >> 27) as u64;
                 let funct2 = (inst & 0x03000000) >> 25;
                 match funct2 {
                     0x0 => {
                         // fnmsub.s
+                        inst_count!(self, "fnmsub.s");
+
                         self.fregs.write(
                             rd,
                             (-self.fregs.read(rs1) as f32)
@@ -2012,18 +2253,23 @@ impl Cpu {
                                 as f64,
                         );
                     }
-                    0x1 => self.fregs.write(
-                        rd,
-                        (-self.fregs.read(rs1))
-                            .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
-                    ), // fnmsub.d
+                    0x1 => {
+                        // fnmsub.d
+                        inst_count!(self, "fnmsub.d");
+
+                        self.fregs.write(
+                            rd,
+                            (-self.fregs.read(rs1))
+                                .mul_add(self.fregs.read(rs2), -self.fregs.read(rs3)),
+                        );
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x53 => {
-                // R-type (RV32F and RV64F)
+                // RV32F and RV64F
                 // TODO: support the rounding mode encoding (rm).
                 // TODO: NaN Boxing of Narrower Values (Spec 12.2).
                 // TODO: set exception flags.
@@ -2054,57 +2300,93 @@ impl Cpu {
                 match funct7 {
                     0x00 => {
                         // fadd.s
+                        inst_count!(self, "fadd.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32 + self.fregs.read(rs2) as f32) as f64,
                         )
                     }
-                    0x01 => self
-                        .fregs
-                        .write(rd, self.fregs.read(rs1) + self.fregs.read(rs2)), // fadd.d
+                    0x01 => {
+                        // fadd.d
+                        inst_count!(self, "fadd.d");
+
+                        self.fregs
+                            .write(rd, self.fregs.read(rs1) + self.fregs.read(rs2));
+                    }
                     0x04 => {
                         // fsub.s
+                        inst_count!(self, "fsub.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32 - self.fregs.read(rs2) as f32) as f64,
                         )
                     }
-                    0x05 => self
-                        .fregs
-                        .write(rd, self.fregs.read(rs1) - self.fregs.read(rs2)), // fsub.d
+                    0x05 => {
+                        // fsub.d
+                        inst_count!(self, "fsub.d");
+
+                        self.fregs
+                            .write(rd, self.fregs.read(rs1) - self.fregs.read(rs2));
+                    }
                     0x08 => {
                         // fmul.s
+                        inst_count!(self, "fmul.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32 * self.fregs.read(rs2) as f32) as f64,
                         )
                     }
-                    0x09 => self
-                        .fregs
-                        .write(rd, self.fregs.read(rs1) * self.fregs.read(rs2)), // fmul.d
+                    0x09 => {
+                        // fmul.d
+                        inst_count!(self, "fmul.d");
+
+                        self.fregs
+                            .write(rd, self.fregs.read(rs1) * self.fregs.read(rs2));
+                    }
                     0x0c => {
                         // fdiv.s
+                        inst_count!(self, "fdiv.s");
+
                         self.fregs.write(
                             rd,
                             (self.fregs.read(rs1) as f32 / self.fregs.read(rs2) as f32) as f64,
                         )
                     }
-                    0x0d => self
-                        .fregs
-                        .write(rd, self.fregs.read(rs1) / self.fregs.read(rs2)), // fdiv.d
+                    0x0d => {
+                        // fdiv.d
+                        inst_count!(self, "fdiv.d");
+
+                        self.fregs
+                            .write(rd, self.fregs.read(rs1) / self.fregs.read(rs2));
+                    }
                     0x10 => {
                         match funct3 {
-                            0x0 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2))), // fsgnj.s
-                            0x1 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).copysign(-self.fregs.read(rs2))), // fsgnjn.s
+                            0x0 => {
+                                // fsgnj.s
+                                inst_count!(self, "fsgnj.s");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2)));
+                            }
+                            0x1 => {
+                                // fsgnjn.s
+                                inst_count!(self, "fsgnjn.s");
+
+                                self.fregs.write(
+                                    rd,
+                                    self.fregs.read(rs1).copysign(-self.fregs.read(rs2)),
+                                );
+                            }
                             0x2 => {
+                                // fsgnjx.s
+                                inst_count!(self, "fsgnjx.s");
+
                                 let sign1 = (self.fregs.read(rs1) as f32).to_bits() & 0x80000000;
                                 let sign2 = (self.fregs.read(rs2) as f32).to_bits() & 0x80000000;
                                 let other = (self.fregs.read(rs1) as f32).to_bits() & 0x7fffffff;
-                                // fsgnjx.s
                                 self.fregs
                                     .write(rd, f32::from_bits((sign1 ^ sign2) | other) as f64);
                             }
@@ -2115,17 +2397,29 @@ impl Cpu {
                     }
                     0x11 => {
                         match funct3 {
-                            0x0 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2))), // fsgnj.d
-                            0x1 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).copysign(-self.fregs.read(rs2))), // fsgnjn.d
+                            0x0 => {
+                                // fsgnj.d
+                                inst_count!(self, "fsgnj.d");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).copysign(self.fregs.read(rs2)));
+                            }
+                            0x1 => {
+                                // fsgnjn.d
+                                inst_count!(self, "fsgnjn.d");
+
+                                self.fregs.write(
+                                    rd,
+                                    self.fregs.read(rs1).copysign(-self.fregs.read(rs2)),
+                                );
+                            }
                             0x2 => {
+                                // fsgnjx.d
+                                inst_count!(self, "fsgnjx.d");
+
                                 let sign1 = self.fregs.read(rs1).to_bits() & 0x80000000_00000000;
                                 let sign2 = self.fregs.read(rs2).to_bits() & 0x80000000_00000000;
                                 let other = self.fregs.read(rs1).to_bits() & 0x7fffffff_ffffffff;
-                                // fsgnjx.d
                                 self.fregs
                                     .write(rd, f64::from_bits((sign1 ^ sign2) | other));
                             }
@@ -2136,12 +2430,20 @@ impl Cpu {
                     }
                     0x14 => {
                         match funct3 {
-                            0x0 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2))), // fmin.s
-                            0x1 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.s
+                            0x0 => {
+                                // fmin.s
+                                inst_count!(self, "fmin.s");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2)));
+                            }
+                            0x1 => {
+                                // fmax.s
+                                inst_count!(self, "fmax.s");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2)));
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2149,49 +2451,91 @@ impl Cpu {
                     }
                     0x15 => {
                         match funct3 {
-                            0x0 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2))), // fmin.d
-                            0x1 => self
-                                .fregs
-                                .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2))), // fmax.d
+                            0x0 => {
+                                // fmin.d
+                                inst_count!(self, "fmin.d");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).min(self.fregs.read(rs2)));
+                            }
+                            0x1 => {
+                                // fmax.d
+                                inst_count!(self, "fmax.d");
+
+                                self.fregs
+                                    .write(rd, self.fregs.read(rs1).max(self.fregs.read(rs2)));
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
                         }
                     }
-                    0x20 => self.fregs.write(rd, self.fregs.read(rs1)), // fcvt.s.d
-                    0x21 => self.fregs.write(rd, (self.fregs.read(rs1) as f32) as f64), // fcvt.d.s
-                    0x2c => self
-                        .fregs
-                        .write(rd, (self.fregs.read(rs1) as f32).sqrt() as f64), // fsqrt.s
-                    0x2d => self.fregs.write(rd, self.fregs.read(rs1).sqrt()), // fsqrt.d
+                    0x20 => {
+                        // fcvt.s.d
+                        inst_count!(self, "fcvt.s.d");
+
+                        self.fregs.write(rd, self.fregs.read(rs1));
+                    }
+                    0x21 => {
+                        // fcvt.d.s
+                        inst_count!(self, "fcvt.d.s");
+
+                        self.fregs.write(rd, (self.fregs.read(rs1) as f32) as f64);
+                    }
+                    0x2c => {
+                        // fsqrt.s
+                        inst_count!(self, "fsqrt.s");
+
+                        self.fregs
+                            .write(rd, (self.fregs.read(rs1) as f32).sqrt() as f64);
+                    }
+                    0x2d => {
+                        // fsqrt.d
+                        inst_count!(self, "fsqrt.d");
+
+                        self.fregs.write(rd, self.fregs.read(rs1).sqrt());
+                    }
                     0x50 => {
                         match funct3 {
-                            0x0 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) <= self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // fle.s
-                            0x1 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) < self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // flt.s
-                            0x2 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) == self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // feq.s
+                            0x0 => {
+                                // fle.s
+                                inst_count!(self, "fle.s");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) <= self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
+                            0x1 => {
+                                // flt.s
+                                inst_count!(self, "flt.s");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) < self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
+                            0x2 => {
+                                // feq.s
+                                inst_count!(self, "feq.s");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) == self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2199,30 +2543,45 @@ impl Cpu {
                     }
                     0x51 => {
                         match funct3 {
-                            0x0 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) <= self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // fle.d
-                            0x1 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) < self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // flt.d
-                            0x2 => self.xregs.write(
-                                rd,
-                                if self.fregs.read(rs1) == self.fregs.read(rs2) {
-                                    1
-                                } else {
-                                    0
-                                },
-                            ), // feq.d
+                            0x0 => {
+                                // fle.d
+                                inst_count!(self, "fle.d");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) <= self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
+                            0x1 => {
+                                // flt.d
+                                inst_count!(self, "flt.d");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) < self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
+                            0x2 => {
+                                // feq.d
+                                inst_count!(self, "feq.d");
+
+                                self.xregs.write(
+                                    rd,
+                                    if self.fregs.read(rs1) == self.fregs.read(rs2) {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                                );
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2230,19 +2589,38 @@ impl Cpu {
                     }
                     0x60 => {
                         match rs2 {
-                            0x0 => self
-                                .xregs
-                                .write(rd, ((self.fregs.read(rs1) as f32).round() as i32) as u64), // fcvt.w.s
-                            0x1 => self.xregs.write(
-                                rd,
-                                (((self.fregs.read(rs1) as f32).round() as u32) as i32) as u64,
-                            ), // fcvt.wu.s
-                            0x2 => self
-                                .xregs
-                                .write(rd, (self.fregs.read(rs1) as f32).round() as u64), // fcvt.l.s
-                            0x3 => self
-                                .xregs
-                                .write(rd, (self.fregs.read(rs1) as f32).round() as u64), // fcvt.lu.s
+                            0x0 => {
+                                // fcvt.w.s
+                                inst_count!(self, "fcvt.w.s");
+
+                                self.xregs.write(
+                                    rd,
+                                    ((self.fregs.read(rs1) as f32).round() as i32) as u64,
+                                );
+                            }
+                            0x1 => {
+                                // fcvt.wu.s
+                                inst_count!(self, "fcvt.wu.s");
+
+                                self.xregs.write(
+                                    rd,
+                                    (((self.fregs.read(rs1) as f32).round() as u32) as i32) as u64,
+                                );
+                            }
+                            0x2 => {
+                                // fcvt.l.s
+                                inst_count!(self, "fcvt.l.s");
+
+                                self.xregs
+                                    .write(rd, (self.fregs.read(rs1) as f32).round() as u64);
+                            }
+                            0x3 => {
+                                // fcvt.lu.s
+                                inst_count!(self, "fcvt.lu.s");
+
+                                self.xregs
+                                    .write(rd, (self.fregs.read(rs1) as f32).round() as u64);
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2250,14 +2628,34 @@ impl Cpu {
                     }
                     0x61 => {
                         match rs2 {
-                            0x0 => self
-                                .xregs
-                                .write(rd, (self.fregs.read(rs1).round() as i32) as u64), // fcvt.w.d
-                            0x1 => self
-                                .xregs
-                                .write(rd, ((self.fregs.read(rs1).round() as u32) as i32) as u64), // fcvt.wu.d
-                            0x2 => self.xregs.write(rd, self.fregs.read(rs1).round() as u64), // fcvt.l.d
-                            0x3 => self.xregs.write(rd, self.fregs.read(rs1).round() as u64), // fcvt.lu.d
+                            0x0 => {
+                                // fcvt.w.d
+                                inst_count!(self, "fcvt.w.d");
+
+                                self.xregs
+                                    .write(rd, (self.fregs.read(rs1).round() as i32) as u64);
+                            }
+                            0x1 => {
+                                // fcvt.wu.d
+                                inst_count!(self, "fcvt.wu.d");
+
+                                self.xregs.write(
+                                    rd,
+                                    ((self.fregs.read(rs1).round() as u32) as i32) as u64,
+                                );
+                            }
+                            0x2 => {
+                                // fcvt.l.d
+                                inst_count!(self, "fcvt.l.d");
+
+                                self.xregs.write(rd, self.fregs.read(rs1).round() as u64);
+                            }
+                            0x3 => {
+                                // fcvt.lu.d
+                                inst_count!(self, "fcvt.lu.d");
+
+                                self.xregs.write(rd, self.fregs.read(rs1).round() as u64);
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2265,16 +2663,33 @@ impl Cpu {
                     }
                     0x68 => {
                         match rs2 {
-                            0x0 => self
-                                .fregs
-                                .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64), // fcvt.s.w
-                            0x1 => self
-                                .fregs
-                                .write(rd, ((self.xregs.read(rs1) as u32) as f32) as f64), // fcvt.s.wu
-                            0x2 => self.fregs.write(rd, (self.xregs.read(rs1) as f32) as f64), // fcvt.s.l
-                            0x3 => self
-                                .fregs
-                                .write(rd, ((self.xregs.read(rs1) as u64) as f32) as f64), // fcvt.s.lu
+                            0x0 => {
+                                // fcvt.s.w
+                                inst_count!(self, "fcvt.s.w");
+
+                                self.fregs
+                                    .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64);
+                            }
+                            0x1 => {
+                                // fcvt.s.wu
+                                inst_count!(self, "fcvt.s.wu");
+
+                                self.fregs
+                                    .write(rd, ((self.xregs.read(rs1) as u32) as f32) as f64);
+                            }
+                            0x2 => {
+                                // fcvt.s.l
+                                inst_count!(self, "fcvt.s.l");
+
+                                self.fregs.write(rd, (self.xregs.read(rs1) as f32) as f64);
+                            }
+                            0x3 => {
+                                // fcvt.s.lu
+                                inst_count!(self, "fcvt.s.lu");
+
+                                self.fregs
+                                    .write(rd, ((self.xregs.read(rs1) as u64) as f32) as f64);
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2282,10 +2697,30 @@ impl Cpu {
                     }
                     0x69 => {
                         match rs2 {
-                            0x0 => self.fregs.write(rd, (self.xregs.read(rs1) as i32) as f64), // fcvt.d.w
-                            0x1 => self.fregs.write(rd, (self.xregs.read(rs1) as u32) as f64), // fcvt.d.wu
-                            0x2 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fcvt.d.l
-                            0x3 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fcvt.d.lu
+                            0x0 => {
+                                // fcvt.d.w
+                                inst_count!(self, "fcvt.d.w");
+
+                                self.fregs.write(rd, (self.xregs.read(rs1) as i32) as f64);
+                            }
+                            0x1 => {
+                                // fcvt.d.wu
+                                inst_count!(self, "fcvt.d.wu");
+
+                                self.fregs.write(rd, (self.xregs.read(rs1) as u32) as f64);
+                            }
+                            0x2 => {
+                                // fcvt.d.l
+                                inst_count!(self, "fcvt.d.l");
+
+                                self.fregs.write(rd, self.xregs.read(rs1) as f64);
+                            }
+                            0x3 => {
+                                // fcvt.d.lu
+                                inst_count!(self, "fcvt.d.lu");
+
+                                self.fregs.write(rd, self.xregs.read(rs1) as f64);
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2293,9 +2728,16 @@ impl Cpu {
                     }
                     0x70 => {
                         match funct3 {
-                            0x0 => self.xregs.write(rd, (self.fregs.read(rs1) as i32) as u64), // fmv.x.w
+                            0x0 => {
+                                // fmv.x.w
+                                inst_count!(self, "fmv.x.w");
+
+                                self.xregs.write(rd, (self.fregs.read(rs1) as i32) as u64);
+                            }
                             0x1 => {
                                 // fclass.s
+                                inst_count!(self, "fclass.s");
+
                                 let f = self.fregs.read(rs1);
                                 match f.classify() {
                                     FpCategory::Infinite => {
@@ -2325,9 +2767,16 @@ impl Cpu {
                     }
                     0x71 => {
                         match funct3 {
-                            0x0 => self.xregs.write(rd, self.fregs.read(rs1) as u64), // fmv.x.d
+                            0x0 => {
+                                // fmv.x.d
+                                inst_count!(self, "fmv.x.d");
+
+                                self.xregs.write(rd, self.fregs.read(rs1) as u64);
+                            }
                             0x1 => {
                                 // fclass.d
+                                inst_count!(self, "fclass.d");
+
                                 let f = self.fregs.read(rs1);
                                 match f.classify() {
                                     FpCategory::Infinite => {
@@ -2355,17 +2804,26 @@ impl Cpu {
                             }
                         }
                     }
-                    0x78 => self
-                        .fregs
-                        .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64), // fmv.w.x
-                    0x79 => self.fregs.write(rd, self.xregs.read(rs1) as f64), // fmv.d.x
+                    0x78 => {
+                        // fmv.w.x
+                        inst_count!(self, "fmv.w.x");
+
+                        self.fregs
+                            .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64);
+                    }
+                    0x79 => {
+                        // fmv.d.x
+                        inst_count!(self, "fmv.d.x");
+
+                        self.fregs.write(rd, self.xregs.read(rs1) as f64);
+                    }
                     _ => {
                         return Err(Exception::IllegalInstruction);
                     }
                 }
             }
             0x63 => {
-                // B-type (RV32I)
+                // RV32I
                 // imm[12|10:5|4:1|11] = inst[31|30:25|11:8|7]
                 let imm = (((inst & 0x80000000) as i32 as i64 >> 19) as u64)
                     | ((inst & 0x80) << 4) // imm[11]
@@ -2375,36 +2833,48 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // beq
+                        inst_count!(self, "beq");
+
                         if self.xregs.read(rs1) == self.xregs.read(rs2) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
                         // bne
+                        inst_count!(self, "bne");
+
                         if self.xregs.read(rs1) != self.xregs.read(rs2) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
                         // blt
+                        inst_count!(self, "blt");
+
                         if (self.xregs.read(rs1) as i64) < (self.xregs.read(rs2) as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
                         // bge
+                        inst_count!(self, "bge");
+
                         if (self.xregs.read(rs1) as i64) >= (self.xregs.read(rs2) as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
                         // bltu
+                        inst_count!(self, "bltu");
+
                         if self.xregs.read(rs1) < self.xregs.read(rs2) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
                         // bgeu
+                        inst_count!(self, "bgeu");
+
                         if self.xregs.read(rs1) >= self.xregs.read(rs2) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
@@ -2415,20 +2885,22 @@ impl Cpu {
                 }
             }
             0x67 => {
-                // I-type
                 // jalr
+                inst_count!(self, "jalr");
+
                 // Don't add 4 because the pc already moved on.
                 let t = self.pc;
 
-                let offset = (((inst & 0xfff00000) as i32) as i64) >> 20;
+                let offset = (inst as i32 as i64) >> 20;
                 let target = ((self.xregs.read(rs1) as i64).wrapping_add(offset)) & !1;
 
                 self.pc = target as u64;
                 self.xregs.write(rd, t);
             }
             0x6F => {
-                // J-type
                 // jal
+                inst_count!(self, "jal");
+
                 self.xregs.write(rd, self.pc);
 
                 // imm[20|10:1|11|19:12] = inst[31|30:21|20|19:12]
@@ -2440,13 +2912,15 @@ impl Cpu {
                 self.pc = self.pc.wrapping_add(offset).wrapping_sub(4);
             }
             0x73 => {
-                // I-type (RV32I, RVZicsr, supervisor ISA)
-                let csr_addr = ((inst & 0xfff00000) >> 20) as u16;
+                // RV32I, RVZicsr, and supervisor ISA
+                let csr_addr = ((inst >> 20) & 0xfff) as u16;
                 match funct3 {
                     0x0 => {
                         match (rs2, funct7) {
                             (0x0, 0x0) => {
                                 // ecall
+                                inst_count!(self, "ecall");
+
                                 // Makes a request of the execution environment by raising an
                                 // environment call exception.
                                 match self.mode {
@@ -2466,16 +2940,22 @@ impl Cpu {
                             }
                             (0x1, 0x0) => {
                                 // ebreak
+                                inst_count!(self, "ebreak");
+
                                 // Makes a request of the debugger bu raising a Breakpoint
                                 // exception.
                                 return Err(Exception::Breakpoint);
                             }
                             (0x2, 0x0) => {
                                 // uret
+                                inst_count!(self, "uret");
+
                                 dbg!("uret: not implemented yet. pc {}", self.pc);
                             }
                             (0x2, 0x8) => {
                                 // sret
+                                inst_count!(self, "sret");
+
                                 // "The RISC-V Reader" book says:
                                 // "Returns from a supervisor-mode exception handler. Sets the pc to
                                 // CSRs[sepc], the privilege mode to CSRs[sstatus].SPP,
@@ -2508,6 +2988,8 @@ impl Cpu {
                             }
                             (0x2, 0x18) => {
                                 // mret
+                                inst_count!(self, "mret");
+
                                 // "The RISC-V Reader" book says:
                                 // "Returns from a machine-mode exception handler. Sets the pc to
                                 // CSRs[mepc], the privilege mode to CSRs[mstatus].MPP,
@@ -2541,11 +3023,21 @@ impl Cpu {
                             }
                             (0x5, 0x8) => {
                                 // wfi
+                                inst_count!(self, "wfi");
                                 // Do nothing.
                             }
-                            (_, 0x9) => {}  // sfence.vma
-                            (_, 0x11) => {} // hfence.bvma
-                            (_, 0x51) => {} // hfence.gvma
+                            (_, 0x9) => {
+                                // sfence.vma
+                                inst_count!(self, "sfence.vma");
+                            }
+                            (_, 0x11) => {
+                                // hfence.bvma
+                                inst_count!(self, "hfence.bvma");
+                            }
+                            (_, 0x51) => {
+                                // hfence.gvma
+                                inst_count!(self, "hfence.gvma");
+                            }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
                             }
@@ -2553,6 +3045,8 @@ impl Cpu {
                     }
                     0x1 => {
                         // csrrw
+                        inst_count!(self, "csrrw");
+
                         let t = self.state.read(csr_addr);
                         self.state.write(csr_addr, self.xregs.read(rs1));
                         self.xregs.write(rd, t);
@@ -2563,6 +3057,8 @@ impl Cpu {
                     }
                     0x2 => {
                         // csrrs
+                        inst_count!(self, "csrrs");
+
                         let t = self.state.read(csr_addr);
                         self.state.write(csr_addr, t | self.xregs.read(rs1));
                         self.xregs.write(rd, t);
@@ -2573,6 +3069,8 @@ impl Cpu {
                     }
                     0x3 => {
                         // csrrc
+                        inst_count!(self, "csrrc");
+
                         let t = self.state.read(csr_addr);
                         self.state.write(csr_addr, t & (!self.xregs.read(rs1)));
                         self.xregs.write(rd, t);
@@ -2583,6 +3081,8 @@ impl Cpu {
                     }
                     0x5 => {
                         // csrrwi
+                        inst_count!(self, "csrrwi");
+
                         let zimm = rs1;
                         self.xregs.write(rd, self.state.read(csr_addr));
                         self.state.write(csr_addr, zimm);
@@ -2593,6 +3093,8 @@ impl Cpu {
                     }
                     0x6 => {
                         // csrrsi
+                        inst_count!(self, "csrrsi");
+
                         let zimm = rs1;
                         let t = self.state.read(csr_addr);
                         self.state.write(csr_addr, t | zimm);
@@ -2604,6 +3106,8 @@ impl Cpu {
                     }
                     0x7 => {
                         // csrrci
+                        inst_count!(self, "csrrci");
+
                         let zimm = rs1;
                         let t = self.state.read(csr_addr);
                         self.state.write(csr_addr, t & (!zimm));

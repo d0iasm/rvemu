@@ -2,7 +2,7 @@
 name = "rvemu-cli"
 description = "RISC-V emulator CLI tool."
 version = "0.0.1"
-authors = ["Asami Doi <d0iasm.pub@gmail.com>"]
+authors = ["Asami Doi"]
 edition = "2018"
 repository = "https://github.com/d0iasm/rvemu"
 license = "MIT"

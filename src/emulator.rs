@@ -52,6 +52,9 @@ impl Emulator {
             if self.is_test && count > 10000 {
                 return;
             }
+            if self.cpu.is_count && count > 50000000 {
+                return;
+            }
 
             // Take an interrupt.
             match self.cpu.check_pending_interrupt() {

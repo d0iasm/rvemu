@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
+use std::iter::FromIterator;
 
 use rvemu_core::bus::DRAM_BASE;
 use rvemu_core::cpu::Cpu;
@@ -17,6 +18,19 @@ fn dump_registers(cpu: &Cpu) {
     println!("{}", cpu.state);
     println!("-------------------------------------------------------------------------------------------");
     println!("pc: {:#x}", cpu.pc);
+}
+
+/// Output the count of each instruction executed.
+fn dump_count(cpu: &Cpu) {
+    if cpu.is_count {
+        println!("===========================================================================================");
+        let mut sorted_counter = Vec::from_iter(&cpu.inst_counter);
+        sorted_counter.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
+        for (inst, count) in sorted_counter.iter() {
+            println!("{} {}", inst, count);
+        }
+        println!("===========================================================================================");
+    }
 }
 
 /// Main function of RISC-V emulator for the CLI version.
@@ -45,6 +59,12 @@ fn main() -> io::Result<()> {
                 .long("debug")
                 .help("Enables to output debug messages"),
         )
+        .arg(
+            Arg::with_name("count")
+                .short("c")
+                .long("count")
+                .help("Enables to count each instruction executed"),
+        )
         .get_matches();
 
     let mut kernel_file = File::open(
@@ -61,6 +81,7 @@ fn main() -> io::Result<()> {
     }
 
     let mut emu = Emulator::new();
+
     emu.initialize_dram(kernel_data);
     emu.initialize_disk(img_data);
     emu.initialize_pc(DRAM_BASE);
@@ -69,9 +90,14 @@ fn main() -> io::Result<()> {
         emu.is_debug = true;
     }
 
+    if matches.occurrences_of("count") == 1 {
+        emu.cpu.is_count = true;
+    }
+
     emu.start();
 
     dump_registers(&emu.cpu);
+    dump_count(&emu.cpu);
 
     Ok(())
 }
