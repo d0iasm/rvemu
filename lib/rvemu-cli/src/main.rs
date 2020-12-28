@@ -27,7 +27,7 @@ fn dump_count(cpu: &Cpu) {
         let mut sorted_counter = Vec::from_iter(&cpu.inst_counter);
         sorted_counter.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
         for (inst, count) in sorted_counter.iter() {
-            println!("{} {}", inst, count);
+            println!("{}, {}", inst, count);
         }
         println!("===========================================================================================");
     }
