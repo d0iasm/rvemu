@@ -715,6 +715,8 @@ impl Cpu {
                     }
                     0x2 => {
                         // c.lw
+                        inst_count!(self, "c.lw");
+
                         // uimm[5:3|2|6] = isnt[12:10|6|5]
                         let uimm = ((inst << 1) & 0x40) // imm[6]
                             | ((inst >> 7) & 0x38) // imm[5:3]
@@ -724,6 +726,8 @@ impl Cpu {
                     }
                     0x3 => {
                         // c.ld
+                        inst_count!(self, "c.ld");
+
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
@@ -733,9 +737,12 @@ impl Cpu {
                     }
                     0x4 => {
                         // Reserved.
+                        panic!("reserved");
                     }
                     0x5 => {
                         // c.fsd
+                        inst_count!(self, "c.fsd");
+
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
@@ -748,6 +755,8 @@ impl Cpu {
                     }
                     0x6 => {
                         // c.sw
+                        inst_count!(self, "c.sw");
+
                         // uimm[5:3|2|6] = isnt[12:10|6|5]
                         let uimm = ((inst << 1) & 0x40) // imm[6]
                             | ((inst >> 7) & 0x38) // imm[5:3]
@@ -757,6 +766,8 @@ impl Cpu {
                     }
                     0x7 => {
                         // c.sd
+                        inst_count!(self, "c.sd");
+
                         // uimm[5:3|7:6] = isnt[12:10|6:5]
                         let uimm = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
@@ -781,6 +792,8 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // c.addi
+                        inst_count!(self, "c.addi");
+
                         if rd_rs1 != 0 {
                             self.xregs
                                 .write(rd_rs1, self.xregs.read(rd_rs1).wrapping_add(imm));
@@ -788,6 +801,8 @@ impl Cpu {
                     }
                     0x1 => {
                         // c.addiw
+                        inst_count!(self, "c.addiw");
+
                         if rd_rs1 != 0 {
                             self.xregs.write(
                                 rd_rs1,
@@ -797,6 +812,8 @@ impl Cpu {
                     }
                     0x2 => {
                         // c.li
+                        inst_count!(self, "c.li");
+
                         if rd_rs1 != 0 {
                             self.xregs.write(rd_rs1, imm);
                         }
@@ -806,6 +823,8 @@ impl Cpu {
                             0 => {}
                             2 => {
                                 // c.addi16sp
+                                inst_count!(self, "c.addi16sp");
+
                                 // nzimm[9|4|6|8:7|5] = inst[12|6|5|4:3|2]
                                 let mut nzimm = ((inst >> 3) & 0x200) // nzimm[9]
                                     | ((inst >> 2) & 0x10) // nzimm[4]
@@ -823,6 +842,8 @@ impl Cpu {
                             }
                             _ => {
                                 // c.lui
+                                inst_count!(self, "c.lui");
+
                                 // nzimm[17|16:12] = inst[12|6:2]
                                 let mut nzimm = ((inst << 5) & 0x20000) | ((inst << 10) & 0x1f000);
                                 // Sign-extended.
@@ -841,6 +862,8 @@ impl Cpu {
                         match (rd_rs1 >> 3) & 0b11 {
                             0x0 => {
                                 // c.srli
+                                inst_count!(self, "c.srli");
+
                                 self.xregs.write(
                                     rd_rs1_short,
                                     self.xregs.read(rd_rs1_short).wrapping_shr(imm as u32),
@@ -848,6 +871,8 @@ impl Cpu {
                             }
                             0x1 => {
                                 // c.srai
+                                inst_count!(self, "c.srai");
+
                                 self.xregs.write(
                                     rd_rs1_short,
                                     (self.xregs.read(rd_rs1_short) as i64).wrapping_shr(imm as u32)
@@ -856,6 +881,8 @@ impl Cpu {
                             }
                             0x2 => {
                                 // c.andi
+                                inst_count!(self, "c.andi");
+
                                 self.xregs
                                     .write(rd_rs1_short, self.xregs.read(rd_rs1_short) & imm);
                             }
@@ -864,6 +891,8 @@ impl Cpu {
                                 match ((imm >> 5) & 0b1, (imm >> 3) & 0b11) {
                                     (0x0, 0x0) => {
                                         // c.sub
+                                        inst_count!(self, "c.sub");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             self.xregs
@@ -873,6 +902,8 @@ impl Cpu {
                                     }
                                     (0x0, 0x1) => {
                                         // c.xor
+                                        inst_count!(self, "c.xor");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             self.xregs.read(rd_rs1_short) ^ self.xregs.read(rs2),
@@ -880,6 +911,8 @@ impl Cpu {
                                     }
                                     (0x0, 0x2) => {
                                         // c.or
+                                        inst_count!(self, "c.or");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             self.xregs.read(rd_rs1_short) | self.xregs.read(rs2),
@@ -887,6 +920,8 @@ impl Cpu {
                                     }
                                     (0x0, 0x3) => {
                                         // c.and
+                                        inst_count!(self, "c.and");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             self.xregs.read(rd_rs1_short) & self.xregs.read(rs2),
@@ -894,6 +929,8 @@ impl Cpu {
                                     }
                                     (0x1, 0x0) => {
                                         // c.subw
+                                        inst_count!(self, "c.subw");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             ((self
@@ -906,6 +943,8 @@ impl Cpu {
                                     }
                                     (0x1, 0x1) => {
                                         // c.addw
+                                        inst_count!(self, "c.addw");
+
                                         self.xregs.write(
                                             rd_rs1_short,
                                             self.xregs
@@ -928,6 +967,8 @@ impl Cpu {
                     }
                     0x5 => {
                         // c.j
+                        inst_count!(self, "c.j");
+
                         // imm[11|4|9:8|10|6|7|3:1|5] = inst[12|11|10:9|8|7|6|5:3|2]
                         let mut offset = ((inst >> 1) & 0x800) // imm[11]
                             | ((inst << 2) & 0x400) // imm[10]
@@ -946,6 +987,8 @@ impl Cpu {
                     }
                     0x6 => {
                         // c.beqz
+                        inst_count!(self, "c.beqz");
+
                         let rd_rs1_dash = rd_rs1 & 0b111;
                         let rs1 = rd_rs1_dash + 8;
                         // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
@@ -964,6 +1007,8 @@ impl Cpu {
                     }
                     0x7 => {
                         // c.bnez
+                        inst_count!(self, "c.bnez");
+
                         let rd_rs1_dash = rd_rs1 & 0b111;
                         let rs1 = rd_rs1_dash + 8;
                         // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
@@ -991,6 +1036,8 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         // c.slli
+                        inst_count!(self, "c.slli");
+
                         // nzuimm[5|4:0] = inst[12|6:2]
                         let nzuimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                         if rd_rs1 != 0 {
@@ -999,6 +1046,8 @@ impl Cpu {
                     }
                     0x1 => {
                         // c.fldsp
+                        inst_count!(self, "c.fldsp");
+
                         // uimm[5|4:3|8:6] = inst[12|6:5|4:2]
                         let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x20) // imm[5]
@@ -1009,6 +1058,8 @@ impl Cpu {
                     }
                     0x2 => {
                         // c.lwsp
+                        inst_count!(self, "c.lwsp");
+
                         // uimm[5|4:2|7:6] = inst[12|6:4|3:2]
                         let uimm = ((inst << 4) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x20) // imm[5]
@@ -1018,6 +1069,8 @@ impl Cpu {
                     }
                     0x3 => {
                         // c.ldsp
+                        inst_count!(self, "c.ldsp");
+
                         // uimm[5|4:3|8:6] = inst[12|6:5|4:2]
                         let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
                             | ((inst >> 7) & 0x20) // imm[5]
@@ -1030,18 +1083,26 @@ impl Cpu {
                         match ((inst & 0x1000) == 0, rs2 == 0) {
                             (true, true) => {
                                 // c.jr
+                                inst_count!(self, "c.jr");
+
                                 self.pc = self.xregs.read(rd_rs1);
                             }
                             (true, false) => {
                                 // c.mv
+                                inst_count!(self, "c.mv");
+
                                 self.xregs.write(rd_rs1, self.xregs.read(rs2));
                             }
                             (false, true) => {
                                 if rd_rs1 == 0 {
                                     // c.ebreak
+                                    inst_count!(self, "c.ebreak");
+
                                     return Err(Exception::Breakpoint);
                                 } else {
                                     // c.jalr
+                                    inst_count!(self, "c.jalr");
+
                                     // Don't add 2 because the pc already moved on.
                                     let t = self.pc;
                                     self.pc = self.xregs.read(rd_rs1);
@@ -1050,6 +1111,8 @@ impl Cpu {
                             }
                             (false, false) => {
                                 // c.add
+                                inst_count!(self, "c.add");
+
                                 self.xregs.write(
                                     rd_rs1,
                                     self.xregs.read(rd_rs1).wrapping_add(self.xregs.read(rs2)),
@@ -1059,6 +1122,8 @@ impl Cpu {
                     }
                     0x5 => {
                         // c.fsdsp
+                        inst_count!(self, "c.fsdsp");
+
                         let rs2 = (inst >> 2) & 0x1f;
                         // uimm[5:3|8:6] = isnt[12:10|9:7]
                         let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
@@ -1068,6 +1133,8 @@ impl Cpu {
                     }
                     0x6 => {
                         // c.swsp
+                        inst_count!(self, "c.swsp");
+
                         let rs2 = (inst >> 2) & 0x1f;
                         // uimm[5:2|7:6] = inst[12:9|8:7]
                         let uimm = ((inst >> 1) & 0xc0) // imm[7:6]
@@ -1077,6 +1144,8 @@ impl Cpu {
                     }
                     0x7 => {
                         // c.sdsp
+                        inst_count!(self, "c.sdsp");
+
                         let rs2 = (inst >> 2) & 0x1f;
                         // uimm[5:3|8:6] = isnt[12:10|9:7]
                         let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
