@@ -1958,19 +1958,24 @@ impl Cpu {
                         // div
                         inst_count!(self, "div");
 
+                        let dividend = self.xregs.read(rs1) as i64;
+                        let divisor = self.xregs.read(rs2) as i64;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => {
-                                    // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, 1);
-                                    0xffffffff_ffffffff
-                                }
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as i64;
-                                    let divisor = self.xregs.read(rs2) as i64;
-                                    dividend.wrapping_div(divisor) as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // Set DZ (Divide by Zero) flag to 1.
+                                self.state.write_bit(FCSR, 3, 1);
+                                // "The quotient of division by zero has all bits set"
+                                u64::MAX
+                            } else if dividend == i64::MIN && divisor == -1 {
+                                // Overflow
+                                // "The quotient of a signed division with overflow is equal to the
+                                // dividend"
+                                dividend as u64
+                            } else {
+                                // "division of rs1 by rs2, rounding towards zero"
+                                dividend.wrapping_div(divisor) as u64
                             },
                         );
                     }
@@ -1985,19 +1990,19 @@ impl Cpu {
                         // divu
                         inst_count!(self, "divu");
 
+                        let dividend = self.xregs.read(rs1);
+                        let divisor = self.xregs.read(rs2);
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => {
-                                    // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, 1);
-                                    0xffffffff_ffffffff
-                                }
-                                _ => {
-                                    let dividend = self.xregs.read(rs1);
-                                    let divisor = self.xregs.read(rs2);
-                                    dividend.wrapping_div(divisor)
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // Set DZ (Divide by Zero) flag to 1.
+                                self.state.write_bit(FCSR, 3, 1);
+                                // "The quotient of division by zero has all bits set"
+                                u64::MAX
+                            } else {
+                                // "division of rs1 by rs2, rounding towards zero"
+                                dividend.wrapping_div(divisor)
                             },
                         );
                     }
@@ -2116,19 +2121,24 @@ impl Cpu {
                         // divw
                         inst_count!(self, "divw");
 
+                        let dividend = self.xregs.read(rs1) as i32;
+                        let divisor = self.xregs.read(rs2) as i32;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => {
-                                    // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, 1);
-                                    0xffffffff_ffffffff
-                                }
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as i32;
-                                    let divisor = self.xregs.read(rs2) as i32;
-                                    dividend.wrapping_div(divisor) as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // Set DZ (Divide by Zero) flag to 1.
+                                self.state.write_bit(FCSR, 3, 1);
+                                // "The quotient of division by zero has all bits set"
+                                u64::MAX
+                            } else if dividend == i32::MIN && divisor == -1 {
+                                // Overflow
+                                // "The quotient of a signed division with overflow is equal to the
+                                // dividend"
+                                dividend as i64 as u64
+                            } else {
+                                // "division of rs1 by rs2, rounding towards zero"
+                                dividend.wrapping_div(divisor) as i64 as u64
                             },
                         );
                     }
@@ -2145,19 +2155,19 @@ impl Cpu {
                         // divuw
                         inst_count!(self, "divuw");
 
+                        let dividend = self.xregs.read(rs1) as u32;
+                        let divisor = self.xregs.read(rs2) as u32;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => {
-                                    // Set DZ (Divide by Zero) flag to 1.
-                                    self.state.write_bit(FCSR, 3, 1);
-                                    0xffffffff_ffffffff
-                                }
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as u32;
-                                    let divisor = self.xregs.read(rs2) as u32;
-                                    (dividend.wrapping_div(divisor) as i32) as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // Set DZ (Divide by Zero) flag to 1.
+                                self.state.write_bit(FCSR, 3, 1);
+                                // "The quotient of division by zero has all bits set"
+                                u64::MAX
+                            } else {
+                                // "division of rs1 by rs2, rounding towards zero"
+                                dividend.wrapping_div(divisor) as i32 as i64 as u64
                             },
                         );
                     }
@@ -3098,6 +3108,8 @@ impl Cpu {
                             (_, 0x9) => {
                                 // sfence.vma
                                 inst_count!(self, "sfence.vma");
+                                // "SFENCE.VMA is used to synchronize updates to in-memory
+                                // memory-management data structures with current execution"
                             }
                             (_, 0x11) => {
                                 // hfence.bvma
