@@ -36,6 +36,8 @@ impl Interrupt {
 
     /// Update CSRs and the program counter depending on an interrupt.
     pub fn take_trap(&self, cpu: &mut Cpu) {
+        cpu.idle = false;
+
         let exception_pc = cpu.pc;
         cpu.prev_mode = cpu.mode;
 

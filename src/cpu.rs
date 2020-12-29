@@ -260,6 +260,8 @@ pub struct Cpu {
     /// A set of bytes that subsumes the bytes in the addressed word used in
     /// load-reserved/store-conditional instructions.
     reservation_set: Vec<u64>,
+    /// Idle state. True when WFI is called, and becomes false when an interrupt happens.
+    pub idle: bool,
     /// Counter of each instructions for debug.
     pub inst_counter: BTreeMap<String, u64>,
     /// The count flag. Count the number of each instruction executed.
@@ -280,6 +282,7 @@ impl Cpu {
             enable_paging: false,
             page_table: 0,
             reservation_set: Vec::new(),
+            idle: false,
             inst_counter: BTreeMap::new(),
             is_count: false,
         }
@@ -646,6 +649,11 @@ impl Cpu {
         self.bus.clint.increment(&mut self.state);
         // Increment the value in the TIME register in CSR.
         self.state.increment_time();
+
+        // WFI is called and pending interrupts don't exist.
+        if self.idle {
+            return Ok(0);
+        }
 
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
@@ -3123,7 +3131,9 @@ impl Cpu {
                             (0x5, 0x8) => {
                                 // wfi
                                 inst_count!(self, "wfi");
-                                // Do nothing.
+                                // "provides a hint to the implementation that the current
+                                // hart can be stalled until an interrupt might need servicing."
+                                self.idle = true;
                             }
                             (_, 0x9) => {
                                 // sfence.vma
