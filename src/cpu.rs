@@ -2024,15 +2024,22 @@ impl Cpu {
                         // rem
                         inst_count!(self, "rem");
 
+                        let dividend = self.xregs.read(rs1) as i64;
+                        let divisor = self.xregs.read(rs2) as i64;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => self.xregs.read(rs1),
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as i64;
-                                    let divisor = self.xregs.read(rs2) as i64;
-                                    dividend.wrapping_rem(divisor) as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // "the remainder of division by zero equals the dividend"
+                                dividend as u64
+                            } else if dividend == i64::MIN && divisor == -1 {
+                                // Overflow
+                                // "the remainder is zero"
+                                0
+                            } else {
+                                // "provide the remainder of the corresponding division
+                                // operation"
+                                dividend.wrapping_rem(divisor) as u64
                             },
                         );
                     }
@@ -2047,15 +2054,18 @@ impl Cpu {
                         // remu
                         inst_count!(self, "remu");
 
+                        let dividend = self.xregs.read(rs1);
+                        let divisor = self.xregs.read(rs2);
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => self.xregs.read(rs1),
-                                _ => {
-                                    let dividend = self.xregs.read(rs1);
-                                    let divisor = self.xregs.read(rs2);
-                                    dividend.wrapping_rem(divisor)
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // "the remainder of division by zero equals the dividend"
+                                dividend
+                            } else {
+                                // "provide the remainder of the corresponding division
+                                // operation"
+                                dividend.wrapping_rem(divisor)
                             },
                         );
                     }
@@ -2184,15 +2194,22 @@ impl Cpu {
                         // remw
                         inst_count!(self, "remw");
 
+                        let dividend = self.xregs.read(rs1) as i32;
+                        let divisor = self.xregs.read(rs2) as i32;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => self.xregs.read(rs1),
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as i32;
-                                    let divisor = self.xregs.read(rs2) as i32;
-                                    dividend.wrapping_rem(divisor) as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // "the remainder of division by zero equals the dividend"
+                                dividend as i64 as u64
+                            } else if dividend == i32::MIN && divisor == -1 {
+                                // Overflow
+                                // "the remainder is zero"
+                                0
+                            } else {
+                                // "provide the remainder of the corresponding division
+                                // operation"
+                                dividend.wrapping_rem(divisor) as i64 as u64
                             },
                         );
                     }
@@ -2200,15 +2217,18 @@ impl Cpu {
                         // remuw
                         inst_count!(self, "remuw");
 
+                        let dividend = self.xregs.read(rs1) as u32;
+                        let divisor = self.xregs.read(rs2) as u32;
                         self.xregs.write(
                             rd,
-                            match self.xregs.read(rs2) {
-                                0 => self.xregs.read(rs1),
-                                _ => {
-                                    let dividend = self.xregs.read(rs1) as u32;
-                                    let divisor = self.xregs.read(rs2) as u32;
-                                    dividend.wrapping_rem(divisor) as i32 as u64
-                                }
+                            if divisor == 0 {
+                                // Division by zero
+                                // "the remainder of division by zero equals the dividend"
+                                dividend as u64
+                            } else {
+                                // "provide the remainder of the corresponding division
+                                // operation"
+                                dividend.wrapping_rem(divisor) as i32 as i64 as u64
                             },
                         );
                     }
