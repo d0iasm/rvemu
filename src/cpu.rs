@@ -2839,7 +2839,11 @@ impl Cpu {
                                 // fmv.x.w
                                 inst_count!(self, "fmv.x.w");
 
-                                self.xregs.write(rd, (self.fregs.read(rs1) as i32) as u64);
+                                // "The bits are not modified in the transfer"
+                                self.xregs.write(
+                                    rd,
+                                    (self.fregs.read(rs1).to_bits() as u32) as i32 as i64 as u64,
+                                );
                             }
                             0x1 => {
                                 // fclass.s
@@ -2878,7 +2882,8 @@ impl Cpu {
                                 // fmv.x.d
                                 inst_count!(self, "fmv.x.d");
 
-                                self.xregs.write(rd, self.fregs.read(rs1) as u64);
+                                // "FMV.X.D and FMV.D.X do not modify the bits being transferred"
+                                self.xregs.write(rd, self.fregs.read(rs1).to_bits());
                             }
                             0x1 => {
                                 // fclass.d
@@ -2915,14 +2920,16 @@ impl Cpu {
                         // fmv.w.x
                         inst_count!(self, "fmv.w.x");
 
+                        // "The bits are not modified in the transfer"
                         self.fregs
-                            .write(rd, ((self.xregs.read(rs1) as i32) as f32) as f64);
+                            .write(rd, f32::from_bits(self.xregs.read(rs1) as u32) as f64);
                     }
                     0x79 => {
                         // fmv.d.x
                         inst_count!(self, "fmv.d.x");
 
-                        self.fregs.write(rd, self.xregs.read(rs1) as f64);
+                        // "FMV.X.D and FMV.D.X do not modify the bits being transferred"
+                        self.fregs.write(rd, f64::from_bits(self.xregs.read(rs1)));
                     }
                     _ => {
                         return Err(Exception::IllegalInstruction);
