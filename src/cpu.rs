@@ -889,10 +889,8 @@ impl Cpu {
 
                                 // uimm[5|4:0] = inst[12|6:2]
                                 let uimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
-                                self.xregs.write(
-                                    rd_rs1_short,
-                                    self.xregs.read(rd_rs1_short).wrapping_shr(uimm as u32),
-                                );
+                                self.xregs
+                                    .write(rd_rs1_short, self.xregs.read(rd_rs1_short) >> uimm);
                             }
                             0x1 => {
                                 // c.srai
@@ -902,8 +900,7 @@ impl Cpu {
                                 let uimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                                 self.xregs.write(
                                     rd_rs1_short,
-                                    (self.xregs.read(rd_rs1_short) as i64).wrapping_shr(uimm as u32)
-                                        as u64,
+                                    ((self.xregs.read(rd_rs1_short) as i64) >> uimm) as u64,
                                 );
                             }
                             0x2 => {
@@ -1075,8 +1072,7 @@ impl Cpu {
                         // nzuimm[5|4:0] = inst[12|6:2]
                         let nzuimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                         if rd_rs1 != 0 {
-                            self.xregs
-                                .write(rd_rs1, self.xregs.read(rd_rs1).wrapping_shl(nzuimm as u32));
+                            self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) << nzuimm);
                         }
                     }
                     0x1 => {
@@ -1327,8 +1323,6 @@ impl Cpu {
                 // RV32I and RV64I
                 // imm[11:0] = inst[31:20]
                 let imm = ((inst as i32 as i64) >> 20) as u64;
-                // shamt size is 5 bits for RV32I and 6 bits for RV64I.
-                let shamt = ((inst >> 20) & 0x3f) as u32;
                 let funct6 = funct7 >> 1;
                 match funct3 {
                     0x0 => {
@@ -1341,8 +1335,9 @@ impl Cpu {
                         // slli
                         inst_count!(self, "slli");
 
-                        self.xregs
-                            .write(rd, self.xregs.read(rs1).wrapping_shl(shamt));
+                        // shamt size is 5 bits for RV32I and 6 bits for RV64I.
+                        let shamt = (inst >> 20) & 0x3f;
+                        self.xregs.write(rd, self.xregs.read(rs1) << shamt);
                     }
                     0x2 => {
                         // slti
@@ -1376,17 +1371,18 @@ impl Cpu {
                                 // srli
                                 inst_count!(self, "srli");
 
-                                self.xregs
-                                    .write(rd, self.xregs.read(rs1).wrapping_shr(shamt));
+                                // shamt size is 5 bits for RV32I and 6 bits for RV64I.
+                                let shamt = (inst >> 20) & 0x3f;
+                                self.xregs.write(rd, self.xregs.read(rs1) >> shamt);
                             }
                             0x10 => {
                                 // srai
                                 inst_count!(self, "srai");
 
-                                self.xregs.write(
-                                    rd,
-                                    (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64,
-                                );
+                                // shamt size is 5 bits for RV32I and 6 bits for RV64I.
+                                let shamt = (inst >> 20) & 0x3f;
+                                self.xregs
+                                    .write(rd, ((self.xregs.read(rs1) as i64) >> shamt) as u64);
                             }
                             _ => {
                                 return Err(Exception::IllegalInstruction);
@@ -1426,8 +1422,6 @@ impl Cpu {
                 // RV64I
                 // imm[11:0] = inst[31:20]
                 let imm = ((inst as i32 as i64) >> 20) as u64;
-                // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
-                let shamt = (imm & 0x1f) as u32;
                 match funct3 {
                     0x0 => {
                         // addiw
@@ -1442,10 +1436,10 @@ impl Cpu {
                         // slliw
                         inst_count!(self, "slliw");
 
-                        self.xregs.write(
-                            rd,
-                            self.xregs.read(rs1).wrapping_shl(shamt) as i32 as i64 as u64,
-                        );
+                        // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
+                        let shamt = (imm & 0x1f) as u32;
+                        self.xregs
+                            .write(rd, (self.xregs.read(rs1) << shamt) as i32 as i64 as u64);
                     }
                     0x5 => {
                         match funct7 {
@@ -1453,19 +1447,22 @@ impl Cpu {
                                 // srliw
                                 inst_count!(self, "srliw");
 
+                                // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
+                                let shamt = (imm & 0x1f) as u32;
                                 self.xregs.write(
                                     rd,
-                                    (self.xregs.read(rs1) as u32).wrapping_shr(shamt) as i32 as i64
-                                        as u64,
+                                    ((self.xregs.read(rs1) as u32) >> shamt) as i32 as i64 as u64,
                                 )
                             }
                             0x20 => {
                                 // sraiw
                                 inst_count!(self, "sraiw");
 
+                                // "SLLIW, SRLIW, and SRAIW encodings with imm[5] ̸= 0 are reserved."
+                                let shamt = (imm & 0x1f) as u32;
                                 self.xregs.write(
                                     rd,
-                                    (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
+                                    ((self.xregs.read(rs1) as i32) >> shamt) as i64 as u64,
                                 );
                             }
                             _ => {
@@ -1884,10 +1881,6 @@ impl Cpu {
             }
             0x33 => {
                 // RV64I and RV64M
-                // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic right
-                // shifts on the value in register rs1 by the shift amount held in register rs2.
-                // In RV64I, only the low 6 bits of rs2 are considered for the shift amount."
-                let shamt = ((self.xregs.read(rs2) & 0x3f) as u64) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // add
@@ -1917,8 +1910,12 @@ impl Cpu {
                         // sll
                         inst_count!(self, "sll");
 
-                        self.xregs
-                            .write(rd, self.xregs.read(rs1).wrapping_shl(shamt));
+                        // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic
+                        // right shifts on the value in register rs1 by the shift amount held in
+                        // register rs2. In RV64I, only the low 6 bits of rs2 are considered for the
+                        // shift amount."
+                        let shamt = self.xregs.read(rs2) & 0x3f;
+                        self.xregs.write(rd, self.xregs.read(rs1) << shamt);
                     }
                     (0x1, 0x01) => {
                         // mulh
@@ -2018,8 +2015,12 @@ impl Cpu {
                         // srl
                         inst_count!(self, "srl");
 
-                        self.xregs
-                            .write(rd, self.xregs.read(rs1).wrapping_shr(shamt));
+                        // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic
+                        // right shifts on the value in register rs1 by the shift amount held in
+                        // register rs2. In RV64I, only the low 6 bits of rs2 are considered for the
+                        // shift amount."
+                        let shamt = self.xregs.read(rs2) & 0x3f;
+                        self.xregs.write(rd, self.xregs.read(rs1) >> shamt);
                     }
                     (0x5, 0x01) => {
                         // divu
@@ -2045,8 +2046,13 @@ impl Cpu {
                         // sra
                         inst_count!(self, "sra");
 
+                        // "SLL, SRL, and SRA perform logical left, logical right, and arithmetic
+                        // right shifts on the value in register rs1 by the shift amount held in
+                        // register rs2. In RV64I, only the low 6 bits of rs2 are considered for the
+                        // shift amount."
+                        let shamt = self.xregs.read(rs2) & 0x3f;
                         self.xregs
-                            .write(rd, (self.xregs.read(rs1) as i64).wrapping_shr(shamt) as u64);
+                            .write(rd, ((self.xregs.read(rs1) as i64) >> shamt) as u64);
                     }
                     (0x6, 0x00) => {
                         // or
@@ -2121,8 +2127,6 @@ impl Cpu {
             }
             0x3b => {
                 // RV64I and RV64M
-                // The shift amount is given by rs2[4:0].
-                let shamt = (self.xregs.read(rs2) & 0x1f) as u32;
                 match (funct3, funct7) {
                     (0x0, 0x00) => {
                         // addw
@@ -2157,10 +2161,10 @@ impl Cpu {
                         // sllw
                         inst_count!(self, "sllw");
 
-                        self.xregs.write(
-                            rd,
-                            (self.xregs.read(rs1) as u32).wrapping_shl(shamt) as i32 as i64 as u64,
-                        );
+                        // The shift amount is given by rs2[4:0].
+                        let shamt = self.xregs.read(rs2) & 0x1f;
+                        self.xregs
+                            .write(rd, ((self.xregs.read(rs1)) << shamt) as i32 as i64 as u64);
                     }
                     (0x4, 0x01) => {
                         // divw
@@ -2191,9 +2195,11 @@ impl Cpu {
                         // srlw
                         inst_count!(self, "srlw");
 
+                        // The shift amount is given by rs2[4:0].
+                        let shamt = self.xregs.read(rs2) & 0x1f;
                         self.xregs.write(
                             rd,
-                            (self.xregs.read(rs1) as u32).wrapping_shr(shamt) as i32 as i64 as u64,
+                            ((self.xregs.read(rs1) as u32) >> shamt) as i32 as i64 as u64,
                         );
                     }
                     (0x5, 0x01) => {
@@ -2220,10 +2226,10 @@ impl Cpu {
                         // sraw
                         inst_count!(self, "sraw");
 
-                        self.xregs.write(
-                            rd,
-                            (self.xregs.read(rs1) as i32).wrapping_shr(shamt) as i64 as u64,
-                        );
+                        // The shift amount is given by rs2[4:0].
+                        let shamt = self.xregs.read(rs2) & 0x1f;
+                        self.xregs
+                            .write(rd, ((self.xregs.read(rs1) as i32) >> shamt) as i64 as u64);
                     }
                     (0x6, 0x01) => {
                         // remw
@@ -3090,8 +3096,7 @@ impl Cpu {
                             (0x2, 0x0) => {
                                 // uret
                                 inst_count!(self, "uret");
-
-                                dbg!("uret: not implemented yet. pc {}", self.pc);
+                                panic!("uret: not implemented yet. pc {}", self.pc);
                             }
                             (0x2, 0x8) => {
                                 // sret
