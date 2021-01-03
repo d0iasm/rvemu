@@ -650,9 +650,10 @@ impl Cpu {
             return Ok(0);
         }
 
+        // TODO: mtimer in Clint and TIME in CSR should be the same value.
         // Increment the timer register (mtimer) in Clint.
         self.bus.clint.increment(&mut self.state);
-        // Increment the value in the TIME register in CSR.
+        // Increment the value in the TIME and CYCLE registers in CSR.
         self.state.increment_time();
 
         // Fetch.
@@ -685,19 +686,18 @@ impl Cpu {
         let funct3 = (inst >> 13) & 0x7;
 
         // 3. Execute.
+        // Compressed instructions have 3-bit field for popular registers,
+        // which correspond to registers x8 to x15.
         match opcode {
             0 => {
                 // Quadrant 0.
-                // Compressed instructions have 3-bit field for popular registers,
-                // which correspond to registers x8 to x15.
-                let rd_rs2_short = ((inst >> 2) & 0x7) + 8;
-                let rs1_short = ((inst >> 7) & 0x7) + 8;
-
                 match funct3 {
                     0x0 => {
                         // c.addi4spn
+                        // Expands to addi rd, x2, nzuimm, where rd=rd'+8.
                         inst_count!(self, "c.addi4spn");
 
+                        let rd = ((inst >> 2) & 0x7) + 8;
                         // nzuimm[5:4|9:6|2|3] = inst[12:11|10:7|6|5]
                         let nzuimm = ((inst >> 1) & 0x3c0) // znuimm[9:6]
                             | ((inst >> 7) & 0x30) // znuimm[5:4]
@@ -707,41 +707,51 @@ impl Cpu {
                             return Err(Exception::IllegalInstruction);
                         }
                         self.xregs
-                            .write(rd_rs2_short, self.xregs.read(2).wrapping_add(nzuimm));
+                            .write(rd, self.xregs.read(2).wrapping_add(nzuimm));
                     }
                     0x1 => {
                         // c.fld
+                        // Expands to fld rd, offset(rs1), where rd=rd'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.fld");
 
-                        // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
+                        let rd = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|7:6] = isnt[12:10|6:5]
+                        let offset = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
                         let val = f64::from_bits(
-                            self.read(self.xregs.read(2).wrapping_add(uimm), DOUBLEWORD)?,
+                            self.read(self.xregs.read(rs1).wrapping_add(offset), DOUBLEWORD)?,
                         );
-                        self.fregs.write(rd_rs2_short, val);
+                        self.fregs.write(rd, val);
                     }
                     0x2 => {
                         // c.lw
+                        // Expands to lw rd, offset(rs1), where rd=rd'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.lw");
 
-                        // uimm[5:3|2|6] = isnt[12:10|6|5]
-                        let uimm = ((inst << 1) & 0x40) // imm[6]
+                        let rd = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|2|6] = isnt[12:10|6|5]
+                        let offset = ((inst << 1) & 0x40) // imm[6]
                             | ((inst >> 7) & 0x38) // imm[5:3]
                             | ((inst >> 4) & 0x4); // imm[2]
-                        let val = self.read(self.xregs.read(rs1_short).wrapping_add(uimm), WORD)?;
-                        self.xregs.write(rd_rs2_short, val as i32 as i64 as u64);
+                        let addr = self.xregs.read(rs1).wrapping_add(offset);
+                        let val = self.read(addr, WORD)?;
+                        self.xregs.write(rd, val as i32 as i64 as u64);
                     }
                     0x3 => {
                         // c.ld
+                        // Expands to ld rd, offset(rs1), where rd=rd'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.ld");
 
-                        // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
+                        let rd = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|7:6] = isnt[12:10|6:5]
+                        let offset = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
-                        let val =
-                            self.read(self.xregs.read(rs1_short).wrapping_add(uimm), DOUBLEWORD)?;
-                        self.xregs.write(rd_rs2_short, val);
+                        let addr = self.xregs.read(rs1).wrapping_add(offset);
+                        let val = self.read(addr, DOUBLEWORD)?;
+                        self.xregs.write(rd, val);
                     }
                     0x4 => {
                         // Reserved.
@@ -749,38 +759,43 @@ impl Cpu {
                     }
                     0x5 => {
                         // c.fsd
+                        // Expands to fsd rs2, offset(rs1), where rs2=rs2'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.fsd");
 
-                        // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
+                        let rs2 = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|7:6] = isnt[12:10|6:5]
+                        let offset = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
-                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write(
-                            addr,
-                            self.fregs.read(rd_rs2_short).to_bits() as u64,
-                            DOUBLEWORD,
-                        )?;
+                        let addr = self.xregs.read(rs1).wrapping_add(offset);
+                        self.write(addr, self.fregs.read(rs2).to_bits() as u64, DOUBLEWORD)?;
                     }
                     0x6 => {
                         // c.sw
+                        // Expands to sw rs2, offset(rs1), where rs2=rs2'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.sw");
 
-                        // uimm[5:3|2|6] = isnt[12:10|6|5]
-                        let uimm = ((inst << 1) & 0x40) // imm[6]
+                        let rs2 = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|2|6] = isnt[12:10|6|5]
+                        let offset = ((inst << 1) & 0x40) // imm[6]
                             | ((inst >> 7) & 0x38) // imm[5:3]
                             | ((inst >> 4) & 0x4); // imm[2]
-                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write(addr, self.xregs.read(rd_rs2_short), WORD)?;
+                        let addr = self.xregs.read(rs1).wrapping_add(offset);
+                        self.write(addr, self.xregs.read(rs2), WORD)?;
                     }
                     0x7 => {
                         // c.sd
+                        // Expands to sd rs2, offset(rs1), where rs2=rs2'+8 and rs1=rs1'+8.
                         inst_count!(self, "c.sd");
 
-                        // uimm[5:3|7:6] = isnt[12:10|6:5]
-                        let uimm = ((inst << 1) & 0xc0) // imm[7:6]
+                        let rs2 = ((inst >> 2) & 0x7) + 8;
+                        let rs1 = ((inst >> 7) & 0x7) + 8;
+                        // offset[5:3|7:6] = isnt[12:10|6:5]
+                        let offset = ((inst << 1) & 0xc0) // imm[7:6]
                             | ((inst >> 7) & 0x38); // imm[5:3]
-                        let addr = self.xregs.read(rs1_short).wrapping_add(uimm);
-                        self.write(addr, self.xregs.read(rd_rs2_short), DOUBLEWORD)?;
+                        let addr = self.xregs.read(rs1).wrapping_add(offset);
+                        self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?;
                     }
                     _ => {
                         return Err(Exception::IllegalInstruction);
