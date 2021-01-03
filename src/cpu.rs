@@ -645,15 +645,15 @@ impl Cpu {
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// the instruction executed in this cycle.
     pub fn execute(&mut self) -> Result<u64, Exception> {
-        // Increment the timer register (mtimer) in Clint.
-        self.bus.clint.increment(&mut self.state);
-        // Increment the value in the TIME register in CSR.
-        self.state.increment_time();
-
         // WFI is called and pending interrupts don't exist.
         if self.idle {
             return Ok(0);
         }
+
+        // Increment the timer register (mtimer) in Clint.
+        self.bus.clint.increment(&mut self.state);
+        // Increment the value in the TIME register in CSR.
+        self.state.increment_time();
 
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
