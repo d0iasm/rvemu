@@ -686,8 +686,8 @@ impl Cpu {
         let funct3 = (inst >> 13) & 0x7;
 
         // 3. Execute.
-        // Compressed instructions have 3-bit field for popular registers,
-        // which correspond to registers x8 to x15.
+        // Compressed instructions have 3-bit field for popular registers, which correspond to
+        // registers x8 to x15.
         match opcode {
             0 => {
                 // Quadrant 0.
@@ -804,29 +804,33 @@ impl Cpu {
             }
             1 => {
                 // Quadrant 1.
-                let rd_rs1 = (inst >> 7) & 0x1f;
-
                 match funct3 {
                     0x0 => {
                         // c.addi
+                        // Expands to addi rd, rd, nzimm.
                         inst_count!(self, "c.addi");
 
-                        // imm[5|4:0] = inst[12|6:2]
-                        let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
+                        let rd = (inst >> 7) & 0x1f;
+                        // nzimm[5|4:0] = inst[12|6:2]
+                        let mut nzimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                         // Sign-extended.
-                        imm = match (imm & 0x20) == 0 {
-                            true => imm,
-                            false => (0xc0 | imm) as i8 as i64 as u64,
+                        nzimm = match (nzimm & 0x20) == 0 {
+                            true => nzimm,
+                            false => (0xc0 | nzimm) as i8 as i64 as u64,
                         };
-                        if rd_rs1 != 0 {
+                        if rd != 0 {
                             self.xregs
-                                .write(rd_rs1, self.xregs.read(rd_rs1).wrapping_add(imm));
+                                .write(rd, self.xregs.read(rd).wrapping_add(nzimm));
                         }
                     }
                     0x1 => {
                         // c.addiw
+                        // Expands to addiw rd, rd, imm
+                        // "The immediate can be zero for C.ADDIW, where this corresponds to sext.w
+                        // rd"
                         inst_count!(self, "c.addiw");
 
+                        let rd = (inst >> 7) & 0x1f;
                         // imm[5|4:0] = inst[12|6:2]
                         let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                         // Sign-extended.
@@ -834,17 +838,19 @@ impl Cpu {
                             true => imm,
                             false => (0xc0 | imm) as i8 as i64 as u64,
                         };
-                        if rd_rs1 != 0 {
+                        if rd != 0 {
                             self.xregs.write(
-                                rd_rs1,
-                                self.xregs.read(rd_rs1).wrapping_add(imm) as i32 as i64 as u64,
+                                rd,
+                                self.xregs.read(rd).wrapping_add(imm) as i32 as i64 as u64,
                             );
                         }
                     }
                     0x2 => {
                         // c.li
+                        // Expands to addi rd, x0, imm.
                         inst_count!(self, "c.li");
 
+                        let rd = (inst >> 7) & 0x1f;
                         // imm[5|4:0] = inst[12|6:2]
                         let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                         // Sign-extended.
@@ -852,15 +858,17 @@ impl Cpu {
                             true => imm,
                             false => (0xc0 | imm) as i8 as i64 as u64,
                         };
-                        if rd_rs1 != 0 {
-                            self.xregs.write(rd_rs1, imm);
+                        if rd != 0 {
+                            self.xregs.write(rd, imm);
                         }
                     }
                     0x3 => {
-                        match rd_rs1 {
+                        let rd = (inst >> 7) & 0x1f;
+                        match rd {
                             0 => {}
                             2 => {
                                 // c.addi16sp
+                                // Expands to addi x2, x2, nzimm
                                 inst_count!(self, "c.addi16sp");
 
                                 // nzimm[9|4|6|8:7|5] = inst[12|6|5|4:3|2]
@@ -880,6 +888,7 @@ impl Cpu {
                             }
                             _ => {
                                 // c.lui
+                                // Expands to lui rd, nzimm.
                                 inst_count!(self, "c.lui");
 
                                 // nzimm[17|16:12] = inst[12|6:2]
@@ -890,38 +899,41 @@ impl Cpu {
                                     false => (0xfffc0000 | nzimm) as i32 as i64 as u64,
                                 };
                                 if nzimm != 0 {
-                                    self.xregs.write(rd_rs1, nzimm);
+                                    self.xregs.write(rd, nzimm);
                                 }
                             }
                         }
                     }
                     0x4 => {
-                        let rd_rs1_short = (rd_rs1 & 0b111) + 8;
-                        match (inst >> 10) & 0b11 {
+                        let funct2 = (inst >> 10) & 0x3;
+                        match funct2 {
                             0x0 => {
                                 // c.srli
+                                // Expands to srli rd, rd, shamt, where rd=rd'+8.
                                 inst_count!(self, "c.srli");
 
-                                // uimm[5|4:0] = inst[12|6:2]
-                                let uimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
-                                self.xregs
-                                    .write(rd_rs1_short, self.xregs.read(rd_rs1_short) >> uimm);
+                                let rd = ((inst >> 7) & 0b111) + 8;
+                                // shamt[5|4:0] = inst[12|6:2]
+                                let shamt = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
+                                self.xregs.write(rd, self.xregs.read(rd) >> shamt);
                             }
                             0x1 => {
                                 // c.srai
+                                // Expands to srai rd, rd, shamt, where rd=rd'+8.
                                 inst_count!(self, "c.srai");
 
-                                // uimm[5|4:0] = inst[12|6:2]
-                                let uimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
-                                self.xregs.write(
-                                    rd_rs1_short,
-                                    ((self.xregs.read(rd_rs1_short) as i64) >> uimm) as u64,
-                                );
+                                let rd = ((inst >> 7) & 0b111) + 8;
+                                // shamt[5|4:0] = inst[12|6:2]
+                                let shamt = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
+                                self.xregs
+                                    .write(rd, ((self.xregs.read(rd) as i64) >> shamt) as u64);
                             }
                             0x2 => {
                                 // c.andi
+                                // Expands to andi rd, rd, imm, where rd=rd'+8.
                                 inst_count!(self, "c.andi");
 
+                                let rd = ((inst >> 7) & 0b111) + 8;
                                 // imm[5|4:0] = inst[12|6:2]
                                 let mut imm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
                                 // Sign-extended.
@@ -929,59 +941,62 @@ impl Cpu {
                                     true => imm,
                                     false => (0xc0 | imm) as i8 as i64 as u64,
                                 };
-                                self.xregs
-                                    .write(rd_rs1_short, self.xregs.read(rd_rs1_short) & imm);
+                                self.xregs.write(rd, self.xregs.read(rd) & imm);
                             }
                             0x3 => {
-                                let rs2 = ((inst >> 2) & 0b111) + 8;
                                 match ((inst >> 12) & 0b1, (inst >> 5) & 0b11) {
                                     (0x0, 0x0) => {
                                         // c.sub
+                                        // Expands to sub rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.sub");
 
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
                                         self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs
-                                                .read(rd_rs1_short)
-                                                .wrapping_sub(self.xregs.read(rs2)),
+                                            rd,
+                                            self.xregs.read(rd).wrapping_sub(self.xregs.read(rs2)),
                                         );
                                     }
                                     (0x0, 0x1) => {
                                         // c.xor
+                                        // Expands to xor rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.xor");
 
-                                        self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs.read(rd_rs1_short) ^ self.xregs.read(rs2),
-                                        );
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) ^ self.xregs.read(rs2));
                                     }
                                     (0x0, 0x2) => {
                                         // c.or
+                                        // Expands to or rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.or");
 
-                                        self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs.read(rd_rs1_short) | self.xregs.read(rs2),
-                                        );
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) | self.xregs.read(rs2));
                                     }
                                     (0x0, 0x3) => {
                                         // c.and
+                                        // Expands to and rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.and");
 
-                                        self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs.read(rd_rs1_short) & self.xregs.read(rs2),
-                                        );
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
+                                        self.xregs
+                                            .write(rd, self.xregs.read(rd) & self.xregs.read(rs2));
                                     }
                                     (0x1, 0x0) => {
                                         // c.subw
+                                        // Expands to subw rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.subw");
 
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
                                         self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs
-                                                .read(rd_rs1_short)
-                                                .wrapping_sub(self.xregs.read(rs2))
+                                            rd,
+                                            self.xregs.read(rd).wrapping_sub(self.xregs.read(rs2))
                                                 as i32
                                                 as i64
                                                 as u64,
@@ -989,13 +1004,14 @@ impl Cpu {
                                     }
                                     (0x1, 0x1) => {
                                         // c.addw
+                                        // Expands to addw rd, rd, rs2, rd=rd'+8 and rs2=rs2'+8.
                                         inst_count!(self, "c.addw");
 
+                                        let rd = ((inst >> 7) & 0b111) + 8;
+                                        let rs2 = ((inst >> 2) & 0b111) + 8;
                                         self.xregs.write(
-                                            rd_rs1_short,
-                                            self.xregs
-                                                .read(rd_rs1_short)
-                                                .wrapping_add(self.xregs.read(rs2))
+                                            rd,
+                                            self.xregs.read(rd).wrapping_add(self.xregs.read(rs2))
                                                 as i32
                                                 as i64
                                                 as u64,
@@ -1013,36 +1029,38 @@ impl Cpu {
                     }
                     0x5 => {
                         // c.j
+                        // Expands to jal x0, offset.
                         inst_count!(self, "c.j");
 
-                        // imm[11|4|9:8|10|6|7|3:1|5] = inst[12|11|10:9|8|7|6|5:3|2]
-                        let mut offset = ((inst >> 1) & 0x800) // imm[11]
-                            | ((inst << 2) & 0x400) // imm[10]
-                            | ((inst >> 1) & 0x300) // imm[9:8]
-                            | ((inst << 1) & 0x80) // imm[7]
-                            | ((inst >> 1) & 0x40) // imm[6]
-                            | ((inst << 3) & 0x20) // imm[5]
-                            | ((inst >> 7) & 0x10) // imm[4]
-                            | ((inst >> 2) & 0xe); // imm[3:1]
+                        // offset[11|4|9:8|10|6|7|3:1|5] = inst[12|11|10:9|8|7|6|5:3|2]
+                        let mut offset = ((inst >> 1) & 0x800) // offset[11]
+                            | ((inst << 2) & 0x400) // offset[10]
+                            | ((inst >> 1) & 0x300) // offset[9:8]
+                            | ((inst << 1) & 0x80) // offset[7]
+                            | ((inst >> 1) & 0x40) // offset[6]
+                            | ((inst << 3) & 0x20) // offset[5]
+                            | ((inst >> 7) & 0x10) // offset[4]
+                            | ((inst >> 2) & 0xe); // offset[3:1]
+                                                   // Sign-extended.
                         offset = match (offset & 0x800) == 0 {
                             true => offset,
-                            // Sign-extended.
                             false => (0xf000 | offset) as i16 as i64 as u64,
                         };
                         self.pc = self.pc.wrapping_add(offset).wrapping_sub(2);
                     }
                     0x6 => {
                         // c.beqz
+                        // Expands to beq rs1, x0, offset, rs1=rs1'+8.
                         inst_count!(self, "c.beqz");
 
-                        let rd_rs1_dash = rd_rs1 & 0b111;
-                        let rs1 = rd_rs1_dash + 8;
-                        // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
-                        let mut offset = ((inst >> 4) & 0x100) // imm[8]
-                            | ((inst << 1) & 0xc0) // imm[7:6]
-                            | ((inst << 3) & 0x20) // imm[5]
-                            | ((inst >> 7) & 0x18) // imm[4:3]
-                            | ((inst >> 2) & 0x6); // imm[2:1]
+                        let rs1 = ((inst >> 7) & 0b111) + 8;
+                        // offset[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
+                        let mut offset = ((inst >> 4) & 0x100) // offset[8]
+                            | ((inst << 1) & 0xc0) // offset[7:6]
+                            | ((inst << 3) & 0x20) // offset[5]
+                            | ((inst >> 7) & 0x18) // offset[4:3]
+                            | ((inst >> 2) & 0x6); // offset[2:1]
+                                                   // Sign-extended.
                         offset = match (offset & 0x100) == 0 {
                             true => offset,
                             false => (0xfe00 | offset) as i16 as i64 as u64,
@@ -1053,16 +1071,17 @@ impl Cpu {
                     }
                     0x7 => {
                         // c.bnez
+                        // Expands to bne rs1, x0, offset, rs1=rs1'+8.
                         inst_count!(self, "c.bnez");
 
-                        let rd_rs1_dash = rd_rs1 & 0b111;
-                        let rs1 = rd_rs1_dash + 8;
-                        // imm[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
-                        let mut offset = ((inst >> 4) & 0x100) // imm[8]
-                            | ((inst << 1) & 0xc0) // imm[7:6]
-                            | ((inst << 3) & 0x20) // imm[5]
-                            | ((inst >> 7) & 0x18) // imm[4:3]
-                            | ((inst >> 2) & 0x6); // imm[2:1]
+                        let rs1 = ((inst >> 7) & 0b111) + 8;
+                        // offset[8|4:3|7:6|2:1|5] = inst[12|11:10|6:5|4:3|2]
+                        let mut offset = ((inst >> 4) & 0x100) // offset[8]
+                            | ((inst << 1) & 0xc0) // offset[7:6]
+                            | ((inst << 3) & 0x20) // offset[5]
+                            | ((inst >> 7) & 0x18) // offset[4:3]
+                            | ((inst >> 2) & 0x6); // offset[2:1]
+                                                   // Sign-extended.
                         offset = match (offset & 0x100) == 0 {
                             true => offset,
                             false => (0xfe00 | offset) as i16 as i64 as u64,
