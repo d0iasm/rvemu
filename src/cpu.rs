@@ -1097,125 +1097,155 @@ impl Cpu {
             }
             2 => {
                 // Quadrant 2.
-                let rd_rs1 = (inst >> 7) & 0x1f;
                 match funct3 {
                     0x0 => {
                         // c.slli
+                        // Expands to slli rd, rd, shamt.
                         inst_count!(self, "c.slli");
 
-                        // nzuimm[5|4:0] = inst[12|6:2]
-                        let nzuimm = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
-                        if rd_rs1 != 0 {
-                            self.xregs.write(rd_rs1, self.xregs.read(rd_rs1) << nzuimm);
+                        let rd = (inst >> 7) & 0x1f;
+                        // shamt[5|4:0] = inst[12|6:2]
+                        let shamt = ((inst >> 7) & 0x20) | ((inst >> 2) & 0x1f);
+                        if rd != 0 {
+                            self.xregs.write(rd, self.xregs.read(rd) << shamt);
                         }
                     }
                     0x1 => {
                         // c.fldsp
+                        // Expands to fld rd, offset(x2).
                         inst_count!(self, "c.fldsp");
 
-                        // uimm[5|4:3|8:6] = inst[12|6:5|4:2]
-                        let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
-                            | ((inst >> 7) & 0x20) // imm[5]
-                            | ((inst >> 2) & 0x18); // imm[4:3]
+                        let rd = (inst >> 7) & 0x1f;
+                        // offset[5|4:3|8:6] = inst[12|6:5|4:2]
+                        let offset = ((inst << 4) & 0x1c0) // offset[8:6]
+                            | ((inst >> 7) & 0x20) // offset[5]
+                            | ((inst >> 2) & 0x18); // offset[4:3]
                         let val =
-                            f64::from_bits(self.read(self.xregs.read(rd_rs1) + uimm, DOUBLEWORD)?);
-                        self.fregs.write(rd_rs1, val);
+                            f64::from_bits(self.read(self.xregs.read(2) + offset, DOUBLEWORD)?);
+                        self.fregs.write(rd, val);
                     }
                     0x2 => {
                         // c.lwsp
+                        // Expands to lw rd, offset(x2).
                         inst_count!(self, "c.lwsp");
 
-                        // uimm[5|4:2|7:6] = inst[12|6:4|3:2]
-                        let uimm = ((inst << 4) & 0xc0) // imm[7:6]
-                            | ((inst >> 7) & 0x20) // imm[5]
-                            | ((inst >> 2) & 0x1c); // imm[4:2]
-                        let val = self.read(self.xregs.read(2).wrapping_add(uimm), WORD)?;
-                        self.xregs.write(rd_rs1, val as i32 as i64 as u64);
+                        let rd = (inst >> 7) & 0x1f;
+                        // offset[5|4:2|7:6] = inst[12|6:4|3:2]
+                        let offset = ((inst << 4) & 0xc0) // offset[7:6]
+                            | ((inst >> 7) & 0x20) // offset[5]
+                            | ((inst >> 2) & 0x1c); // offset[4:2]
+                        let val = self.read(self.xregs.read(2).wrapping_add(offset), WORD)?;
+                        self.xregs.write(rd, val as i32 as i64 as u64);
                     }
                     0x3 => {
                         // c.ldsp
+                        // Expands to ld rd, offset(x2).
                         inst_count!(self, "c.ldsp");
 
-                        // uimm[5|4:3|8:6] = inst[12|6:5|4:2]
-                        let uimm = ((inst << 4) & 0x1c0) // imm[8:6]
-                            | ((inst >> 7) & 0x20) // imm[5]
-                            | ((inst >> 2) & 0x18); // imm[4:3]
-                        let val = self.read(self.xregs.read(2).wrapping_add(uimm), DOUBLEWORD)?;
-                        self.xregs.write(rd_rs1, val);
+                        let rd = (inst >> 7) & 0x1f;
+                        // offset[5|4:3|8:6] = inst[12|6:5|4:2]
+                        let offset = ((inst << 4) & 0x1c0) // offset[8:6]
+                            | ((inst >> 7) & 0x20) // offset[5]
+                            | ((inst >> 2) & 0x18); // offset[4:3]
+                        let val = self.read(self.xregs.read(2).wrapping_add(offset), DOUBLEWORD)?;
+                        self.xregs.write(rd, val);
                     }
                     0x4 => {
-                        let rs2 = (inst >> 2) & 0x1f;
-                        match ((inst & 0x1000) == 0, rs2 == 0) {
-                            (true, true) => {
+                        match ((inst >> 12) & 0x1, (inst >> 2) & 0x1f) {
+                            (0, 0) => {
                                 // c.jr
+                                // Expands to jalr x0, 0(rs1).
                                 inst_count!(self, "c.jr");
 
-                                self.pc = self.xregs.read(rd_rs1);
+                                let rs1 = (inst >> 7) & 0x1f;
+                                if rs1 != 0 {
+                                    self.pc = self.xregs.read(rs1);
+                                }
                             }
-                            (true, false) => {
+                            (0, _) => {
                                 // c.mv
+                                // Expands to add rd, x0, rs2.
                                 inst_count!(self, "c.mv");
 
-                                self.xregs.write(rd_rs1, self.xregs.read(rs2));
+                                let rd = (inst >> 7) & 0x1f;
+                                let rs2 = (inst >> 2) & 0x1f;
+                                if rs2 != 0 {
+                                    self.xregs.write(rd, self.xregs.read(rs2));
+                                }
                             }
-                            (false, true) => {
-                                if rd_rs1 == 0 {
+                            (1, 0) => {
+                                let rd = (inst >> 7) & 0x1f;
+                                if rd == 0 {
                                     // c.ebreak
+                                    // Expands to ebreak.
                                     inst_count!(self, "c.ebreak");
 
                                     return Err(Exception::Breakpoint);
                                 } else {
                                     // c.jalr
+                                    // Expands to jalr x1, 0(rs1).
                                     inst_count!(self, "c.jalr");
 
+                                    let rs1 = (inst >> 7) & 0x1f;
                                     // Don't add 2 because the pc already moved on.
                                     let t = self.pc;
-                                    self.pc = self.xregs.read(rd_rs1);
+                                    self.pc = self.xregs.read(rs1);
                                     self.xregs.write(1, t);
                                 }
                             }
-                            (false, false) => {
+                            (1, _) => {
                                 // c.add
+                                // Expands to add rd, rd, rs2.
                                 inst_count!(self, "c.add");
 
-                                self.xregs.write(
-                                    rd_rs1,
-                                    self.xregs.read(rd_rs1).wrapping_add(self.xregs.read(rs2)),
-                                );
+                                let rd = (inst >> 7) & 0x1f;
+                                let rs2 = (inst >> 2) & 0x1f;
+                                if rs2 != 0 {
+                                    self.xregs.write(
+                                        rd,
+                                        self.xregs.read(rd).wrapping_add(self.xregs.read(rs2)),
+                                    );
+                                }
+                            }
+                            (_, _) => {
+                                return Err(Exception::IllegalInstruction);
                             }
                         }
                     }
                     0x5 => {
                         // c.fsdsp
+                        // Expands to fsd rs2, offset(x2).
                         inst_count!(self, "c.fsdsp");
 
                         let rs2 = (inst >> 2) & 0x1f;
-                        // uimm[5:3|8:6] = isnt[12:10|9:7]
-                        let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
-                            | ((inst >> 7) & 0x38); // imm[5:3]
-                        let addr = self.xregs.read(2).wrapping_add(uimm);
-                        self.write(addr, self.fregs.read(rs2).to_bits() as u64, DOUBLEWORD)?;
+                        // offset[5:3|8:6] = isnt[12:10|9:7]
+                        let offset = ((inst >> 1) & 0x1c0) // offset[8:6]
+                            | ((inst >> 7) & 0x38); // offset[5:3]
+                        let addr = self.xregs.read(2).wrapping_add(offset);
+                        self.write(addr, self.fregs.read(rs2).to_bits(), DOUBLEWORD)?;
                     }
                     0x6 => {
                         // c.swsp
+                        // Expands to sw rs2, offset(x2).
                         inst_count!(self, "c.swsp");
 
                         let rs2 = (inst >> 2) & 0x1f;
-                        // uimm[5:2|7:6] = inst[12:9|8:7]
-                        let uimm = ((inst >> 1) & 0xc0) // imm[7:6]
-                            | ((inst >> 7) & 0x3c); // imm[5:2]
-                        let addr = self.xregs.read(2).wrapping_add(uimm);
+                        // offset[5:2|7:6] = inst[12:9|8:7]
+                        let offset = ((inst >> 1) & 0xc0) // offset[7:6]
+                            | ((inst >> 7) & 0x3c); // offset[5:2]
+                        let addr = self.xregs.read(2).wrapping_add(offset);
                         self.write(addr, self.xregs.read(rs2), WORD)?;
                     }
                     0x7 => {
                         // c.sdsp
+                        // Expands to sd rs2, offset(x2).
                         inst_count!(self, "c.sdsp");
 
                         let rs2 = (inst >> 2) & 0x1f;
-                        // uimm[5:3|8:6] = isnt[12:10|9:7]
-                        let uimm = ((inst >> 1) & 0x1c0) // imm[8:6]
-                            | ((inst >> 7) & 0x38); // imm[5:3]
-                        let addr = self.xregs.read(2).wrapping_add(uimm);
+                        // offset[5:3|8:6] = isnt[12:10|9:7]
+                        let offset = ((inst >> 1) & 0x1c0) // offset[8:6]
+                            | ((inst >> 7) & 0x38); // offset[5:3]
+                        let addr = self.xregs.read(2).wrapping_add(offset);
                         self.write(addr, self.xregs.read(rs2), DOUBLEWORD)?;
                     }
                     _ => {
