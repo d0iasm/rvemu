@@ -36,6 +36,10 @@ impl Interrupt {
 
     /// Update CSRs and the program counter depending on an interrupt.
     pub fn take_trap(&self, cpu: &mut Cpu) {
+        // 1.2 Privilege Levels
+        // "Traps that increase privilege level are termed vertical traps, while traps that remain
+        // at the same privilege level are termed horizontal traps."
+
         cpu.idle = false;
 
         let exception_pc = cpu.pc;
@@ -44,10 +48,10 @@ impl Interrupt {
         let cause = self.exception_code();
 
         // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
-        // "By default, all traps at any privilege level are handled in machine mode"
-        // "To increase performance, implementations can provide individual read/write bits within
-        // medeleg and mideleg to indicate that certain exceptions and interrupts should be
-        // processed directly by a lower privilege level."
+        // "By default, all traps at any privilege level are handled in machine mode To increase
+        // performance, implementations can provide individual read/write bits within medeleg and
+        // mideleg to indicate that certain exceptions and interrupts should be processed directly
+        // by a lower privilege level."
         //
         // "mideleg holds trap delegation bits for individual interrupts, with the layout of bits
         // matching those in the mip register (i.e., STIP interrupt delegation control is located

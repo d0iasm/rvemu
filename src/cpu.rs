@@ -302,12 +302,14 @@ impl Cpu {
 
     /// Check interrupt flags for all devices that can interrupt.
     pub fn check_pending_interrupt(&mut self) -> Option<Interrupt> {
-        // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global interrupts to multiple harts.
-        // local interrupt: CLINT (Core Local Interrupter) dispatches local interrupts to a hart which directly connected to CLINT.
+        // global interrupt: PLIC (Platform Local Interrupt Controller) dispatches global
+        //                   interrupts to multiple harts.
+        // local interrupt: CLINT (Core Local Interrupter) dispatches local interrupts to a hart
+        //                  which directly connected to CLINT.
 
         // 3.1.6.1 Privilege and Global Interrupt-Enable Stack in mstatus register
-        // "When a hart is executing in privilege mode x, interrupts are globally enabled when x
-        // IE=1 and globally disabled when x IE=0."
+        // "When a hart is executing in privilege mode x, interrupts are globally enabled when
+        // xIE=1 and globally disabled when xIE=0."
         match self.mode {
             Mode::Machine => {
                 // Check if the MIE bit is enabled.
@@ -329,12 +331,9 @@ impl Cpu {
         // Check external interrupt for uart and virtio.
         let irq;
         if self.bus.uart.is_interrupting() {
-            //println!("uart: check_pending_interrupt!");
             irq = UART_IRQ;
         } else if self.bus.virtio.is_interrupting() {
-            //println!("virtio: check_pending_interrupt!");
-            // Access disk by direct memory access (DMA). An interrupt is raised after a disk
-            // access is done.
+            // An interrupt is raised after a disk access is done.
             Virtio::disk_access(self).expect("failed to access the disk");
             irq = VIRTIO_IRQ;
         } else {
@@ -347,70 +346,48 @@ impl Cpu {
             self.bus
                 .write(PLIC_SCLAIM, irq, WORD)
                 .expect("failed to write an IRQ to the PLIC_SCLAIM");
-            self.state.write(MIP, self.state.read(MIP) | MIP_SEIP);
+            self.state.write(MIP, self.state.read(MIP) | SEIP_BIT);
         }
 
-        // "An interrupt i will be taken if bit i is set in both mip and mie, and if interrupts are globally enabled.
-        // By default, M-mode interrupts are globally enabled if the hart’s current privilege mode is less than
-        // M, or if the current privilege mode is M and the MIE bit in the mstatus register is set. If bit i
-        // in mideleg is set, however, interrupts are considered to be globally enabled if the hart’s current
-        // privilege mode equals the delegated privilege mode (S or U) and that mode’s interrupt enable bit
-        // (SIE or UIE in mstatus) is set, or if the current privilege mode is less than the delegated privilege
+        // "An interrupt i will be taken if bit i is set in both mip and mie, and if interrupts are
+        // globally enabled. By default, M-mode interrupts are globally enabled if the hart’s
+        // current privilege mode is less than M, or if the current privilege mode is M and the MIE
+        // bit in the mstatus register is set. If bit i in mideleg is set, however, interrupts are
+        // considered to be globally enabled if the hart’s current privilege mode equals the
+        // delegated privilege mode (S or U) and that mode’s interrupt enable bit (SIE or UIE in
+        // mstatus) is set, or if the current privilege mode is less than the delegated privilege
         // mode."
-
         let pending = self.state.read(MIE) & self.state.read(MIP);
 
-        /*
-        let mie = self.state.read_bit(MSTATUS, 3);
-        let m_enabled = (if self.prev_mode < Mode::Machine { 1 } else { 0 }
-            | (if self.prev_mode == Mode::Machine {
-                1
-            } else {
-                0
-            } & mie)) as i64;
-        let mut enabled_interrupts = pending & !self.state.read(MIDELEG) & (-m_enabled as u64);
-
-        let sie = self.state.read_bit(MSTATUS, 1);
-        let s_enabled = (if self.prev_mode < Mode::Supervisor { 1 } else { 0 }
-            | (if self.prev_mode == Mode::Supervisor {
-                1
-            } else {
-                0
-            } & sie)) as i64;
-        if enabled_interrupts == 0 {
-            enabled_interrupts = pending & self.state.read(MIDELEG) & (-s_enabled as u64);
-        }
-        */
-
-        if (pending & MIP_MEIP) != 0 {
+        if (pending & MEIP_BIT) != 0 {
             //println!("meip: check_pending_interrupt!");
-            self.state.write(MIP, self.state.read(MIP) & !MIP_MEIP);
+            self.state.write(MIP, self.state.read(MIP) & !MEIP_BIT);
             return Some(Interrupt::MachineExternalInterrupt);
         }
-        if (pending & MIP_MSIP) != 0 {
+        if (pending & MSIP_BIT) != 0 {
             //println!("msip: check_pending_interrupt!");
-            self.state.write(MIP, self.state.read(MIP) & !MIP_MSIP);
+            self.state.write(MIP, self.state.read(MIP) & !MSIP_BIT);
             return Some(Interrupt::MachineSoftwareInterrupt);
         }
-        if (pending & MIP_MTIP) != 0 {
+        if (pending & MTIP_BIT) != 0 {
             //println!("mtip: check_pending_interrupt!");
-            //TODO: MachineTimerInterrupt causes an error.
-            self.state.write(MIP, self.state.read(MIP) & !MIP_MTIP);
+            //TODO: MachineTimerInterrupt causes an error in xv6.
+            self.state.write(MIP, self.state.read(MIP) & !MTIP_BIT);
             //return Some(Interrupt::MachineTimerInterrupt);
         }
-        if (pending & MIP_SEIP) != 0 {
+        if (pending & SEIP_BIT) != 0 {
             //println!("seip: check_pending_interrupt!");
-            self.state.write(MIP, self.state.read(MIP) & !MIP_SEIP);
+            self.state.write(MIP, self.state.read(MIP) & !SEIP_BIT);
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
-        if (pending & MIP_SSIP) != 0 {
+        if (pending & SSIP_BIT) != 0 {
             //println!("ssip: check_pending_interrupt!");
-            self.state.write(MIP, self.state.read(MIP) & !MIP_SSIP);
+            self.state.write(MIP, self.state.read(MIP) & !SSIP_BIT);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
-        if (pending & MIP_STIP) != 0 {
+        if (pending & STIP_BIT) != 0 {
             //println!("stip: check_pending_interrupt!");
-            self.state.write(MIP, self.state.read(MIP) & !MIP_STIP);
+            self.state.write(MIP, self.state.read(MIP) & !STIP_BIT);
             return Some(Interrupt::SupervisorTimerInterrupt);
         }
 
@@ -3219,7 +3196,9 @@ impl Cpu {
                                     _ => Mode::Debug,
                                 };
 
-                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7), and set a global interrupt-enable bit for machine mode (MIE, 3) to it.
+                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7),
+                                // and set a global interrupt-enable bit for machine mode (MIE, 3)
+                                // to it.
                                 self.state
                                     .write_bit(MSTATUS, 3, self.state.read_bit(MSTATUS, 7));
 

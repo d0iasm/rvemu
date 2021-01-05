@@ -11,7 +11,7 @@
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
 use crate::bus::CLINT_BASE;
-use crate::csr::{State, MIP};
+use crate::csr::{State, MIP, MSIP_BIT, MTIP_BIT};
 use crate::exception::Exception;
 
 /// The address of a msip register starts. A msip is a machine mode software interrupt pending
@@ -57,17 +57,17 @@ impl Clint {
         self.mtime = self.mtime.wrapping_add(1);
 
         // Clear the MSIP bit (MIP, 3).
-        state.write(MIP, state.read(MIP) & !(1 << 3));
+        state.write(MIP, state.read(MIP) & !MSIP_BIT);
         if (self.msip & 1) != 0 {
             // Enable the MSIP bit (MIP, 3).
-            state.write(MIP, state.read(MIP) | (1 << 3));
+            state.write(MIP, state.read(MIP) | MSIP_BIT);
         }
 
         // Clear the MTIP bit (MIP, 7).
-        state.write(MIP, state.read(MIP) & !(1 << 7));
+        state.write(MIP, state.read(MIP) & !MTIP_BIT);
         if self.mtime >= self.mtimecmp {
             // Enable the MTIP bit (MIP, 7).
-            state.write(MIP, state.read(MIP) | (1 << 7));
+            state.write(MIP, state.read(MIP) | MTIP_BIT);
             self.mtime = 0;
         }
     }

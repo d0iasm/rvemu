@@ -65,6 +65,10 @@ impl Exception {
 
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
+        // 1.2 Privilege Levels
+        // "Traps that increase privilege level are termed vertical traps, while traps that remain
+        // at the same privilege level are termed horizontal traps."
+
         let exception_pc = cpu.pc.wrapping_sub(4);
         cpu.prev_mode = cpu.mode;
 

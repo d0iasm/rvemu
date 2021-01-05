@@ -132,15 +132,18 @@ pub const PMPCFG0: CsrAddress = 0x3a0;
 pub const PMPADDR0: CsrAddress = 0x3b0;
 
 // MIP fields.
-//pub const MIP_USIP: u64 = 1 << 0;
-pub const MIP_SSIP: u64 = 1 << 1;
-pub const MIP_MSIP: u64 = 1 << 3;
-//pub const MIP_UTIP: u64 = 1 << 4;
-pub const MIP_STIP: u64 = 1 << 5;
-pub const MIP_MTIP: u64 = 1 << 7;
-//pub const MIP_UEIP: u64 = 1 << 8;
-pub const MIP_SEIP: u64 = 1 << 9;
-pub const MIP_MEIP: u64 = 1 << 11;
+/// Supervisor software interrupt.
+pub const SSIP_BIT: u64 = 1 << 1;
+/// Machine software interrupt.
+pub const MSIP_BIT: u64 = 1 << 3;
+/// Supervisor timer interrupt.
+pub const STIP_BIT: u64 = 1 << 5;
+/// Machine timer interrupt.
+pub const MTIP_BIT: u64 = 1 << 7;
+/// Supervisor external interrupt.
+pub const SEIP_BIT: u64 = 1 << 9;
+/// Machine external interrupt.
+pub const MEIP_BIT: u64 = 1 << 11;
 
 /// The state to contains all the CSRs.
 pub struct State {
@@ -209,6 +212,13 @@ impl State {
 
     /// Read the val from the CSR.
     pub fn read(&self, addr: CsrAddress) -> u64 {
+        // 4.1 Supervisor CSRs
+        // "The supervisor should only view CSR state that should be visible to a supervisor-level
+        // operating system. In particular, there is no information about the existence (or
+        // non-existence) of higher privilege levels (machine level or other) visible in the CSRs
+        // accessible by the supervisor.  Many supervisor CSRs are a subset of the equivalent
+        // machine-mode CSR, and the machinemode chapter should be read first to help understand
+        // the supervisor-level CSR descriptions."
         match addr {
             SSTATUS => {
                 let mask = SSTATUS_SIE
@@ -229,6 +239,13 @@ impl State {
 
     /// Write the val to the CSR.
     pub fn write(&mut self, addr: CsrAddress, val: u64) {
+        // 4.1 Supervisor CSRs
+        // "The supervisor should only view CSR state that should be visible to a supervisor-level
+        // operating system. In particular, there is no information about the existence (or
+        // non-existence) of higher privilege levels (machine level or other) visible in the CSRs
+        // accessible by the supervisor.  Many supervisor CSRs are a subset of the equivalent
+        // machine-mode CSR, and the machinemode chapter should be read first to help understand
+        // the supervisor-level CSR descriptions."
         match addr {
             MVENDORID => {}
             MARCHID => {}
@@ -249,7 +266,7 @@ impl State {
                     | (val & self.csrs[MIDELEG as usize]);
             }
             SIP => {
-                let mask = MIP_SSIP & self.csrs[MIDELEG as usize];
+                let mask = SSIP_BIT & self.csrs[MIDELEG as usize];
                 self.csrs[MIP as usize] = (self.csrs[MIP as usize] & !mask) | (val & mask);
             }
             _ => self.csrs[addr as usize] = val,
