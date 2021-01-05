@@ -35,8 +35,6 @@ pub const FRB: CsrAddress = 0x002;
 pub const FCSR: CsrAddress = 0x003;
 
 // User Counter/Timers.
-/// Cycle counter for RDCYCLE instruction.
-pub const CYCLE: CsrAddress = 0xc00;
 /// Timer for RDTIME instruction.
 pub const TIME: CsrAddress = 0xc01;
 
@@ -207,7 +205,6 @@ impl State {
     /// Increment the value in the TIME register.
     pub fn increment_time(&mut self) {
         self.csrs[TIME as usize] = self.csrs[TIME as usize].wrapping_add(1);
-        self.csrs[CYCLE as usize] = self.csrs[CYCLE as usize].wrapping_add(1);
     }
 
     /// Read the val from the CSR.

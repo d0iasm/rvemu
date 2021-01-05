@@ -90,14 +90,14 @@ pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
 ///   struct virtq_used used;
 /// };
 /// ```
-struct Virtq {
+struct _Virtq {
     /// The actual descriptors (16 bytes each)
     /// The number of descriptors in the table is defined by the queue size for this virtqueue.
     desc: Vec<VirtqDesc>,
     /// A ring of available descriptor heads with free-running index.
-    avail: VirtqAvail,
+    avail: _VirtqAvail,
     /// A ring of used descriptor heads with free-running index.
-    used: VirtqUsed,
+    used: _VirtqUsed,
 }
 
 /// "The descriptor table refers to the buffers the driver is using for the device. addr is a
@@ -160,7 +160,7 @@ impl VirtqDesc {
 ///   le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
 /// };
 /// ```
-struct VirtqAvail {
+struct _VirtqAvail {
     flags: u16,
     /// Indicates where the driver would put the next descriptor entry in the ring (modulo the
     /// queue size). Starts at 0 and increases.
@@ -183,12 +183,12 @@ struct VirtqAvail {
 ///   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
 /// };
 /// ```
-struct VirtqUsed {
+struct _VirtqUsed {
     flags: u16,
     /// Indicates where the device would put the next descriptor entry in the ring (modulo the
     /// queue size). Starts at 0 and increases.
     idx: u16,
-    ring: Vec<VirtqUsedElem>,
+    ring: Vec<_VirtqUsedElem>,
     avail_event: u16,
 }
 
@@ -200,7 +200,7 @@ struct VirtqUsed {
 ///   le32 len;
 /// };
 /// ```
-struct VirtqUsedElem {
+struct _VirtqUsedElem {
     /// Index of start of used descriptor chain. Indicates the head entry of the descriptor chain
     /// describing the buffer (this matches an entry placed in the available ring by the guest
     /// earlier).

@@ -13,7 +13,6 @@
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_plic.h
 
 use crate::bus::PLIC_BASE;
-use crate::devices::{uart::UART_IRQ, virtio::VIRTIO_IRQ};
 use crate::exception::Exception;
 
 /// The address of interrupt source priority.
