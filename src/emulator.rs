@@ -56,6 +56,9 @@ impl Emulator {
                 return;
             }
 
+            // Run a cycle on peripheral devices.
+            self.cpu.peripherals_cycle();
+
             // Take an interrupt.
             match self.cpu.check_pending_interrupt() {
                 Some(interrupt) => interrupt.take_trap(&mut self.cpu),

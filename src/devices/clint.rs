@@ -55,31 +55,28 @@ impl Clint {
     /// when `mtime` is greater than or equal to `mtimecmp`.
     pub fn increment(&mut self, state: &mut State) {
         self.mtime = self.mtime.wrapping_add(1);
+        // Sync TIME csr.
+        //state.write(TIME, self.mtime);
 
-        // Clear the MSIP bit (MIP, 3).
-        state.write(MIP, state.read(MIP) & !MSIP_BIT);
         if (self.msip & 1) != 0 {
             // Enable the MSIP bit (MIP, 3).
             state.write(MIP, state.read(MIP) | MSIP_BIT);
         }
 
-        // Clear the MTIP bit (MIP, 7).
-        state.write(MIP, state.read(MIP) & !MTIP_BIT);
+        // 3.1.10 Machine Timer Registers (mtime and mtimecmp)
+        // "The interrupt remains posted until mtimecmp becomes greater than mtime (typically as a
+        // result of writing mtimecmp)."
+        if self.mtimecmp > self.mtime {
+            // Clear the MTIP bit (MIP, 7).
+            state.write(MIP, state.read(MIP) & !MTIP_BIT);
+        }
+
+        // 3.1.10 Machine Timer Registers (mtime and mtimecmp)
+        // "A timer interrupt becomes pending whenever mtime contains a value greater than or equal
+        // to mtimecmp, treating the values as unsigned integers."
         if self.mtime >= self.mtimecmp {
             // Enable the MTIP bit (MIP, 7).
             state.write(MIP, state.read(MIP) | MTIP_BIT);
-            self.mtime = 0;
-        }
-    }
-
-    /// Return true if an interrupt is pending and clear the `mtime` register if an interrupting
-    /// is enable.
-    pub fn is_interrupting(&mut self) -> bool {
-        if self.mtime >= self.mtimecmp {
-            self.mtime = 0;
-            true
-        } else {
-            false
         }
     }
 

@@ -349,6 +349,7 @@ impl Cpu {
             self.state.write(MIP, self.state.read(MIP) | SEIP_BIT);
         }
 
+        // 3.1.9 Machine Interrupt Registers (mip and mie)
         // "An interrupt i will be taken if bit i is set in both mip and mie, and if interrupts are
         // globally enabled. By default, M-mode interrupts are globally enabled if the hart’s
         // current privilege mode is less than M, or if the current privilege mode is M and the MIE
@@ -371,9 +372,8 @@ impl Cpu {
         }
         if (pending & MTIP_BIT) != 0 {
             //println!("mtip: check_pending_interrupt!");
-            //TODO: MachineTimerInterrupt causes an error in xv6.
             self.state.write(MIP, self.state.read(MIP) & !MTIP_BIT);
-            //return Some(Interrupt::MachineTimerInterrupt);
+            return Some(Interrupt::MachineTimerInterrupt);
         }
         if (pending & SEIP_BIT) != 0 {
             //println!("seip: check_pending_interrupt!");
@@ -619,6 +619,15 @@ impl Cpu {
         }
     }
 
+    /// Execute a cycle on peripheral devices.
+    pub fn peripherals_cycle(&mut self) {
+        // TODO: mtime in Clint and TIME in CSR should be the same value.
+        // Increment the timer register (mtimer) in Clint.
+        self.bus.clint.increment(&mut self.state);
+        // Increment the value in the TIME and CYCLE registers in CSR.
+        self.state.increment_time();
+    }
+
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// the instruction executed in this cycle.
     pub fn execute(&mut self) -> Result<u64, Exception> {
@@ -626,12 +635,6 @@ impl Cpu {
         if self.idle {
             return Ok(0);
         }
-
-        // TODO: mtimer in Clint and TIME in CSR should be the same value.
-        // Increment the timer register (mtimer) in Clint.
-        self.bus.clint.increment(&mut self.state);
-        // Increment the value in the TIME and CYCLE registers in CSR.
-        self.state.increment_time();
 
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
