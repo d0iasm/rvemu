@@ -156,7 +156,7 @@ impl fmt::Display for State {
             format!(
                 "{}\n{}\n{}",
                 format!(
-                    "mstatus={:>#18x} mtvec={:>#18x} mepc={:>#18x}\n mcause={:>#18x} medeleg={:>#18x} mideleg={:>#18x}",
+                    "mstatus={:>#18x}   mtvec={:>#18x}    mepc={:>#18x}\n mcause={:>#18x} medeleg={:>#18x} mideleg={:>#18x}",
                     self.read(MSTATUS),
                     self.read(MTVEC),
                     self.read(MEPC),
@@ -165,7 +165,7 @@ impl fmt::Display for State {
                     self.read(MIDELEG),
                 ),
                 format!(
-                    "sstatus={:>#18x} stvec={:>#18x} sepc={:>#18x}\n scause={:>#18x} sedeleg={:>#18x} sideleg={:>#18x}",
+                    "sstatus={:>#18x}   stvec={:>#18x}    sepc={:>#18x}\n scause={:>#18x} sedeleg={:>#18x} sideleg={:>#18x}",
                     self.read(SSTATUS),
                     self.read(STVEC),
                     self.read(SEPC),
@@ -174,7 +174,7 @@ impl fmt::Display for State {
                     self.read(SIDELEG),
                 ),
                 format!(
-                    "ustatus={:>#18x} utvec={:>#18x} uepc={:>#18x}\n ucause={:>#18x}",
+                    "ustatus={:>#18x}   utvec={:>#18x}    uepc={:>#18x}\n ucause={:>#18x}",
                     self.read(USTATUS),
                     self.read(UTVEC),
                     self.read(UEPC),

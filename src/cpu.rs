@@ -547,13 +547,7 @@ impl Cpu {
     /// if it is enabled.
     fn read(&mut self, v_addr: u64, size: u8) -> Result<u64, Exception> {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
-        match size {
-            BYTE => self.bus.read(p_addr, BYTE),
-            HALFWORD => self.bus.read(p_addr, HALFWORD),
-            WORD => self.bus.read(p_addr, WORD),
-            DOUBLEWORD => self.bus.read(p_addr, DOUBLEWORD),
-            _ => Err(Exception::LoadAccessFault),
-        }
+        self.bus.read(p_addr, size)
     }
 
     /// Write `size`-bit data to the system bus with the translation a virtual address to a physical address
@@ -566,13 +560,7 @@ impl Cpu {
         }
 
         let p_addr = self.translate(v_addr, AccessType::Load)?;
-        match size {
-            BYTE => self.bus.write(p_addr, value, BYTE),
-            HALFWORD => self.bus.write(p_addr, value, HALFWORD),
-            WORD => self.bus.write(p_addr, value, WORD),
-            DOUBLEWORD => self.bus.write(p_addr, value, DOUBLEWORD),
-            _ => Err(Exception::StoreAMOAccessFault),
-        }
+        self.bus.write(p_addr, value, size)
     }
 
     /// Fetch the `size`-bit next instruction from the memory at the current program counter.
