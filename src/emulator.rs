@@ -49,7 +49,7 @@ impl Emulator {
         loop {
             count += 1;
             // This is a workaround for unit tests to finish the execution.
-            if self.is_test && count > 10000 {
+            if self.is_test && count > 1000 {
                 return;
             }
             if self.cpu.is_count && count > 50000000 {
@@ -57,7 +57,7 @@ impl Emulator {
             }
 
             // Run a cycle on peripheral devices.
-            self.cpu.peripherals_cycle();
+            self.cpu.devices_increment();
 
             // Take an interrupt.
             match self.cpu.check_pending_interrupt() {
