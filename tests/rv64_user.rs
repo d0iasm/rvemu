@@ -25,10 +25,8 @@ macro_rules! add_test {
             emu.initialize_pc(DRAM_BASE);
 
             emu.is_test = true;
-            //emu.is_debug = true;
 
             emu.start();
-            //println!("{}", emu.cpu.xregs);
 
             // Test result is stored at a0 (x10), a function argument and a return value.
             // The riscv-tests set a0 to 0 when all tests pass.
@@ -214,7 +212,7 @@ add_test!(rv64um_p_mulhu);
 add_test!(rv64um_p_mulw);
 add_test!(rv64um_p_rem);
 add_test!(rv64um_p_remu);
-//add_test!(rv64um_p_remuw);
+add_test!(rv64um_p_remuw);
 add_test!(rv64um_p_remw);
 
 // rv64uc-p-*
