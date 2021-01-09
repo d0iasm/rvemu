@@ -58,7 +58,8 @@ impl Interrupt {
         // in bit 5)."
         // TODO: Why should a M-mode timer interrupt be taken in M-mode?
         if cpu.mode <= Mode::Supervisor
-            && (((cpu.state.read(MIDELEG) & 0xffff) >> cause) & 1 == 1 && cause != 7)
+            && (((cpu.state.read(MIDELEG) & 0xffff) >> cause) & 1) == 1
+            && cause != Interrupt::MachineTimerInterrupt.exception_code()
         {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
