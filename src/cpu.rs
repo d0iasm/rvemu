@@ -1617,8 +1617,8 @@ impl Cpu {
 
                         let addr = self.xregs.read(rs1);
                         // "For LR and SC, the A extension requires that the address held in rs1 be
-                        // naturally aligned to the size of the operand (i.e., eight-byte aligned for
-                        // 64-bit words and four-byte aligned for 32-bit words)."
+                        // naturally aligned to the size of the operand (i.e., eight-byte aligned
+                        // for 64-bit words and four-byte aligned for 32-bit words)."
                         if addr % 4 != 0 {
                             return Err(Exception::LoadAddressMisaligned);
                         }
@@ -1764,7 +1764,7 @@ impl Cpu {
                             return Err(Exception::LoadAddressMisaligned);
                         }
                         let t = self.read(addr, DOUBLEWORD)?;
-                        self.write(addr, t & self.xregs.read(rs1), DOUBLEWORD)?;
+                        self.write(addr, t & self.xregs.read(rs2), DOUBLEWORD)?;
                         self.xregs.write(rd, t);
                     }
                     (0x2, 0x10) => {
