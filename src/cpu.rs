@@ -66,33 +66,6 @@ pub enum Mode {
     Debug,
 }
 
-impl Mode {
-    /// Check that the current privilege mode meets the required mode.
-    pub fn require(&self, require: Mode) -> Result<(), Exception> {
-        match require {
-            Mode::User => {
-                if self == &Mode::Machine || self == &Mode::Supervisor || self == &Mode::User {
-                    return Ok(());
-                }
-                Err(Exception::IllegalInstruction)
-            }
-            Mode::Supervisor => {
-                if self == &Mode::Machine || self == &Mode::Supervisor {
-                    return Ok(());
-                }
-                Err(Exception::IllegalInstruction)
-            }
-            Mode::Machine => {
-                if self == &Mode::Machine {
-                    return Ok(());
-                }
-                Err(Exception::IllegalInstruction)
-            }
-            _ => Err(Exception::IllegalInstruction),
-        }
-    }
-}
-
 /// The integer registers.
 #[derive(Debug)]
 pub struct XRegisters {
@@ -620,7 +593,7 @@ impl Cpu {
     }
 
     /// Execute a cycle on peripheral devices.
-    pub fn peripherals_cycle(&mut self) {
+    pub fn devices_increment(&mut self) {
         // TODO: mtime in Clint and TIME in CSR should be the same value.
         // Increment the timer register (mtimer) in Clint.
         self.bus.clint.increment(&mut self.state);
@@ -1530,19 +1503,19 @@ impl Cpu {
                         // sb
                         inst_count!(self, "sb");
 
-                        self.write(addr, self.xregs.read(rs2) & 0xff, BYTE)?
+                        self.write(addr, self.xregs.read(rs2), BYTE)?
                     }
                     0x1 => {
                         // sh
                         inst_count!(self, "sh");
 
-                        self.write(addr, self.xregs.read(rs2) & 0xffff, HALFWORD)?
+                        self.write(addr, self.xregs.read(rs2), HALFWORD)?
                     }
                     0x2 => {
                         // sw
                         inst_count!(self, "sw");
 
-                        self.write(addr, self.xregs.read(rs2) & 0xffffffff, WORD)?
+                        self.write(addr, self.xregs.read(rs2), WORD)?
                     }
                     0x3 => {
                         // sd
@@ -1599,11 +1572,7 @@ impl Cpu {
                             return Err(Exception::LoadAddressMisaligned);
                         }
                         let t = self.read(addr, WORD)?;
-                        self.write(
-                            addr,
-                            t.wrapping_add(self.xregs.read(rs2) & 0xffffffff),
-                            WORD,
-                        )?;
+                        self.write(addr, t.wrapping_add(self.xregs.read(rs2)), WORD)?;
                         self.xregs.write(rd, t as i32 as i64 as u64);
                     }
                     (0x3, 0x00) => {
@@ -3152,7 +3121,6 @@ impl Cpu {
                                 // CSRs[sstatus].SIE to CSRs[sstatus].SPIE, CSRs[sstatus].SPIE to
                                 // 1, and CSRs[sstatus].SPP to 0.", but the implementation in QEMU
                                 // and Spike use `mstatus` instead of `sstatus`.
-                                self.mode.require(Mode::Supervisor)?;
 
                                 // Set the program coutner to the supervisor exception program
                                 // counter (SEPC).
@@ -3160,13 +3128,16 @@ impl Cpu {
 
                                 // TODO: Check TSR field
 
-                                // Set the current privileged mode depending on a privious privilege mode for supervisor mode (SPP, 8).
+                                // Set the current privileged mode depending on a privious
+                                // privilege mode for supervisor mode (SPP, 8).
                                 self.mode = match self.state.read_bit(SSTATUS, 8) {
                                     0 => Mode::User,
                                     1 => Mode::Supervisor,
                                     _ => Mode::Debug,
                                 };
-                                // Read a privious interrupt-enable bit for supervisor mode (SPIE, 5), and set a global interrupt-enable bit for supervisor mode (SIE, 1) to it.
+                                // Read a privious interrupt-enable bit for supervisor mode (SPIE,
+                                // 5), and set a global interrupt-enable bit for supervisor mode
+                                // (SIE, 1) to it.
                                 self.state
                                     .write_bit(SSTATUS, 1, self.state.read_bit(SSTATUS, 5));
 
@@ -3184,14 +3155,15 @@ impl Cpu {
                                 // "Returns from a machine-mode exception handler. Sets the pc to
                                 // CSRs[mepc], the privilege mode to CSRs[mstatus].MPP,
                                 // CSRs[mstatus].MIE to CSRs[mstatus].MPIE, and CSRs[mstatus].MPIE
-                                // to 1; and, if user mode is supported, sets CSRs[mstatus].MPP to 0".
-                                self.mode.require(Mode::Machine)?;
+                                // to 1; and, if user mode is supported, sets CSRs[mstatus].MPP to
+                                // 0".
 
                                 // Set the program coutner to the machine exception program
                                 // counter (MEPC).
                                 self.pc = self.state.read(MEPC);
 
-                                // Set the current privileged mode depending on a privious privilege mode for machine  mode (MPP, 11..13).
+                                // Set the current privileged mode depending on a privious
+                                // privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
                                     0b00 => Mode::User,
                                     0b01 => Mode::Supervisor,
