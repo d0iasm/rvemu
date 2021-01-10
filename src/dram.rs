@@ -1,6 +1,8 @@
 //! The memory module contains the memory structure and implementation to read/write the memory.
 
 use crate::bus::DRAM_BASE;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
+use crate::exception::Exception;
 
 /// Default memory size (1GiB).
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 1024;
@@ -27,21 +29,44 @@ impl Dram {
         self.dram.splice(..binary.len(), binary.iter().cloned());
     }
 
+    /// Load `size`-bit data from the memory.
+    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+        match size {
+            BYTE => Ok(self.read8(addr)),
+            HALFWORD => Ok(self.read16(addr)),
+            WORD => Ok(self.read32(addr)),
+            DOUBLEWORD => Ok(self.read64(addr)),
+            _ => return Err(Exception::LoadAccessFault),
+        }
+    }
+
+    /// Store `size`-bit data to the memory.
+    pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        match size {
+            BYTE => self.write8(addr, value),
+            HALFWORD => self.write16(addr, value),
+            WORD => self.write32(addr, value),
+            DOUBLEWORD => self.write64(addr, value),
+            _ => return Err(Exception::StoreAMOAccessFault),
+        }
+        Ok(())
+    }
+
     /// Write a byte to the memory.
-    pub fn write8(&mut self, addr: u64, val: u64) {
+    fn write8(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = val as u8
     }
 
     /// Write 2 bytes to the memory with little endian.
-    pub fn write16(&mut self, addr: u64, val: u64) {
+    fn write16(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
         self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
     }
 
     /// Write 4 bytes to the memory with little endian.
-    pub fn write32(&mut self, addr: u64, val: u64) {
+    fn write32(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
         self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
@@ -50,7 +75,7 @@ impl Dram {
     }
 
     /// Write 8 bytes to the memory with little endian.
-    pub fn write64(&mut self, addr: u64, val: u64) {
+    fn write64(&mut self, addr: u64, val: u64) {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] = (val & 0xff) as u8;
         self.dram[index + 1] = ((val >> 8) & 0xff) as u8;
@@ -63,19 +88,19 @@ impl Dram {
     }
 
     /// Read a byte from the memory.
-    pub fn read8(&self, addr: u64) -> u64 {
+    fn read8(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
         self.dram[index] as u64
     }
 
     /// Read 2 bytes from the memory with little endian.
-    pub fn read16(&self, addr: u64) -> u64 {
+    fn read16(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
         return (self.dram[index] as u64) | ((self.dram[index + 1] as u64) << 8);
     }
 
     /// Read 4 bytes from the memory with little endian.
-    pub fn read32(&self, addr: u64) -> u64 {
+    fn read32(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
         return (self.dram[index] as u64)
             | ((self.dram[index + 1] as u64) << 8)
@@ -84,7 +109,7 @@ impl Dram {
     }
 
     /// Read 8 bytes from the memory with little endian.
-    pub fn read64(&self, addr: u64) -> u64 {
+    fn read64(&self, addr: u64) -> u64 {
         let index = (addr - DRAM_BASE) as usize;
         return (self.dram[index] as u64)
             | ((self.dram[index + 1] as u64) << 8)

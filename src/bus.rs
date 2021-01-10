@@ -112,7 +112,7 @@ impl Bus {
             MROM_BASE..=MROM_END => Ok(self.rom.read8(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, BYTE),
             UART_BASE..=UART_END => Ok(self.uart.read(addr) as u64),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.read8(addr)),
+            DRAM_BASE..=DRAM_END => self.dram.read(addr, BYTE),
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -122,7 +122,7 @@ impl Bus {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read16(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, HALFWORD),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.read16(addr)),
+            DRAM_BASE..=DRAM_END => self.dram.read(addr, HALFWORD),
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -135,7 +135,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.read(addr, WORD),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, WORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.read32(addr)),
+            DRAM_BASE..=DRAM_END => self.dram.read(addr, WORD),
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -146,7 +146,7 @@ impl Bus {
             MROM_BASE..=MROM_END => Ok(self.rom.read64(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, DOUBLEWORD),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, DOUBLEWORD),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.read64(addr)),
+            DRAM_BASE..=DRAM_END => self.dram.read(addr, DOUBLEWORD),
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -156,7 +156,7 @@ impl Bus {
         match addr {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, BYTE),
             UART_BASE..=UART_END => Ok(self.uart.write(addr, value as u8)),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.write8(addr, value)),
+            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, BYTE),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
@@ -165,7 +165,7 @@ impl Bus {
     fn write16(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, HALFWORD),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.write16(addr, value)),
+            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, HALFWORD),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
@@ -176,7 +176,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, WORD),
             PLIC_BASE..=PLIC_END => self.plic.write(addr, value, WORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.write32(addr, value)),
+            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, WORD),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
@@ -187,7 +187,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, DOUBLEWORD),
             PLIC_BASE..=PLIC_END => self.plic.write(addr, value, DOUBLEWORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.write64(addr, value)),
+            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, DOUBLEWORD),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
