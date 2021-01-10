@@ -5,31 +5,40 @@
 // Reference:
 // "SiFive Interrupt Cookbook Version 1.0"
 // https://sifive.cdn.prismic.io/sifive/0d163928-2128-42be-a75a-464df65e04e0_sifive-interrupt-cookbook.pdf
+// Chapter 8 Core-Local Interruptor (CLINT) in "U74 Core Complex Manual"
+// https://sifive.cdn.prismic.io/sifive/132ebfe4-e7eb-4274-b456-d79835e10d8d_sifive_U74_rtl_full_20G1.03.00_manual.pdf
 //
 // QEMU SiFive CLINT used in the virt machine:
 // - https://github.com/qemu/qemu/blob/master/hw/intc/sifive_clint.c
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::bus::CLINT_BASE;
 use crate::csr::{State, MIP, MSIP_BIT, MTIP_BIT};
 use crate::exception::Exception;
 
 /// The address of a msip register starts. A msip is a machine mode software interrupt pending
 /// register, used to assert a software interrupt for a CPU.
-pub const CLINT_MSIP: u64 = CLINT_BASE;
+const CLINT_MSIP: u64 = CLINT_BASE;
+/// The address of a msip register ends. `msip` is a 4-byte register.
+const CLINT_MSIP_END: u64 = CLINT_MSIP + 4;
+
 /// The address of a mtimecmp register starts. A mtimecmp is a memory mapped machine mode timer
 /// compare register, used to trigger an interrupt when mtimecmp is greater than or equal to mtime.
-pub const CLINT_MTIMECMP: u64 = CLINT_BASE + 0x4000;
-/// The address of a timer register. A mtime is a machine mode timer register which runs at a
+const CLINT_MTIMECMP: u64 = CLINT_BASE + 0x4000;
+/// The address of a mtimecmp register ends. `mtimecmp` is a 8-byte register.
+const CLINT_MTIMECMP_END: u64 = CLINT_MTIMECMP + 8;
+
+/// The address of a timer register starts. A mtime is a machine mode timer register which runs at a
 /// constant frequency.
-pub const CLINT_MTIME: u64 = CLINT_BASE + 0xbff8;
+const CLINT_MTIME: u64 = CLINT_BASE + 0xbff8;
+/// The address of a timer register ends. `mtime` is a 8-byte register.
+const CLINT_MTIME_END: u64 = CLINT_MTIME + 8;
 
 /// The core-local interruptor (CLINT).
-/// 0x0000 msip hart 0
-/// 0x4000 mtimecmp hart 0 lo
-/// 0x4004 mtimecmp hart 0 hi
-/// 0xbff8 mtime lo
-/// 0xbffc mtime hi
+/// 0x0000 msip for hart 0 (4 bytes)
+/// 0x4000 mtimecmp for hart 0 (8 bytes)
+/// 0xbff8 mtime (8 bytes)
 pub struct Clint {
     /// Machine mode software interrupt pending register, used to assert a software interrupt for
     /// a CPU.
@@ -80,41 +89,65 @@ impl Clint {
         }
     }
 
-    /// Read `size`-bit data from a register located at `addr` in CLINT.
+    /// Load `size`-bit data from a register located at `addr` in CLINT.
     pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
-        // TODO: Access to addr + 1/2/3 bytes
-        let value = match addr {
-            CLINT_MSIP => self.msip as u64,
-            CLINT_MTIMECMP => self.mtimecmp,
-            CLINT_MTIME => self.mtime,
+        // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
+        // position in the register.
+        let (reg, offset) = match addr {
+            CLINT_MSIP..=CLINT_MSIP_END => (self.msip as u64, addr - CLINT_MSIP),
+            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => (self.mtimecmp, addr - CLINT_MTIMECMP),
+            CLINT_MTIME..=CLINT_MTIME_END => (self.mtime, addr - CLINT_MTIME),
             _ => return Err(Exception::LoadAccessFault),
         };
 
         match size {
-            8 => Ok(value & 0xff),
-            16 => Ok(value & 0xffff),
-            32 => Ok(value & 0xffffffff),
-            64 => Ok(value),
-            _ => Err(Exception::LoadAccessFault),
+            BYTE => Ok((reg >> (offset * 8)) & 0xff),
+            HALFWORD => Ok((reg >> (offset * 8)) & 0xffff),
+            WORD => Ok((reg >> (offset * 8)) & 0xffffffff),
+            DOUBLEWORD => Ok(reg),
+            _ => return Err(Exception::LoadAccessFault),
         }
     }
 
-    /// Write `size`-bit data to a register located at `addr` in CLINT.
+    /// Store `size`-bit data to a register located at `addr` in CLINT.
     pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
-        // TODO: Access to addr + 1/2/3 bytes
-        let v = match size {
-            8 => value & 0xff,
-            16 => value & 0xffff,
-            32 => value & 0xffffffff,
-            64 => value,
-            _ => return Err(Exception::StoreAMOAccessFault),
+        // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
+        // position in the register.
+        let (mut reg, offset) = match addr {
+            CLINT_MSIP..=CLINT_MSIP_END => (self.msip as u64, addr - CLINT_MSIP),
+            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => (self.mtimecmp, addr - CLINT_MTIMECMP),
+            CLINT_MTIME..=CLINT_MTIME_END => (self.mtime, addr - CLINT_MTIME),
+            _ => return Err(Exception::LoadAccessFault),
         };
 
+        // Calculate the new value of the target register based on `size` and `offset`.
+        match size {
+            BYTE => {
+                // Clear the target byte.
+                reg = reg & (!(0xff << (offset * 8)));
+                // Set the new `value` to the target byte.
+                reg = reg | ((value & 0xff) << (offset * 8));
+            }
+            HALFWORD => {
+                reg = reg & (!(0xffff << (offset * 8)));
+                reg = reg | ((value & 0xffff) << (offset * 8));
+            }
+            WORD => {
+                reg = reg & (!(0xffffffff << (offset * 8)));
+                reg = reg | ((value & 0xffffffff) << (offset * 8));
+            }
+            DOUBLEWORD => {
+                reg = value;
+            }
+            _ => return Err(Exception::LoadAccessFault),
+        }
+
+        // Store the new value to the target register.
         match addr {
-            CLINT_MSIP => self.msip = v as u32,
-            CLINT_MTIMECMP => self.mtimecmp = v,
-            CLINT_MTIME => self.mtime = v,
-            _ => return Err(Exception::StoreAMOAccessFault),
+            CLINT_MSIP..=CLINT_MSIP_END => self.msip = reg as u32,
+            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => self.mtimecmp = reg,
+            CLINT_MTIME..=CLINT_MTIME_END => self.mtime = reg,
+            _ => return Err(Exception::LoadAccessFault),
         }
 
         Ok(())
