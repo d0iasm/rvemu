@@ -7,6 +7,8 @@ use wasm_bindgen::JsValue;
 use web_sys::Window;
 
 use crate::bus::{UART_BASE, UART_SIZE};
+use crate::cpu::BYTE;
+use crate::exception::Exception;
 
 #[wasm_bindgen]
 extern "C" {
@@ -106,18 +108,26 @@ impl Uart {
     }
 
     /// Read a byte from the receive holding register.
-    pub fn read(&mut self, index: u64) -> u8 {
+    pub fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
+        if size != BYTE {
+            return Err(Exception::LoadAccessFault);
+        }
+
         match index {
             UART_RHR => {
                 self.uart[(UART_LSR - UART_BASE) as usize] &= !1;
-                self.uart[(index - UART_BASE) as usize]
+                Ok(self.uart[(index - UART_BASE) as usize] as u64)
             }
-            _ => self.uart[(index - UART_BASE) as usize],
+            _ => Ok(self.uart[(index - UART_BASE) as usize] as u64),
         }
     }
 
     /// Write a byte to the transmit holding register.
-    pub fn write(&mut self, index: u64, value: u8) {
+    pub fn write(&mut self, index: u64, value: u8, size: u8) -> Result<(), Exception> {
+        if size != BYTE {
+            return Err(Exception::StoreAMOAccessFault);
+        }
+
         match index {
             UART_THR => {
                 self.window
@@ -128,5 +138,6 @@ impl Uart {
                 self.uart[(index - UART_BASE) as usize] = value;
             }
         }
+        Ok(())
     }
 }

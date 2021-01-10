@@ -11,6 +11,9 @@ use std::sync::{
 use std::thread;
 
 use crate::bus::{UART_BASE, UART_SIZE};
+use crate::cpu::BYTE;
+use crate::exception::Exception;
+
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;
 
@@ -95,21 +98,29 @@ impl Uart {
     }
 
     /// Read a byte from the receive holding register.
-    pub fn read(&mut self, index: u64) -> u8 {
+    pub fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
+        if size != BYTE {
+            return Err(Exception::LoadAccessFault);
+        }
+
         let (uart, cvar) = &*self.uart;
         let mut uart = uart.lock().expect("failed to get an UART object");
         match index {
             UART_RHR => {
                 cvar.notify_one();
                 uart[(UART_LSR - UART_BASE) as usize] &= !UART_LSR_RX;
-                uart[(UART_RHR - UART_BASE) as usize]
+                Ok(uart[(UART_RHR - UART_BASE) as usize] as u64)
             }
-            _ => uart[(index - UART_BASE) as usize],
+            _ => Ok(uart[(index - UART_BASE) as usize] as u64),
         }
     }
 
     /// Write a byte to the transmit holding register.
-    pub fn write(&mut self, index: u64, value: u8) {
+    pub fn write(&mut self, index: u64, value: u8, size: u8) -> Result<(), Exception> {
+        if size != BYTE {
+            return Err(Exception::StoreAMOAccessFault);
+        }
+
         // An OS allows to write a byte to a UART when UART_LSR_TX is 1.
         // e.g. (xv6):
         //   // wait for Transmit Holding Empty to be set in LSR.
@@ -131,5 +142,6 @@ impl Uart {
                 uart[(index - UART_BASE) as usize] = value;
             }
         }
+        Ok(())
     }
 }

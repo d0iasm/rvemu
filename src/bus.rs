@@ -111,7 +111,7 @@ impl Bus {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read8(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, BYTE),
-            UART_BASE..=UART_END => Ok(self.uart.read(addr) as u64),
+            UART_BASE..=UART_END => self.uart.read(addr, BYTE),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, BYTE),
             _ => Err(Exception::LoadAccessFault),
         }
@@ -155,7 +155,7 @@ impl Bus {
     fn write8(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, BYTE),
-            UART_BASE..=UART_END => Ok(self.uart.write(addr, value as u8)),
+            UART_BASE..=UART_END => self.uart.write(addr, value as u8, BYTE),
             DRAM_BASE..=DRAM_END => self.dram.write(addr, value, BYTE),
             _ => Err(Exception::StoreAMOAccessFault),
         }
