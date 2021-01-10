@@ -109,7 +109,7 @@ impl Bus {
     /// Read a byte from the system bus.
     fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
         match addr {
-            MROM_BASE..=MROM_END => Ok(self.rom.read8(addr)),
+            MROM_BASE..=MROM_END => self.rom.read(addr, BYTE),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, BYTE),
             UART_BASE..=UART_END => self.uart.read(addr, BYTE),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, BYTE),
@@ -120,7 +120,7 @@ impl Bus {
     /// Read 2 bytes from the system bus.
     fn read16(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
-            MROM_BASE..=MROM_END => Ok(self.rom.read16(addr)),
+            MROM_BASE..=MROM_END => self.rom.read(addr, HALFWORD),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, HALFWORD),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, HALFWORD),
             _ => Err(Exception::LoadAccessFault),
@@ -131,7 +131,7 @@ impl Bus {
     fn read32(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
             DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
-            MROM_BASE..=MROM_END => Ok(self.rom.read32(addr)),
+            MROM_BASE..=MROM_END => self.rom.read(addr, WORD),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, WORD),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, WORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
@@ -143,7 +143,7 @@ impl Bus {
     /// Read 8 bytes from the system bus.
     fn read64(&self, addr: u64) -> Result<u64, Exception> {
         match addr {
-            MROM_BASE..=MROM_END => Ok(self.rom.read64(addr)),
+            MROM_BASE..=MROM_END => self.rom.read(addr, DOUBLEWORD),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, DOUBLEWORD),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, DOUBLEWORD),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, DOUBLEWORD),

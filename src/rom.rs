@@ -1,6 +1,8 @@
 //! The rom module contains the read-only memory structure and implementation to read the memory. ROM includes a device tree blob (DTB) compiled from a device tree source (DTS).
 
 use crate::bus::MROM_BASE;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
+use crate::exception::Exception;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -157,20 +159,36 @@ impl Rom {
         Self { data: rom }
     }
 
+    /// Load `size`-bit data from the memory.
+    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+        match size {
+            BYTE => Ok(self.read8(addr)),
+            HALFWORD => Ok(self.read16(addr)),
+            WORD => Ok(self.read32(addr)),
+            DOUBLEWORD => Ok(self.read64(addr)),
+            _ => return Err(Exception::LoadAccessFault),
+        }
+    }
+
+    /// Store `size`-bit data to the memory. Returns the exception because the ROM is read-only.
+    pub fn write(&self, _addr: u64, _value: u64, _size: u8) -> Result<(), Exception> {
+        Err(Exception::StoreAMOAccessFault)
+    }
+
     /// Read a byte from the rom.
-    pub fn read8(&self, addr: u64) -> u64 {
+    fn read8(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
         self.data[index] as u64
     }
 
     /// Read 2 bytes from the rom.
-    pub fn read16(&self, addr: u64) -> u64 {
+    fn read16(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
         return (self.data[index] as u64) | ((self.data[index + 1] as u64) << 8);
     }
 
     /// Read 4 bytes from the rom.
-    pub fn read32(&self, addr: u64) -> u64 {
+    fn read32(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
         return (self.data[index] as u64)
             | ((self.data[index + 1] as u64) << 8)
@@ -179,7 +197,7 @@ impl Rom {
     }
 
     /// Read 8 bytes from the rom.
-    pub fn read64(&self, addr: u64) -> u64 {
+    fn read64(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
         return (self.data[index] as u64)
             | ((self.data[index + 1] as u64) << 8)
