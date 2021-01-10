@@ -133,7 +133,7 @@ impl Bus {
             DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
             MROM_BASE..=MROM_END => Ok(self.rom.read32(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, WORD),
-            PLIC_BASE..=PLIC_END => self.plic.read32(addr),
+            PLIC_BASE..=PLIC_END => self.plic.read(addr, WORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
             DRAM_BASE..=DRAM_END => Ok(self.dram.read32(addr)),
             _ => Err(Exception::LoadAccessFault),
@@ -145,7 +145,7 @@ impl Bus {
         match addr {
             MROM_BASE..=MROM_END => Ok(self.rom.read64(addr)),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, DOUBLEWORD),
-            PLIC_BASE..=PLIC_END => self.plic.read32(addr), // TODO: support read64 for PLIC.
+            PLIC_BASE..=PLIC_END => self.plic.read(addr, DOUBLEWORD),
             DRAM_BASE..=DRAM_END => Ok(self.dram.read64(addr)),
             _ => Err(Exception::LoadAccessFault),
         }
@@ -174,7 +174,7 @@ impl Bus {
     fn write32(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, WORD),
-            PLIC_BASE..=PLIC_END => self.plic.write32(addr, value as u32),
+            PLIC_BASE..=PLIC_END => self.plic.write(addr, value, WORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write32(addr, value)),
             _ => Err(Exception::StoreAMOAccessFault),
@@ -185,7 +185,7 @@ impl Bus {
     fn write64(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
         match addr {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, DOUBLEWORD),
-            PLIC_BASE..=PLIC_END => self.plic.write32(addr, value as u32), // TODO: support plic64
+            PLIC_BASE..=PLIC_END => self.plic.write(addr, value, DOUBLEWORD),
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
             DRAM_BASE..=DRAM_END => Ok(self.dram.write64(addr, value)),
             _ => Err(Exception::StoreAMOAccessFault),

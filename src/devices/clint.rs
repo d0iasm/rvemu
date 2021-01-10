@@ -12,27 +12,27 @@
 // - https://github.com/qemu/qemu/blob/master/hw/intc/sifive_clint.c
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
-use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::bus::CLINT_BASE;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::csr::{State, MIP, MSIP_BIT, MTIP_BIT};
 use crate::exception::Exception;
 
-/// The address of a msip register starts. A msip is a machine mode software interrupt pending
+/// The address that a msip register starts. A msip is a machine mode software interrupt pending
 /// register, used to assert a software interrupt for a CPU.
 const CLINT_MSIP: u64 = CLINT_BASE;
-/// The address of a msip register ends. `msip` is a 4-byte register.
+/// The address that a msip register ends. `msip` is a 4-byte register.
 const CLINT_MSIP_END: u64 = CLINT_MSIP + 4;
 
-/// The address of a mtimecmp register starts. A mtimecmp is a memory mapped machine mode timer
+/// The address that a mtimecmp register starts. A mtimecmp is a memory mapped machine mode timer
 /// compare register, used to trigger an interrupt when mtimecmp is greater than or equal to mtime.
 const CLINT_MTIMECMP: u64 = CLINT_BASE + 0x4000;
-/// The address of a mtimecmp register ends. `mtimecmp` is a 8-byte register.
+/// The address that a mtimecmp register ends. `mtimecmp` is a 8-byte register.
 const CLINT_MTIMECMP_END: u64 = CLINT_MTIMECMP + 8;
 
-/// The address of a timer register starts. A mtime is a machine mode timer register which runs at a
-/// constant frequency.
+/// The address that a timer register starts. A mtime is a machine mode timer register which runs
+/// at a constant frequency.
 const CLINT_MTIME: u64 = CLINT_BASE + 0xbff8;
-/// The address of a timer register ends. `mtime` is a 8-byte register.
+/// The address that a timer register ends. `mtime` is a 8-byte register.
 const CLINT_MTIME_END: u64 = CLINT_MTIME + 8;
 
 /// The core-local interruptor (CLINT).
@@ -117,7 +117,7 @@ impl Clint {
             CLINT_MSIP..=CLINT_MSIP_END => (self.msip as u64, addr - CLINT_MSIP),
             CLINT_MTIMECMP..=CLINT_MTIMECMP_END => (self.mtimecmp, addr - CLINT_MTIMECMP),
             CLINT_MTIME..=CLINT_MTIME_END => (self.mtime, addr - CLINT_MTIME),
-            _ => return Err(Exception::LoadAccessFault),
+            _ => return Err(Exception::StoreAMOAccessFault),
         };
 
         // Calculate the new value of the target register based on `size` and `offset`.
@@ -139,7 +139,7 @@ impl Clint {
             DOUBLEWORD => {
                 reg = value;
             }
-            _ => return Err(Exception::LoadAccessFault),
+            _ => return Err(Exception::StoreAMOAccessFault),
         }
 
         // Store the new value to the target register.
@@ -147,7 +147,7 @@ impl Clint {
             CLINT_MSIP..=CLINT_MSIP_END => self.msip = reg as u32,
             CLINT_MTIMECMP..=CLINT_MTIMECMP_END => self.mtimecmp = reg,
             CLINT_MTIME..=CLINT_MTIME_END => self.mtime = reg,
-            _ => return Err(Exception::LoadAccessFault),
+            _ => return Err(Exception::StoreAMOAccessFault),
         }
 
         Ok(())
