@@ -92,16 +92,30 @@ impl Bus {
             DOUBLEWORD => self.read64(addr),
             _ => Err(Exception::LoadAccessFault),
         }
+
+        /*
+         * TODO: This makes to test not to finish.
+        match addr {
+            DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
+            MROM_BASE..=MROM_END => self.rom.read(addr, size),
+            CLINT_BASE..=CLINT_END => self.clint.read(addr, size),
+            PLIC_BASE..=PLIC_END => self.plic.read(addr, size),
+            UART_BASE..=UART_END => self.uart.read(addr, size),
+            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
+            DRAM_BASE..=DRAM_END => self.dram.read(addr, size),
+            _ => Err(Exception::LoadAccessFault),
+        }
+        */
     }
 
     /// Store a `size`-bit data to the device that connects to the system bus.
     pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
-        // TODO: PMP check (Physical Memory Protection)?
-        match size {
-            BYTE => self.write8(addr, value),
-            HALFWORD => self.write16(addr, value),
-            WORD => self.write32(addr, value),
-            DOUBLEWORD => self.write64(addr, value),
+        match addr {
+            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, size),
+            PLIC_BASE..=PLIC_END => self.plic.write(addr, value, size),
+            UART_BASE..=UART_END => self.uart.write(addr, value as u8, size),
+            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
+            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, size),
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
@@ -148,47 +162,6 @@ impl Bus {
             PLIC_BASE..=PLIC_END => self.plic.read(addr, DOUBLEWORD),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, DOUBLEWORD),
             _ => Err(Exception::LoadAccessFault),
-        }
-    }
-
-    /// Write a byte to the system bus.
-    fn write8(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
-        match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, BYTE),
-            UART_BASE..=UART_END => self.uart.write(addr, value as u8, BYTE),
-            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, BYTE),
-            _ => Err(Exception::StoreAMOAccessFault),
-        }
-    }
-
-    /// Write 2 bytes to the system bus.
-    fn write16(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
-        match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, HALFWORD),
-            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, HALFWORD),
-            _ => Err(Exception::StoreAMOAccessFault),
-        }
-    }
-
-    /// Write 4 bytes to the system bus.
-    fn write32(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
-        match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, WORD),
-            PLIC_BASE..=PLIC_END => self.plic.write(addr, value, WORD),
-            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
-            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, WORD),
-            _ => Err(Exception::StoreAMOAccessFault),
-        }
-    }
-
-    /// Write 8 bytes to the system bus.
-    fn write64(&mut self, addr: u64, value: u64) -> Result<(), Exception> {
-        match addr {
-            CLINT_BASE..=CLINT_END => self.clint.write(addr, value, DOUBLEWORD),
-            PLIC_BASE..=PLIC_END => self.plic.write(addr, value, DOUBLEWORD),
-            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
-            DRAM_BASE..=DRAM_END => self.dram.write(addr, value, DOUBLEWORD),
-            _ => Err(Exception::StoreAMOAccessFault),
         }
     }
 }
