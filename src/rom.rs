@@ -170,11 +170,6 @@ impl Rom {
         }
     }
 
-    /// Store `size`-bit data to the memory. Returns the exception because the ROM is read-only.
-    pub fn write(&self, _addr: u64, _value: u64, _size: u8) -> Result<(), Exception> {
-        Err(Exception::StoreAMOAccessFault)
-    }
-
     /// Read a byte from the rom.
     fn read8(&self, addr: u64) -> u64 {
         let index = (addr - MROM_BASE) as usize;
