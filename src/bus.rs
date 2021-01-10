@@ -1,7 +1,6 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
-use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio_blk::Virtio};
 use crate::dram::{Dram, DRAM_SIZE};
 use crate::exception::Exception;
@@ -9,11 +8,6 @@ use crate::rom::Rom;
 
 // QEMU virt machine:
 // https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c#L46-L63
-
-/// The address which the debug information starts.
-pub const DEBUG_BASE: u64 = 0x0;
-/// The address which the debug information ends.
-const DEBUG_END: u64 = DEBUG_BASE + 0x100;
 
 /// The address which the mask ROM starts.
 pub const MROM_BASE: u64 = 0x1000;
@@ -85,18 +79,7 @@ impl Bus {
 
     /// Load a `size`-bit data from the device that connects to the system bus.
     pub fn read(&mut self, addr: u64, size: u8) -> Result<u64, Exception> {
-        match size {
-            BYTE => self.read8(addr),
-            HALFWORD => self.read16(addr),
-            WORD => self.read32(addr),
-            DOUBLEWORD => self.read64(addr),
-            _ => Err(Exception::LoadAccessFault),
-        }
-
-        /*
-         * TODO: This makes to test not to finish.
         match addr {
-            DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
             MROM_BASE..=MROM_END => self.rom.read(addr, size),
             CLINT_BASE..=CLINT_END => self.clint.read(addr, size),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, size),
@@ -105,7 +88,6 @@ impl Bus {
             DRAM_BASE..=DRAM_END => self.dram.read(addr, size),
             _ => Err(Exception::LoadAccessFault),
         }
-        */
     }
 
     /// Store a `size`-bit data to the device that connects to the system bus.
@@ -117,51 +99,6 @@ impl Bus {
             VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
             DRAM_BASE..=DRAM_END => self.dram.write(addr, value, size),
             _ => Err(Exception::StoreAMOAccessFault),
-        }
-    }
-
-    /// Read a byte from the system bus.
-    fn read8(&mut self, addr: u64) -> Result<u64, Exception> {
-        match addr {
-            MROM_BASE..=MROM_END => self.rom.read(addr, BYTE),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, BYTE),
-            UART_BASE..=UART_END => self.uart.read(addr, BYTE),
-            DRAM_BASE..=DRAM_END => self.dram.read(addr, BYTE),
-            _ => Err(Exception::LoadAccessFault),
-        }
-    }
-
-    /// Read 2 bytes from the system bus.
-    fn read16(&self, addr: u64) -> Result<u64, Exception> {
-        match addr {
-            MROM_BASE..=MROM_END => self.rom.read(addr, HALFWORD),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, HALFWORD),
-            DRAM_BASE..=DRAM_END => self.dram.read(addr, HALFWORD),
-            _ => Err(Exception::LoadAccessFault),
-        }
-    }
-
-    /// Read 4 bytes from the system bus.
-    fn read32(&self, addr: u64) -> Result<u64, Exception> {
-        match addr {
-            DEBUG_BASE..=DEBUG_END => Ok(0), // Do nothing for now.
-            MROM_BASE..=MROM_END => self.rom.read(addr, WORD),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, WORD),
-            PLIC_BASE..=PLIC_END => self.plic.read(addr, WORD),
-            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
-            DRAM_BASE..=DRAM_END => self.dram.read(addr, WORD),
-            _ => Err(Exception::LoadAccessFault),
-        }
-    }
-
-    /// Read 8 bytes from the system bus.
-    fn read64(&self, addr: u64) -> Result<u64, Exception> {
-        match addr {
-            MROM_BASE..=MROM_END => self.rom.read(addr, DOUBLEWORD),
-            CLINT_BASE..=CLINT_END => self.clint.read(addr, DOUBLEWORD),
-            PLIC_BASE..=PLIC_END => self.plic.read(addr, DOUBLEWORD),
-            DRAM_BASE..=DRAM_END => self.dram.read(addr, DOUBLEWORD),
-            _ => Err(Exception::LoadAccessFault),
         }
     }
 }
