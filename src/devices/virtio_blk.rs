@@ -1,11 +1,9 @@
-//! The virtio module contains a virtualization standard for a block device.
-//! This is the "legacy" virtio interface.
+//! The virtio_blk module contains a virtualization standard for a virtio block device.
 //!
 //! The spec for Virtual I/O Device (VIRTIO) Version 1.1:
 //!   Web: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html
 //!   PDF: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
 //!
-//! In particular, This module supports a block device.
 //! 5.2 Block Device:
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
@@ -70,10 +68,11 @@ pub const VIRTIO_QUEUE_PFN: u64 = VIRTIO_BASE + 0x040;
 /// Queue notifier. Writing a queue index to this register notifies the device that there are new
 /// buffers to process in the queue. Write-only.
 pub const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
-/// Interrupt status. Reading from this register returns a bit mask of events that caused the device interrupt to be
-/// asserted.
+/// Interrupt status. Reading from this register returns a bit mask of events that caused the
+/// device interrupt to be asserted.
 pub const VIRTIO_MMIO_INTERRUPT_STATUS: u64 = VIRTIO_BASE + 0x060;
-/// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this register notifies the device that events causing the interrupt have been handled.
+/// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this
+/// register notifies the device that events causing the interrupt have been handled.
 pub const VIRTIO_MMIO_INTERRUPT_ACK: u64 = VIRTIO_BASE + 0x064;
 /// Device status. Reading from this register returns the current device status flags. Writing
 /// non-zero values to this register sets the status flags, indicating the driver progress. Writing

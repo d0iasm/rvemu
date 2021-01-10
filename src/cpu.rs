@@ -12,7 +12,7 @@ use crate::{
     devices::{
         plic::PLIC_SCLAIM,
         uart::UART_IRQ,
-        virtio::{Virtio, VIRTIO_IRQ},
+        virtio_blk::{Virtio, VIRTIO_IRQ},
     },
     dram::DRAM_SIZE,
     exception::Exception,

@@ -1,7 +1,7 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
-use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio::Virtio};
+use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio_blk::Virtio};
 use crate::dram::{Dram, DRAM_SIZE};
 use crate::exception::Exception;
 use crate::rom::Rom;
