@@ -84,7 +84,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.read(addr, size),
             PLIC_BASE..=PLIC_END => self.plic.read(addr, size),
             UART_BASE..=UART_END => self.uart.read(addr, size),
-            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.read(addr) as u64),
+            VIRTIO_BASE..=VIRTIO_END => self.virtio.read(addr, size),
             DRAM_BASE..=DRAM_END => self.dram.read(addr, size),
             _ => Err(Exception::LoadAccessFault),
         }
@@ -96,7 +96,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, size),
             PLIC_BASE..=PLIC_END => self.plic.write(addr, value, size),
             UART_BASE..=UART_END => self.uart.write(addr, value as u8, size),
-            VIRTIO_BASE..=VIRTIO_END => Ok(self.virtio.write(addr, value as u32)),
+            VIRTIO_BASE..=VIRTIO_END => self.virtio.write(addr, value, size),
             DRAM_BASE..=DRAM_END => self.dram.write(addr, value, size),
             _ => Err(Exception::StoreAMOAccessFault),
         }

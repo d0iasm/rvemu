@@ -24,37 +24,43 @@ const SECTOR_SIZE: u64 = 512;
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Magic value. Always return 0x74726976 (a Little Endian equivalent of the “virt” string).
-pub const VIRTIO_MAGIC: u64 = VIRTIO_BASE + 0x000;
+const VIRTIO_MAGIC: u64 = VIRTIO_BASE + 0x000;
 /// Device version number. 1 is legacy.
-pub const VIRTIO_VERSION: u64 = VIRTIO_BASE + 0x004;
+const VIRTIO_VERSION: u64 = VIRTIO_BASE + 0x004;
 /// Virtio Subsystem Device ID. 1 is network, 2 is block device.
-pub const VIRTIO_DEVICE_ID: u64 = VIRTIO_BASE + 0x008;
+const VIRTIO_DEVICE_ID: u64 = VIRTIO_BASE + 0x008;
 /// Virtio Subsystem Vendor ID. Always return 0x554d4551
-pub const VIRTIO_VENDOR_ID: u64 = VIRTIO_BASE + 0x00c;
+const VIRTIO_VENDOR_ID: u64 = VIRTIO_BASE + 0x00c;
 /// Flags representing features the device supports.
-pub const VIRTIO_DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x010;
+const VIRTIO_DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x010;
+/// Device (host) features word selection.
+const VIRTIO_DEVICE_FEATURES_SEL: u64 = VIRTIO_BASE + 0x014;
 /// Flags representing device features understood and activated by the driver.
-pub const VIRTIO_DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x020;
+const VIRTIO_DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x020;
+/// Activated (guest) features word selection.
+const VIRTIO_DRIVER_FEATURES_SEL: u64 = VIRTIO_BASE + 0x024;
 // 4.2.4 Legacy interface
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
 /// Guest page size. The driver writes the guest page size in bytes to the register during
 /// initialization, before any queues are used. This value should be a power of 2 and is used by
 /// the device to calculate the Guest address of the first queue page. Write-only.
-pub const VIRTIO_GUEST_PAGE_SIZE: u64 = VIRTIO_BASE + 0x028;
+const VIRTIO_GUEST_PAGE_SIZE: u64 = VIRTIO_BASE + 0x028;
 /// Virtual queue index. Writing to this register selects the virtual queue that the following
 /// operations on the QueueNumMax, QueueNum, QueueAlign and QueuePFN registers apply to. The index
 /// number of the first queue is zero (0x0). Write-only.
-pub const VIRTIO_QUEUE_SEL: u64 = VIRTIO_BASE + 0x030;
+const VIRTIO_QUEUE_SEL: u64 = VIRTIO_BASE + 0x030;
 /// Maximum virtual queue size. Reading from the register returns the maximum size of the queue the
 /// device is ready to process or zero (0x0) if the queue is not available. This applies to the
 /// queue selected by writing to QueueSel and is allowed only when QueuePFN is set to zero (0x0),
 /// so when the queue is not actively used. Read-only. In QEMU, `VIRTIO_COUNT = 8`.
-pub const VIRTIO_QUEUE_NUM_MAX: u64 = VIRTIO_BASE + 0x034;
+const VIRTIO_QUEUE_NUM_MAX: u64 = VIRTIO_BASE + 0x034;
 /// Virtual queue size. Queue size is the number of elements in the queue, therefore size of the
 /// descriptor table and both available and used rings. Writing to this register notifies the
 /// device what size of the queue the driver will use. This applies to the queue selected by
 /// writing to QueueSel. Write-only.
-pub const VIRTIO_QUEUE_NUM: u64 = VIRTIO_BASE + 0x038;
+const VIRTIO_QUEUE_NUM: u64 = VIRTIO_BASE + 0x038;
+/// Used Ring alignment in the virtual queue.
+const VIRTIO_QUEUE_ALIGN: u64 = VIRTIO_BASE + 0x03c;
 /// Guest physical page number of the virtual queue. Writing to this register notifies the device
 /// about location of the virtual queue in the Guest’s physical address space. This value is the
 /// index number of a page starting with the queue Descriptor Table. Value zero (0x0) means
@@ -62,22 +68,25 @@ pub const VIRTIO_QUEUE_NUM: u64 = VIRTIO_BASE + 0x038;
 /// writes zero (0x0) to this register. Reading from this register returns the currently used page
 /// number of the queue, therefore a value other than zero (0x0) means that the queue is in use.
 /// Both read and write accesses apply to the queue selected by writing to QueueSel.
-pub const VIRTIO_QUEUE_PFN: u64 = VIRTIO_BASE + 0x040;
+const VIRTIO_QUEUE_PFN: u64 = VIRTIO_BASE + 0x040;
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Queue notifier. Writing a queue index to this register notifies the device that there are new
 /// buffers to process in the queue. Write-only.
-pub const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
+const VIRTIO_QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x050;
 /// Interrupt status. Reading from this register returns a bit mask of events that caused the
 /// device interrupt to be asserted.
-pub const VIRTIO_MMIO_INTERRUPT_STATUS: u64 = VIRTIO_BASE + 0x060;
+const VIRTIO_MMIO_INTERRUPT_STATUS: u64 = VIRTIO_BASE + 0x060;
 /// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this
 /// register notifies the device that events causing the interrupt have been handled.
-pub const VIRTIO_MMIO_INTERRUPT_ACK: u64 = VIRTIO_BASE + 0x064;
+const VIRTIO_MMIO_INTERRUPT_ACK: u64 = VIRTIO_BASE + 0x064;
 /// Device status. Reading from this register returns the current device status flags. Writing
 /// non-zero values to this register sets the status flags, indicating the driver progress. Writing
 /// zero (0x0) to this register triggers a device reset.
-pub const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
+const VIRTIO_STATUS: u64 = VIRTIO_BASE + 0x070;
+/// Configuration space.
+const VIRTIO_CONFIG: u64 = VIRTIO_BASE + 0x100;
+const VIRTIO_CONFIG_END: u64 = VIRTIO_CONFIG + 0x8;
 
 /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-250001
 ///
@@ -134,7 +143,8 @@ struct VirtqDesc {
 }
 
 impl VirtqDesc {
-    /// Create a new virtqueue descriptor based on the address that stores the content of the descriptor.
+    /// Create a new virtqueue descriptor based on the address that stores the content of the
+    /// descriptor.
     fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
             addr: cpu.bus.read(addr, DOUBLEWORD)?,
@@ -211,6 +221,7 @@ struct _VirtqUsedElem {
 /// Paravirtualized drivers for IO virtualization.
 pub struct Virtio {
     id: u64,
+    device_features_sel: u32,
     /// 2.2 Feature Bits
     /// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-130002
     /// Each virtio device offers all the features it understands.
@@ -219,9 +230,11 @@ pub struct Virtio {
     ///           feature negotiation mechanisms
     /// 41 to 63: Feature bits reserved for future extensions
     driver_features: u32,
+    driver_features_sel: u32,
     page_size: u32,
     queue_sel: u32,
     queue_num: u32,
+    queue_align: u32,
     queue_pfn: u32,
     queue_notify: u32,
     interrupt_status: u32,
@@ -230,6 +243,7 @@ pub struct Virtio {
     /// The device MUST initialize device status to 0 upon reset."
     /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-100001
     status: u32,
+    config: [u8; 8],
     disk: Vec<u8>,
 }
 
@@ -238,16 +252,20 @@ impl Virtio {
     pub fn new() -> Self {
         Self {
             id: 0,
+            device_features_sel: 0,
             driver_features: 0,
+            driver_features_sel: 0,
             page_size: 0,
             queue_sel: 0,
             queue_num: 0,
+            queue_align: 0,
             queue_pfn: 0,
             queue_notify: 9999, // TODO: what is the correct initial value?
             interrupt_status: 0,
             // "The device MUST initialize device status to 0 upon reset."
             // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-120002
             status: 0,
+            config: [0; 8],
             disk: Vec::new(),
         }
     }
@@ -266,42 +284,65 @@ impl Virtio {
         self.disk.extend(binary.iter().cloned());
     }
 
-    /// Read 4 bytes from virtio only if the addr is valid. Otherwise, return 0.
-    pub fn read(&self, addr: u64) -> u32 {
-        match addr {
+    /// Load `size`-bit data from a register located at `addr` in the virtio block device.
+    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+        if size == DOUBLEWORD {
+            return Err(Exception::LoadAccessFault);
+        }
+
+        let value = match addr {
             VIRTIO_MAGIC => 0x74726976,     // read-only
             VIRTIO_VERSION => 0x1,          // read-only
             VIRTIO_DEVICE_ID => 0x2,        // read-only
             VIRTIO_VENDOR_ID => 0x554d4551, // read-only
             VIRTIO_DEVICE_FEATURES => 0,    // TODO: what should it return?
-            VIRTIO_DRIVER_FEATURES => self.driver_features,
             VIRTIO_QUEUE_NUM_MAX => 8,
             VIRTIO_QUEUE_PFN => self.queue_pfn,
             VIRTIO_MMIO_INTERRUPT_STATUS => self.interrupt_status,
             VIRTIO_STATUS => self.status,
-            _ => 0,
-        }
+            VIRTIO_CONFIG..=VIRTIO_CONFIG_END => {
+                let index = addr - VIRTIO_CONFIG;
+                self.config[index as usize] as u32
+            }
+            _ => return Err(Exception::LoadAccessFault),
+        };
+        Ok(value as u64)
     }
 
-    /// Write 4 bytes to virtio only if the addr is valid. Otherwise, does nothing.
-    pub fn write(&mut self, addr: u64, val: u32) {
+    /// Store `size`-bit data to a register located at `addr` in the virtio block device.
+    pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        if size == DOUBLEWORD {
+            return Err(Exception::StoreAMOAccessFault);
+        }
+
         match addr {
-            VIRTIO_DEVICE_FEATURES => self.driver_features = val,
-            VIRTIO_GUEST_PAGE_SIZE => self.page_size = val,
-            VIRTIO_QUEUE_SEL => self.queue_sel = val,
-            VIRTIO_QUEUE_NUM => self.queue_num = val,
-            VIRTIO_QUEUE_PFN => self.queue_pfn = val,
-            VIRTIO_QUEUE_NOTIFY => self.queue_notify = val,
+            VIRTIO_DEVICE_FEATURES_SEL => self.device_features_sel = value as u32,
+            VIRTIO_DRIVER_FEATURES => self.driver_features = value as u32,
+            VIRTIO_DRIVER_FEATURES_SEL => self.driver_features_sel = value as u32,
+            VIRTIO_GUEST_PAGE_SIZE => self.page_size = value as u32,
+            VIRTIO_QUEUE_SEL => self.queue_sel = value as u32,
+            VIRTIO_QUEUE_NUM => self.queue_num = value as u32,
+            VIRTIO_QUEUE_ALIGN => self.queue_align = value as u32,
+            VIRTIO_QUEUE_PFN => self.queue_pfn = value as u32,
+            VIRTIO_QUEUE_NOTIFY => self.queue_notify = value as u32,
             VIRTIO_MMIO_INTERRUPT_ACK => {
-                if (val & 0x1) == 1 {
+                if (value & 0x1) == 1 {
                     self.interrupt_status &= !0x1;
                 } else {
-                    panic!("unexpected value for VIRTIO_MMIO_INTERRUPT_ACK: {:#x}", val);
+                    panic!(
+                        "unexpected value for VIRTIO_MMIO_INTERRUPT_ACK: {:#x}",
+                        value
+                    );
                 }
             }
-            VIRTIO_STATUS => self.status = val,
-            _ => {}
+            VIRTIO_STATUS => self.status = value as u32,
+            VIRTIO_CONFIG..=VIRTIO_CONFIG_END => {
+                let index = addr - VIRTIO_CONFIG;
+                self.config[index as usize] = (value >> (index * 8)) as u8;
+            }
+            _ => return Err(Exception::StoreAMOAccessFault),
         }
+        Ok(())
     }
 
     fn get_new_id(&mut self) -> u64 {
