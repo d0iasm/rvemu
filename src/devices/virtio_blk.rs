@@ -1,9 +1,7 @@
-//! The virtio_blk module contains a virtualization standard for a virtio block device.
+//! The virtio_blk module implements a virtio block device.
 //!
 //! The spec for Virtual I/O Device (VIRTIO) Version 1.1:
-//!   Web: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html
-//!   PDF: https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.pdf
-//!
+//! https://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html
 //! 5.2 Block Device:
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
@@ -31,11 +29,13 @@ const VIRTIO_VERSION: u64 = VIRTIO_BASE + 0x004;
 const VIRTIO_DEVICE_ID: u64 = VIRTIO_BASE + 0x008;
 /// Virtio Subsystem Vendor ID. Always return 0x554d4551
 const VIRTIO_VENDOR_ID: u64 = VIRTIO_BASE + 0x00c;
-/// Flags representing features the device supports.
+/// Flags representing features the device supports. Access to this register returns bits
+/// DeviceFeaturesSel ∗ 32 to (DeviceFeaturesSel ∗ 32) + 31.
 const VIRTIO_DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x010;
 /// Device (host) features word selection.
 const VIRTIO_DEVICE_FEATURES_SEL: u64 = VIRTIO_BASE + 0x014;
-/// Flags representing device features understood and activated by the driver.
+/// Flags representing device features understood and activated by the driver. Access to this
+/// register sets bits DriverFeaturesSel ∗ 32 to (DriverFeaturesSel ∗ 32) + 31.
 const VIRTIO_DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x020;
 /// Activated (guest) features word selection.
 const VIRTIO_DRIVER_FEATURES_SEL: u64 = VIRTIO_BASE + 0x024;
@@ -221,17 +221,11 @@ struct _VirtqUsedElem {
 /// Paravirtualized drivers for IO virtualization.
 pub struct Virtio {
     id: u64,
+    device_features: [u32; 2],
     device_features_sel: u32,
-    /// 2.2 Feature Bits
-    /// http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.html#x1-130002
-    /// Each virtio device offers all the features it understands.
-    /// 0 to 23: Feature bits for the specific device type
-    /// 24 to 40: Feature bits reserved for extensions to the queue and
-    ///           feature negotiation mechanisms
-    /// 41 to 63: Feature bits reserved for future extensions
-    driver_features: u32,
+    driver_features: [u32; 2],
     driver_features_sel: u32,
-    page_size: u32,
+    guest_page_size: u32,
     queue_sel: u32,
     queue_num: u32,
     queue_align: u32,
@@ -252,10 +246,11 @@ impl Virtio {
     pub fn new() -> Self {
         Self {
             id: 0,
+            device_features: [0; 2],
             device_features_sel: 0,
-            driver_features: 0,
+            driver_features: [0; 2],
             driver_features_sel: 0,
-            page_size: 0,
+            guest_page_size: 0,
             queue_sel: 0,
             queue_num: 0,
             queue_align: 0,
@@ -291,16 +286,20 @@ impl Virtio {
         }
 
         let value = match addr {
-            VIRTIO_MAGIC => 0x74726976,     // read-only
-            VIRTIO_VERSION => 0x1,          // read-only
-            VIRTIO_DEVICE_ID => 0x2,        // read-only
-            VIRTIO_VENDOR_ID => 0x554d4551, // read-only
-            VIRTIO_DEVICE_FEATURES => 0,    // TODO: what should it return?
+            VIRTIO_MAGIC => 0x74726976, // A Little Endian equivalent of the “virt” string.
+            VIRTIO_VERSION => 0x1,      // Legacy devices (see 4.2.4 Legacy interface) used 0x1.
+            VIRTIO_DEVICE_ID => 0x2,    // Block device.
+            // See https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L86
+            VIRTIO_VENDOR_ID => 0x554d4551,
+            VIRTIO_DEVICE_FEATURES => self.device_features[self.device_features_sel as usize],
             VIRTIO_QUEUE_NUM_MAX => 8,
             VIRTIO_QUEUE_PFN => self.queue_pfn,
             VIRTIO_MMIO_INTERRUPT_STATUS => self.interrupt_status,
             VIRTIO_STATUS => self.status,
             VIRTIO_CONFIG..=VIRTIO_CONFIG_END => {
+                if size != BYTE {
+                    return Err(Exception::LoadAccessFault);
+                }
                 let index = addr - VIRTIO_CONFIG;
                 self.config[index as usize] as u32
             }
@@ -317,9 +316,11 @@ impl Virtio {
 
         match addr {
             VIRTIO_DEVICE_FEATURES_SEL => self.device_features_sel = value as u32,
-            VIRTIO_DRIVER_FEATURES => self.driver_features = value as u32,
+            VIRTIO_DRIVER_FEATURES => {
+                self.driver_features[self.driver_features_sel as usize] = value as u32
+            }
             VIRTIO_DRIVER_FEATURES_SEL => self.driver_features_sel = value as u32,
-            VIRTIO_GUEST_PAGE_SIZE => self.page_size = value as u32,
+            VIRTIO_GUEST_PAGE_SIZE => self.guest_page_size = value as u32,
             VIRTIO_QUEUE_SEL => self.queue_sel = value as u32,
             VIRTIO_QUEUE_NUM => self.queue_num = value as u32,
             VIRTIO_QUEUE_ALIGN => self.queue_align = value as u32,
@@ -337,6 +338,9 @@ impl Virtio {
             }
             VIRTIO_STATUS => self.status = value as u32,
             VIRTIO_CONFIG..=VIRTIO_CONFIG_END => {
+                if size != BYTE {
+                    return Err(Exception::StoreAMOAccessFault);
+                }
                 let index = addr - VIRTIO_CONFIG;
                 self.config[index as usize] = (value >> (index * 8)) as u8;
             }
@@ -351,7 +355,7 @@ impl Virtio {
     }
 
     fn desc_addr(&self) -> u64 {
-        self.queue_pfn as u64 * self.page_size as u64
+        self.queue_pfn as u64 * self.guest_page_size as u64
     }
 
     fn read_disk(&self, addr: u64) -> u64 {
@@ -463,7 +467,7 @@ impl Virtio {
         // };
         let new_id = cpu.bus.virtio.get_new_id();
         cpu.bus
-            .write(used_addr.wrapping_add(2), new_id % 8, HALFWORD)?;
+            .write(used_addr.wrapping_add(2), new_id % QUEUE_SIZE, HALFWORD)?;
         Ok(())
     }
 }
