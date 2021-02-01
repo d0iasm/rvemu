@@ -75,7 +75,6 @@ pub const SSTATUS_SIE: u64 = 0x00000002;
 //pub const SSTATUS_UPIE: u64 = 0x00000010;
 pub const SSTATUS_SPIE: u64 = 0x00000020;
 pub const SSTATUS_SPP: u64 = 0x00000100;
-pub const SSTATUS_VS: u64 = 0x00000600;
 pub const SSTATUS_FS: u64 = 0x00006000;
 pub const SSTATUS_XS: u64 = 0x00018000;
 pub const SSTATUS_SUM: u64 = 0x00040000;
