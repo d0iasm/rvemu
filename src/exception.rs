@@ -117,7 +117,7 @@ impl Exception {
             // instruction as described below. For other exceptions, stval is set to zero."
             cpu.state.write(STVAL, 0);
 
-            // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
+            // Set a previous interrupt-enable bit for supervisor mode (SPIE, 5) to the value
             // of a global interrupt-enable bit for supervisor mode (SIE, 1).
             cpu.state
                 .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
@@ -163,7 +163,7 @@ impl Exception {
             // instruction as described below. For other traps, mtval is set to zero."
             cpu.state.write(MTVAL, 0);
 
-            // Set a privious interrupt-enable bit for supervisor mode (MPIE, 7) to the value
+            // Set a previous interrupt-enable bit for supervisor mode (MPIE, 7) to the value
             // of a global interrupt-enable bit for supervisor mode (MIE, 3).
             cpu.state
                 .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
