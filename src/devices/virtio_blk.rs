@@ -249,10 +249,6 @@ pub struct Virtio {
     queue_pfn: u32,
     queue_notify: u32,
     interrupt_status: u32,
-    /// "The device status field provides a simple low-level indication of the completed steps of
-    /// this sequence.
-    /// The device MUST initialize device status to 0 upon reset."
-    /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-100001
     status: u32,
     config: [u8; 8],
     disk: Vec<u8>,
@@ -277,6 +273,15 @@ impl Virtio {
             config: [0; 8],
             disk: Vec::new(),
         }
+    }
+
+    /// Reset the device when `status` is written to 0.
+    fn reset(&mut self) {
+        self.id = 0;
+        // 4.2.2.1 Device Requirements: MMIO Device Register Layout
+        // "Upon reset, the device MUST clear all bits in InterruptStatus and ready bits in the
+        // QueueReady register for all queues in the device."
+        self.interrupt_status = 0;
     }
 
     /// Return true if an interrupt is pending.
@@ -311,7 +316,7 @@ impl Virtio {
                 addr - DEVICE_FEATURES_RANGE.start(),
             ),
             addr if QUEUE_NUM_MAX_RANGE.contains(&addr) => {
-                (0x8, addr - QUEUE_NUM_MAX_RANGE.start())
+                (QUEUE_SIZE as u32, addr - QUEUE_NUM_MAX_RANGE.start())
             }
             addr if QUEUE_PFN_RANGE.contains(&addr) => {
                 (self.queue_pfn, addr - QUEUE_PFN_RANGE.start())
@@ -428,7 +433,13 @@ impl Virtio {
             addr if QUEUE_ALIGN_RANGE.contains(&addr) => self.queue_align = reg,
             addr if QUEUE_PFN_RANGE.contains(&addr) => self.queue_pfn = reg,
             addr if QUEUE_NOTIFY_RANGE.contains(&addr) => self.queue_notify = reg,
-            addr if STATUS_RANGE.contains(&addr) => self.status = reg,
+            addr if STATUS_RANGE.contains(&addr) => {
+                self.status = reg;
+                // "Writing 0 into this field resets the device."
+                if self.status == 0 {
+                    self.reset();
+                }
+            }
             _ => return Err(Exception::StoreAMOAccessFault),
         }
 
@@ -527,14 +538,14 @@ impl Virtio {
         // Write to a device if the second bit of `flags` is set.
         match (desc1.flags & 2) == 0 {
             true => {
-                // Read memory data and write it to a disk directly (DMA).
+                // Read memory data and write it to a disk directly.
                 for i in 0..desc1.len {
                     let data = cpu.bus.read(desc1.addr + i, BYTE)?;
                     cpu.bus.virtio.write_disk(sector * SECTOR_SIZE + i, data);
                 }
             }
             false => {
-                // Read disk data and write it to memory directly (DMA).
+                // Read disk data and write it to memory directly.
                 for i in 0..desc1.len {
                     let data = cpu.bus.virtio.read_disk(sector * SECTOR_SIZE + i);
                     cpu.bus.write(desc1.addr + i, data, BYTE)?;
