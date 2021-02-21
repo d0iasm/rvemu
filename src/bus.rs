@@ -96,7 +96,7 @@ impl Bus {
             CLINT_BASE..=CLINT_END => self.clint.write(addr, value, size),
             PLIC_BASE..=PLIC_END => self.plic.write(addr, value, size),
             UART_BASE..=UART_END => self.uart.write(addr, value as u8, size),
-            VIRTIO_BASE..=VIRTIO_END => self.virtio.write(addr, value, size),
+            VIRTIO_BASE..=VIRTIO_END => self.virtio.write(addr, value as u32, size),
             DRAM_BASE..=DRAM_END => self.dram.write(addr, value, size),
             _ => Err(Exception::StoreAMOAccessFault),
         }
