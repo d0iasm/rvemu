@@ -210,13 +210,13 @@ impl fmt::Display for FRegisters {
     }
 }
 
-/// The CPU to contain registers, a program coutner, status, and a privileged mode.
+/// The CPU to contain registers, a program counter, status, and a privileged mode.
 pub struct Cpu {
     /// 64-bit integer registers.
     pub xregs: XRegisters,
     /// 64-bit floating-point registers.
     pub fregs: FRegisters,
-    /// Program coutner.
+    /// Program counter.
     pub pc: u64,
     /// Control and status registers (CSR).
     pub state: State,
@@ -3110,7 +3110,7 @@ impl Cpu {
                                 // 1, and CSRs[sstatus].SPP to 0.", but the implementation in QEMU
                                 // and Spike use `mstatus` instead of `sstatus`.
 
-                                // Set the program coutner to the supervisor exception program
+                                // Set the program counter to the supervisor exception program
                                 // counter (SEPC).
                                 self.pc = self.state.read(SEPC);
 
@@ -3146,7 +3146,7 @@ impl Cpu {
                                 // to 1; and, if user mode is supported, sets CSRs[mstatus].MPP to
                                 // 0".
 
-                                // Set the program coutner to the machine exception program
+                                // Set the program counter to the machine exception program
                                 // counter (MEPC).
                                 self.pc = self.state.read(MEPC);
 
