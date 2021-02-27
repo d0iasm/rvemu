@@ -106,8 +106,15 @@ const STATUS_RANGE: RangeInclusive<u64> =
 const CONFIG_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x100, VIRTIO_BASE + 0x107);
 
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-250001
-///
+/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-230005
+/// "Each virtqueue can consist of up to 3 parts:
+///     Descriptor Area - used for describing buffers
+///     Driver Area - extra data supplied by driver to the device
+///     Device Area - extra data supplied by device to driver"
+/// "Note: Note that previous versions of this spec used different names for these parts
+///     Descriptor Table - for the Descriptor Area
+///     Available Ring - for the Driver Area
+///     Used Ring - for the Device Area"
 /// ```c
 /// struct virtq {
 ///   struct virtq_desc desc[ Queue Size ];
@@ -116,14 +123,31 @@ const CONFIG_RANGE: RangeInclusive<u64> =
 ///   struct virtq_used used;
 /// };
 /// ```
-struct _Virtq {
-    /// The actual descriptors (16 bytes each)
-    /// The number of descriptors in the table is defined by the queue size for this virtqueue.
-    desc: Vec<VirtqDesc>,
-    /// A ring of available descriptor heads with free-running index.
-    avail: _VirtqAvail,
-    /// A ring of used descriptor heads with free-running index.
-    used: _VirtqUsed,
+#[derive(Debug)]
+struct Virtqueue {
+    /// The address that starts actual descriptors (16 bytes each).
+    desc_addr: u64,
+    /// The address that starts a ring of available descriptors.
+    avail_addr: u64,
+    /// The address that starts a ring of used descriptors.
+    used_addr: u64,
+}
+
+impl Virtqueue {
+    /// Create a new virtqueue descriptor based on the address that stores the content of the
+    /// descriptor.
+    fn new(cpu: &Cpu) -> Self {
+        let base_addr = cpu.bus.virtio.queue_pfn as u64 * cpu.bus.virtio.guest_page_size as u64;
+        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L101-L103
+        //     desc = pages -- num * VirtqDesc
+        //     avail = pages + 0x40 -- 2 * uint16, then num * uint16
+        //     used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+        Self {
+            desc_addr: base_addr,
+            avail_addr: base_addr + 0x40,
+            used_addr: base_addr + 4096,
+        }
+    }
 }
 
 /// "The descriptor table refers to the buffers the driver is using for the device. addr is a
@@ -149,6 +173,7 @@ struct _Virtq {
 ///   le16 next;
 /// };
 /// ```
+#[derive(Debug)]
 struct VirtqDesc {
     /// Address (guest-physical).
     addr: u64,
@@ -161,7 +186,7 @@ struct VirtqDesc {
 }
 
 impl VirtqDesc {
-    /// Create a new virtqueue descriptor based on the address that stores the content of the
+    /// Creates a new virtqueue descriptor based on the address that stores the content of the
     /// descriptor.
     fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
@@ -464,10 +489,6 @@ impl Virtio {
         self.id
     }
 
-    fn desc_addr(&self) -> u64 {
-        self.queue_pfn as u64 * self.guest_page_size as u64
-    }
-
     fn read_disk(&self, addr: u64) -> u64 {
         self.disk[addr as usize] as u64
     }
@@ -485,23 +506,7 @@ impl Virtio {
         //     least one of the active virtual queues."
         cpu.bus.virtio.interrupt_status |= 0x1;
 
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-230005
-        // "Each virtqueue can consist of up to 3 parts:
-        //     Descriptor Area - used for describing buffers
-        //     Driver Area - extra data supplied by driver to the device
-        //     Device Area - extra data supplied by device to driver"
-        //
-        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L101-L103
-        //     desc = pages -- num * VirtqDesc
-        //     avail = pages + 0x40 -- 2 * uint16, then num * uint16
-        //     used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
-        //
-        // The actual descriptors (16 bytes each).
-        let desc_addr = cpu.bus.virtio.desc_addr();
-        // A ring of available descriptor heads with free-running index.
-        let avail_addr = cpu.bus.virtio.desc_addr() + 0x40;
-        // A ring of used descriptor heads with free-running index.
-        let used_addr = cpu.bus.virtio.desc_addr() + 4096;
+        let virtq = Virtqueue::new(cpu);
 
         // 2.6.6 The Virtqueue Available Ring
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-380006
@@ -518,22 +523,25 @@ impl Virtio {
         //  avail[1] tells the device how far to look in avail[2...].
         //  avail[2...] are desc[] indices the device should process.
         //  we only tell device the first index in our chain of descriptors."
-        let offset = cpu.bus.read(avail_addr.wrapping_add(1), HALFWORD)?;
+        let offset = cpu.bus.read(virtq.avail_addr.wrapping_add(1), HALFWORD)?;
         let index = cpu.bus.read(
-            avail_addr.wrapping_add(offset % QUEUE_SIZE).wrapping_add(2),
+            virtq
+                .avail_addr
+                .wrapping_add(offset % QUEUE_SIZE)
+                .wrapping_add(2),
             HALFWORD,
         )?;
 
         // First descriptor.
-        let desc0 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * index)?;
+        let desc0 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * index)?;
 
         // Second descriptor.
-        let desc1 = VirtqDesc::new(cpu, desc_addr + VRING_DESC_SIZE * desc0.next)?;
+        let desc1 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc0.next)?;
 
         // Third descriptor address.
         let desc2_addr = cpu
             .bus
-            .read(desc_addr + VRING_DESC_SIZE * desc1.next, DOUBLEWORD)?;
+            .read(virtq.desc_addr + VRING_DESC_SIZE * desc1.next, DOUBLEWORD)?;
         // Tell success.
         cpu.bus.write(desc2_addr, 0, BYTE)?;
 
@@ -576,8 +584,11 @@ impl Virtio {
         //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
         // };
         let new_id = cpu.bus.virtio.get_new_id();
-        cpu.bus
-            .write(used_addr.wrapping_add(2), new_id % QUEUE_SIZE, HALFWORD)?;
+        cpu.bus.write(
+            virtq.used_addr.wrapping_add(2),
+            new_id % QUEUE_SIZE,
+            HALFWORD,
+        )?;
         Ok(())
     }
 }
