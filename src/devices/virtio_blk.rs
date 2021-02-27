@@ -255,11 +255,11 @@ pub struct Virtio {
 }
 
 impl Virtio {
-    /// Create a new virtio object.
+    /// Creates a new virtio object.
     pub fn new() -> Self {
         Self {
             id: 0,
-            device_features: [0; 2],
+            device_features: Virtio::device_features(),
             device_features_sel: 0,
             driver_features: [0; 2],
             driver_features_sel: 0,
@@ -275,7 +275,16 @@ impl Virtio {
         }
     }
 
-    /// Reset the device when `status` is written to 0.
+    /// Returns device features.
+    fn device_features() -> [u32; 2] {
+        let mut features = [0; 2];
+        // VIRTIO_F_IN_ORDER(Bit 35). This feature indicates that all buffers are used by the device
+        // in the same order in which they have been made available.
+        features[1] = features[1] | (1 << 3);
+        return features;
+    }
+
+    /// Resets the device when `status` is written to 0.
     fn reset(&mut self) {
         self.id = 0;
         // 4.2.2.1 Device Requirements: MMIO Device Register Layout
@@ -284,7 +293,7 @@ impl Virtio {
         self.interrupt_status = 0;
     }
 
-    /// Return true if an interrupt is pending.
+    /// Returns true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
         if self.queue_notify != u32::MAX {
             self.queue_notify = u32::MAX;
@@ -293,12 +302,12 @@ impl Virtio {
         false
     }
 
-    /// Set the binary in the virtio disk.
+    /// Sets the binary in the virtio disk.
     pub fn initialize(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());
     }
 
-    /// Load `size`-bit data from a register located at `addr` in the virtio block device.
+    /// Loads `size`-bit data from a register located at `addr` in the virtio block device.
     pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
         // `reg` is the value of a target register in the virtio block device and `offset` is the
         // byte of the start position in the register.
@@ -345,7 +354,7 @@ impl Virtio {
         Ok(value as u64)
     }
 
-    /// Store `size`-bit data to a register located at `addr` in the virtio block device.
+    /// Stores `size`-bit data to a register located at `addr` in the virtio block device.
     pub fn write(&mut self, addr: u64, value: u32, size: u8) -> Result<(), Exception> {
         // `reg` is the value of a target register in the virtio block device and `offset` is the
         // byte of the start position in the register.
@@ -439,6 +448,10 @@ impl Virtio {
                 if self.status == 0 {
                     self.reset();
                 }
+                // FAILED (128) bit. Indicates that something went wrong in the guest.
+                if (self.status & 128) == 1 {
+                    panic!("virtio: device status FAILED");
+                }
             }
             _ => return Err(Exception::StoreAMOAccessFault),
         }
@@ -463,7 +476,7 @@ impl Virtio {
         self.disk[addr as usize] = value as u8
     }
 
-    /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
+    /// Accesses the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
     pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
