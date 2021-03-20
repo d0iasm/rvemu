@@ -20,6 +20,13 @@ const QUEUE_SIZE: u64 = 8;
 /// The size of a sector.
 const SECTOR_SIZE: u64 = 512;
 
+/// This marks a buffer as continuing via the next field.
+const VIRTQ_DESC_F_NEXT: u64 = 1;
+/// This marks a buffer as device write-only (otherwise device read-only).
+const VIRTQ_DESC_F_WRITE: u64 = 2;
+/// This means the buffer contains a list of buffer descriptors.
+const VIRTQ_DESC_F_INDIRECT: u64 = 4;
+
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Magic value. Always return 0x74726976 (a Little Endian equivalent of the “virt” string).
@@ -124,7 +131,7 @@ const CONFIG_RANGE: RangeInclusive<u64> =
 /// };
 /// ```
 #[derive(Debug)]
-struct Virtqueue {
+struct VirtqueueAddr {
     /// The address that starts actual descriptors (16 bytes each).
     desc_addr: u64,
     /// The address that starts a ring of available descriptors.
@@ -133,19 +140,27 @@ struct Virtqueue {
     used_addr: u64,
 }
 
-impl Virtqueue {
+impl VirtqueueAddr {
     /// Create a new virtqueue descriptor based on the address that stores the content of the
     /// descriptor.
-    fn new(cpu: &Cpu) -> Self {
-        let base_addr = cpu.bus.virtio.queue_pfn as u64 * cpu.bus.virtio.guest_page_size as u64;
-        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L101-L103
-        //     desc = pages -- num * VirtqDesc
-        //     avail = pages + 0x40 -- 2 * uint16, then num * uint16
-        //     used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+    fn new(virtio: &Virtio) -> Self {
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-240006
+        // Virtqueue Part   | Alignment | Size
+        // -------------------------------------------------
+        // Descriptor Table | 16        | 16∗(Queue Size)
+        // Available Ring   | 2         | 6 + 2∗(Queue Size)
+        // Used Ring        | 4         | 6 + 8∗(Queue Size)
+
+        let base_addr = virtio.queue_pfn as u64 * virtio.guest_page_size as u64;
+        let align = virtio.queue_align as u64;
+        let size = virtio.queue_num as u64;
+        let avail_ring_end = base_addr + (16 * size) + (6 + 2 * size);
+
         Self {
             desc_addr: base_addr,
-            avail_addr: base_addr + 0x40,
-            used_addr: base_addr + 4096,
+            avail_addr: base_addr + 16 * size,
+            // Used ring starts with the `queue_align` boundary after the available ring ends.
+            used_addr: ((avail_ring_end / align) + 1) * align,
         }
     }
 }
@@ -212,13 +227,21 @@ impl VirtqDesc {
 ///   le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
 /// };
 /// ```
-struct _VirtqAvail {
+#[derive(Debug)]
+struct VirtqAvail {
     flags: u16,
-    /// Indicates where the driver would put the next descriptor entry in the ring (modulo the
-    /// queue size). Starts at 0 and increases.
     idx: u16,
-    ring: Vec<u16>,
-    used_event: u16,
+    ring_start_addr: u64,
+}
+
+impl VirtqAvail {
+    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
+        Ok(Self {
+            flags: cpu.bus.read(addr, HALFWORD)? as u16,
+            idx: cpu.bus.read(addr.wrapping_add(2), HALFWORD)? as u16,
+            ring_start_addr: addr.wrapping_add(4),
+        })
+    }
 }
 
 /// "The used ring is where the device returns buffers once it is done with them: it is only
@@ -237,11 +260,8 @@ struct _VirtqAvail {
 /// ```
 struct _VirtqUsed {
     flags: u16,
-    /// Indicates where the device would put the next descriptor entry in the ring (modulo the
-    /// queue size). Starts at 0 and increases.
     idx: u16,
     ring: Vec<_VirtqUsedElem>,
-    avail_event: u16,
 }
 
 /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
@@ -290,7 +310,8 @@ impl Virtio {
             driver_features_sel: 0,
             guest_page_size: 0,
             queue_num: 0,
-            queue_align: 0,
+            // default value to avoid division by 0.
+            queue_align: 0x1000,
             queue_pfn: 0,
             queue_notify: u32::MAX,
             interrupt_status: 0,
@@ -317,6 +338,10 @@ impl Virtio {
         // QueueReady register for all queues in the device."
         self.interrupt_status = 0;
     }
+
+    /// Initializes a virtqueue once the device initialization is finished by setting the DRIVER_OK
+    /// status bit (0x4).
+    fn init_virtqueue() {}
 
     /// Returns true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
@@ -484,11 +509,6 @@ impl Virtio {
         Ok(())
     }
 
-    fn get_new_id(&mut self) -> u64 {
-        self.id = self.id.wrapping_add(1);
-        self.id
-    }
-
     fn read_disk(&self, addr: u64) -> u64 {
         self.disk[addr as usize] as u64
     }
@@ -506,23 +526,15 @@ impl Virtio {
         //     least one of the active virtual queues."
         cpu.bus.virtio.interrupt_status |= 0x1;
 
-        let virtq = Virtqueue::new(cpu);
+        let virtq = VirtqueueAddr::new(&cpu.bus.virtio);
 
-        // 2.6.6 The Virtqueue Available Ring
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-380006
-        // struct virtq_avail {
-        //   #define VIRTQ_AVAIL_F_NO_INTERRUPT 1
-        //   le16 flags;
-        //   le16 idx;
-        //   le16 ring[ /* Queue Size */ ];
-        //   le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
-        // };
-        //
-        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c#L230-L234
-        // "avail[0] is flags
-        //  avail[1] tells the device how far to look in avail[2...].
-        //  avail[2...] are desc[] indices the device should process.
-        //  we only tell device the first index in our chain of descriptors."
+        let avail = VirtqAvail::new(cpu, virtq.avail_addr)?;
+
+        let head_index = cpu.bus.read(
+            avail.ring_start_addr + avail.idx as u64 % QUEUE_SIZE,
+            HALFWORD,
+        )?;
+
         let offset = cpu.bus.read(virtq.avail_addr.wrapping_add(1), HALFWORD)?;
         let index = cpu.bus.read(
             virtq
@@ -533,17 +545,10 @@ impl Virtio {
         )?;
 
         // First descriptor.
-        let desc0 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * index)?;
+        let desc0 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * head_index)?;
 
         // Second descriptor.
         let desc1 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc0.next)?;
-
-        // Third descriptor address.
-        let desc2_addr = cpu
-            .bus
-            .read(virtq.desc_addr + VRING_DESC_SIZE * desc1.next, DOUBLEWORD)?;
-        // Tell success.
-        cpu.bus.write(desc2_addr, 0, BYTE)?;
 
         // 5.2.6 Device Operation
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
@@ -557,16 +562,16 @@ impl Virtio {
         let sector = cpu.bus.read(desc0.addr.wrapping_add(8), DOUBLEWORD)?;
 
         // Write to a device if the second bit of `flags` is set.
-        match (desc1.flags & 2) == 0 {
+        match (desc1.flags & VIRTQ_DESC_F_WRITE) == 0 {
             true => {
-                // Read memory data and write it to a disk directly.
+                // Read memory data and write it to a disk.
                 for i in 0..desc1.len {
                     let data = cpu.bus.read(desc1.addr + i, BYTE)?;
                     cpu.bus.virtio.write_disk(sector * SECTOR_SIZE + i, data);
                 }
             }
             false => {
-                // Read disk data and write it to memory directly.
+                // Read disk data and write it to memory.
                 for i in 0..desc1.len {
                     let data = cpu.bus.virtio.read_disk(sector * SECTOR_SIZE + i);
                     cpu.bus.write(desc1.addr + i, data, BYTE)?;
@@ -574,21 +579,33 @@ impl Virtio {
             }
         };
 
-        // 2.6.8 The Virtqueue Used Ring
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
-        // struct virtq_used {
-        //   #define VIRTQ_USED_F_NO_NOTIFY 1
-        //   le16 flags;
-        //   le16 idx;
-        //   struct virtq_used_elem ring[ /* Queue Size */];
-        //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
-        // };
-        let new_id = cpu.bus.virtio.get_new_id();
+        // Third descriptor address.
+        let desc2 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc1.next)?;
+        // Tell success.
+        cpu.bus.write(desc2.addr, 0, BYTE)?;
+
+        // 2.6.7.2 Device Requirements: Used Buffer Notification Suppression
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-400007
+        // After the device writes a descriptor index into the used ring:
+        //   If flags is 1, the device SHOULD NOT send a notification.
+        //   If flags is 0, the device MUST send a notification.
+        // TODO: check the flags in the available ring.
+
+        cpu.bus.write(
+            virtq.used_addr
+                .wrapping_add(4)
+                .wrapping_add((cpu.bus.virtio.id as u64 % QUEUE_SIZE) * 8),
+            head_index,
+            WORD,
+        )?;
+
+        cpu.bus.virtio.id = cpu.bus.virtio.id.wrapping_add(1);
         cpu.bus.write(
             virtq.used_addr.wrapping_add(2),
-            new_id % QUEUE_SIZE,
+            cpu.bus.virtio.id,
             HALFWORD,
         )?;
+
         Ok(())
     }
 }
