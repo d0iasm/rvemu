@@ -2243,7 +2243,7 @@ impl Cpu {
                             if divisor == 0 {
                                 // Division by zero
                                 // "the remainder of division by zero equals the dividend"
-                                self.xregs.read(rs1)
+                                dividend as i64 as u64
                             } else if dividend == i32::MIN && divisor == -1 {
                                 // Overflow
                                 // "the remainder is zero"
@@ -2266,7 +2266,7 @@ impl Cpu {
                             if divisor == 0 {
                                 // Division by zero
                                 // "the remainder of division by zero equals the dividend"
-                                self.xregs.read(rs1)
+                                dividend as i32 as i64 as u64
                             } else {
                                 // "provide the remainder of the corresponding division
                                 // operation"
