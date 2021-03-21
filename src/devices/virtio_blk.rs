@@ -25,7 +25,7 @@ const VIRTQ_DESC_F_NEXT: u64 = 1;
 /// This marks a buffer as device write-only (otherwise device read-only).
 const VIRTQ_DESC_F_WRITE: u64 = 2;
 /// This means the buffer contains a list of buffer descriptors.
-const VIRTQ_DESC_F_INDIRECT: u64 = 4;
+const _VIRTQ_DESC_F_INDIRECT: u64 = 4;
 
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
@@ -130,7 +130,7 @@ const CONFIG_RANGE: RangeInclusive<u64> =
 ///   struct virtq_used used;
 /// };
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct VirtqueueAddr {
     /// The address that starts actual descriptors (16 bytes each).
     desc_addr: u64,
@@ -297,11 +297,25 @@ pub struct Virtio {
     status: u32,
     config: [u8; 8],
     disk: Vec<u8>,
+    virtqueue: Option<VirtqueueAddr>,
 }
 
 impl Virtio {
     /// Creates a new virtio object.
     pub fn new() -> Self {
+        let mut config = [0; 8];
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2440004
+        // 5.2.4 Device configuration layout
+        // struct virtio_blk_config {
+        //   le64 capacity;
+        // }
+        //
+        // The value is based on QEMU's output:
+        // "virtio_blk virtio0: [vda] 204800 512-byte logical blocks (105 MB/100 MiB)"
+        // 204800 --> 0x32000
+        config[1] = 0x20;
+        config[2] = 0x03;
+
         Self {
             id: 0,
             device_features: Virtio::device_features(),
@@ -316,8 +330,9 @@ impl Virtio {
             queue_notify: u32::MAX,
             interrupt_status: 0,
             status: 0,
-            config: [0; 8],
+            config,
             disk: Vec::new(),
+            virtqueue: None,
         }
     }
 
@@ -330,6 +345,22 @@ impl Virtio {
         return features;
     }
 
+    /// Initializes a virtqueue once the device initialization is finished by setting the DRIVER_OK
+    /// status bit (0x4).
+    fn init_virtqueue(&mut self) {
+        let queue = VirtqueueAddr::new(self);
+        self.virtqueue = Some(queue);
+    }
+
+    /// Gets `VirtqueueAddr` struct if it exists. If not, creates a new one based on the virtio
+    /// configuration values.
+    fn virtqueue(&self) -> VirtqueueAddr {
+        match self.virtqueue {
+            Some(queue) => queue,
+            None => VirtqueueAddr::new(self),
+        }
+    }
+
     /// Resets the device when `status` is written to 0.
     fn reset(&mut self) {
         self.id = 0;
@@ -338,10 +369,6 @@ impl Virtio {
         // QueueReady register for all queues in the device."
         self.interrupt_status = 0;
     }
-
-    /// Initializes a virtqueue once the device initialization is finished by setting the DRIVER_OK
-    /// status bit (0x4).
-    fn init_virtqueue() {}
 
     /// Returns true if an interrupt is pending.
     pub fn is_interrupting(&mut self) -> bool {
@@ -443,12 +470,7 @@ impl Virtio {
                 (self.queue_notify, addr - QUEUE_NOTIFY_RANGE.start())
             }
             addr if INTERRUPT_ACK_RANGE.contains(&addr) => {
-                if (value & 0x1) == 1 {
-                    self.interrupt_status &= !0x1;
-                } else {
-                    panic!("unexpected value for INTERRUPT_ACK: {:#x}", value);
-                }
-                return Ok(());
+                (self.interrupt_status, addr - INTERRUPT_ACK_RANGE.start())
             }
             addr if STATUS_RANGE.contains(&addr) => (self.status, addr - STATUS_RANGE.start()),
             addr if CONFIG_RANGE.contains(&addr) => {
@@ -492,11 +514,16 @@ impl Virtio {
             addr if QUEUE_ALIGN_RANGE.contains(&addr) => self.queue_align = reg,
             addr if QUEUE_PFN_RANGE.contains(&addr) => self.queue_pfn = reg,
             addr if QUEUE_NOTIFY_RANGE.contains(&addr) => self.queue_notify = reg,
+            addr if INTERRUPT_ACK_RANGE.contains(&addr) => self.interrupt_status = reg,
             addr if STATUS_RANGE.contains(&addr) => {
                 self.status = reg;
                 // "Writing 0 into this field resets the device."
                 if self.status == 0 {
                     self.reset();
+                }
+                // DRIVER_OK bit (4) was set, so initialize `VirtqueueAddr`.
+                if self.status & 0x4 == 1 {
+                    self.init_virtqueue();
                 }
                 // FAILED (128) bit. Indicates that something went wrong in the guest.
                 if (self.status & 128) == 1 {
@@ -526,7 +553,7 @@ impl Virtio {
         //     least one of the active virtual queues."
         cpu.bus.virtio.interrupt_status |= 0x1;
 
-        let virtq = VirtqueueAddr::new(&cpu.bus.virtio);
+        let virtq = cpu.bus.virtio.virtqueue();
 
         let avail = VirtqAvail::new(cpu, virtq.avail_addr)?;
 
@@ -535,20 +562,13 @@ impl Virtio {
             HALFWORD,
         )?;
 
-        let offset = cpu.bus.read(virtq.avail_addr.wrapping_add(1), HALFWORD)?;
-        let index = cpu.bus.read(
-            virtq
-                .avail_addr
-                .wrapping_add(offset % QUEUE_SIZE)
-                .wrapping_add(2),
-            HALFWORD,
-        )?;
-
         // First descriptor.
         let desc0 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * head_index)?;
+        assert_eq!(desc0.flags & VIRTQ_DESC_F_NEXT, 1);
 
         // Second descriptor.
         let desc1 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc0.next)?;
+        assert_eq!(desc1.flags & VIRTQ_DESC_F_NEXT, 1);
 
         // 5.2.6 Device Operation
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
@@ -581,6 +601,7 @@ impl Virtio {
 
         // Third descriptor address.
         let desc2 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc1.next)?;
+        assert_eq!(desc2.flags & VIRTQ_DESC_F_NEXT, 0);
         // Tell success.
         cpu.bus.write(desc2.addr, 0, BYTE)?;
 
@@ -592,7 +613,8 @@ impl Virtio {
         // TODO: check the flags in the available ring.
 
         cpu.bus.write(
-            virtq.used_addr
+            virtq
+                .used_addr
                 .wrapping_add(4)
                 .wrapping_add((cpu.bus.virtio.id as u64 % QUEUE_SIZE) * 8),
             head_index,
@@ -600,11 +622,8 @@ impl Virtio {
         )?;
 
         cpu.bus.virtio.id = cpu.bus.virtio.id.wrapping_add(1);
-        cpu.bus.write(
-            virtq.used_addr.wrapping_add(2),
-            cpu.bus.virtio.id,
-            HALFWORD,
-        )?;
+        cpu.bus
+            .write(virtq.used_addr.wrapping_add(2), cpu.bus.virtio.id, HALFWORD)?;
 
         Ok(())
     }
