@@ -23,7 +23,7 @@ const PLIC_SOURCE_PRIORITY_END: u64 = PLIC_SOURCE_PRIORITY + 0xfff;
 
 /// The address that interrupt pending bits start.
 const PLIC_PENDING: u64 = PLIC_BASE + 0x1000;
-/// The address that interrupt pending bits end. 128 4-byte (1024 bits) registers exist.
+/// The address that interrupt pending bits end. 32 4-byte (1024 bits) registers exist.
 const PLIC_PENDING_END: u64 = PLIC_PENDING + 0x7f;
 
 /// The address that the regsiters to enable interrupts start.
@@ -64,9 +64,9 @@ pub struct Plic {
     priority: [u32; 1024],
     /// Interrupt pending bits. If bit 1 is set, a global interrupt 1 is pending. A pending bit in
     /// the PLIC core can be cleared by setting the associated enable bit then performing a claim.
-    pending: [u32; 128],
+    pending: [u32; 32],
     /// Interrupt Enable Bit of Interrupt Source #0 to #1023 for 2 contexts.
-    enable: [u32; 256],
+    enable: [u32; 64],
     /// The settings of a interrupt priority threshold of each context. The PLIC will mask all PLIC
     /// interrupts of a priority less than or equal to `threshold`.
     threshold: [u32; 2],
@@ -80,8 +80,8 @@ impl Plic {
     pub fn new() -> Self {
         Self {
             priority: [0; 1024],
-            pending: [0; 128],
-            enable: [0; 256],
+            pending: [0; 32],
+            enable: [0; 64],
             threshold: [0; 2],
             claim: [0; 2],
         }
