@@ -85,7 +85,7 @@ The `wasm-pack build` command generates a `pkg` directory and makes Rust
 source code into `.wasm` binary. It also generates the JavaScript API for
 using our Rust-generated WebAssembly. The toolchain's supported target is
 `wasm32-unknown-unknown`. You need to execute this command whenever you change
-your Rust code. 
+your Rust code.
 
 ```
 // This is the alias of
@@ -145,16 +145,42 @@ $ riscv64-unknown-elf-objcopy -O binary foo foo.text
 
 ### Linux
 
-The page [Running 64- and 32-bit RISC-V Linux on
-QEMU](https://risc-v-getting-started-guide.readthedocs.io/en/latest/linux-qemu.html)
-helps to build a Linux image. When you compile this project in a x86 computer,
-you may need to:
+- [Linux v4.19-rc3](https://github.com/torvalds/linux/tree/v4.19-rc3)
+- [riscv-pk](https://github.com/riscv/riscv-pk)
+- [busybear-linux](https://github.com/michaeljclark/busybear-linux)
+
+For build:
+
+```
+// Linux
+$ git clone https://github.com/torvalds/linux/
+$ git checkout tags/v4.19-rc3 -b v4.19-rc3
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+
+// riscv-pk
+$ git clone https://github.com/riscv/riscv-pk
+$ cd riscv-pk
+$ mkdir build
+$ cd build
+$ ../configure --prefix=$RISCV --host=riscv64-unknown-elf \
+  --with-payload=../../linux/vmlinux --enable-logo
+$ make
+$ make install
+
+// busybear-linux
+$ git clone https://github.com/michaeljclark/busybear-linux
+$ cd busybear-linux
+$ ./scripts/build.sh
+```
+
+If a compile error happens, you may need to:
 
 - update `CC := gcc` to `CC := riscv64-unknown-elf-gcc` in
   `riscv-pk/build/Makefile`
 - comment out the "build bbl" part in `busybear-linux/scripts/build.sh`
 
-because the build script for cross compiling in riscv-pk is broken.  See
+because the build script for cross compiling in `riscv-pk` is broken.  See
 https://github.com/riscv/riscv-pk/blob/master/configure#L1146-L1148
 
 ## Testing
