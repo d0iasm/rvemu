@@ -308,7 +308,6 @@ impl Cpu {
         } else if self.bus.virtio.is_interrupting() {
             // An interrupt is raised after a disk access is done.
             Virtio::disk_access(self).expect("failed to access the disk");
-
             irq = VIRTIO_IRQ;
         } else {
             irq = 0;
@@ -335,26 +334,32 @@ impl Cpu {
         let pending = self.state.read(MIE) & self.state.read(MIP);
 
         if (pending & MEIP_BIT) != 0 {
+            //println!("meip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MEIP_BIT);
             return Some(Interrupt::MachineExternalInterrupt);
         }
         if (pending & MSIP_BIT) != 0 {
+            //println!("msip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MSIP_BIT);
             return Some(Interrupt::MachineSoftwareInterrupt);
         }
         if (pending & MTIP_BIT) != 0 {
+            //println!("mtip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !MTIP_BIT);
             return Some(Interrupt::MachineTimerInterrupt);
         }
         if (pending & SEIP_BIT) != 0 {
+            //println!("seip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !SEIP_BIT);
             return Some(Interrupt::SupervisorExternalInterrupt);
         }
         if (pending & SSIP_BIT) != 0 {
+            //println!("ssip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !SSIP_BIT);
             return Some(Interrupt::SupervisorSoftwareInterrupt);
         }
         if (pending & STIP_BIT) != 0 {
+            //println!("stip: check_pending_interrupt!");
             self.state.write(MIP, self.state.read(MIP) & !STIP_BIT);
             return Some(Interrupt::SupervisorTimerInterrupt);
         }

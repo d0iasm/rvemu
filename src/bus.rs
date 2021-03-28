@@ -67,16 +67,6 @@ impl Bus {
         }
     }
 
-    /// Return the reference pointer of UART.
-    pub fn uart(&self) -> &Uart {
-        return &self.uart;
-    }
-
-    /// Return the reference pointer of Virtio.
-    pub fn virtio(&self) -> &Virtio {
-        return &self.virtio;
-    }
-
     /// Set the binary data to the memory.
     pub fn initialize_dram(&mut self, data: Vec<u8>) {
         self.dram.initialize(data);

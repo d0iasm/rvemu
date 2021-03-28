@@ -15,24 +15,21 @@
 use crate::bus::PLIC_BASE;
 use crate::cpu::WORD;
 use crate::exception::Exception;
-use std::ops::RangeInclusive;
 
-/// The address range for interrupt source priority. 1024 4-byte registers exist. Each interrupt
-/// into the PLIC has a configurable priority, from 1-7, with 7 being the highest priority. A value
-/// of 0 means do not interrupt, effectively disabling that interrupt.
-const SOURCE_PRIORITY: RangeInclusive<u64> = RangeInclusive::new(PLIC_BASE, PLIC_BASE + 0xfff);
+/// The address that interrupt source priority starts.
+const PLIC_SOURCE_PRIORITY: u64 = PLIC_BASE;
+/// The address that interrupt source priority ends. 1024 4-byte registers exist.
+const PLIC_SOURCE_PRIORITY_END: u64 = PLIC_SOURCE_PRIORITY + 0xfff;
 
-/// The address range for interrupt pending bits. 32 4-byte (1024 bits) registers exist.
-///
-/// https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc#memory-map
-/// base + 0x001000: Interrupt Pending bit 0-31
-/// base + 0x00107C: Interrupt Pending bit 992-1023
-const PENDING: RangeInclusive<u64> = RangeInclusive::new(PLIC_BASE + 0x1000, PLIC_BASE + 0x107f);
+/// The address that interrupt pending bits start.
+const PLIC_PENDING: u64 = PLIC_BASE + 0x1000;
+/// The address that interrupt pending bits end. 32 4-byte (1024 bits) registers exist.
+const PLIC_PENDING_END: u64 = PLIC_PENDING + 0x7f;
 
-/// The address range for enable registers. The maximum number of contexts is 15871 but this PLIC
-/// supports only 2 contexts.
-///
-/// https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc#memory-map
+/// The address that the regsiters to enable interrupts start.
+const PLIC_ENABLE: u64 = PLIC_BASE + 0x2000;
+/// The address that the regsiters to enable interrupts end. The maximum number of contexts is
+/// 15871 but this PLIC supports 2 contexts.
 /// base + 0x002000: Enable bits for sources 0-31 on context 0
 /// base + 0x002004: Enable bits for sources 32-63 on context 0
 /// ...
@@ -41,12 +38,12 @@ const PENDING: RangeInclusive<u64> = RangeInclusive::new(PLIC_BASE + 0x1000, PLI
 /// base + 0x002084: Enable bits for sources 32-63 on context 1
 /// ...
 /// base + 0x0020FF: Enable bits for sources 992-1023 on context 1
-const ENABLE: RangeInclusive<u64> = RangeInclusive::new(PLIC_BASE + 0x2000, PLIC_BASE + 0x20ff);
+const PLIC_ENABLE_END: u64 = PLIC_ENABLE + 0xff;
 
-/// The address range for priority thresholds and claim/complete registers. The maximum number of
-/// contexts is 15871 but this PLIC supports only 2 contexts.
-///
-/// https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc#memory-map
+/// The address that priority thresholds and claim/complete registers start.
+const PLIC_THRESHOLD_AND_CLAIM: u64 = PLIC_BASE + 0x200000;
+/// The address that priority thresholds and claim/complete registers end.  The maximum number of
+/// contexts is 15871 but this PLIC supports 2 contexts.
 /// base + 0x200000: Priority threshold for context 0
 /// base + 0x200004: Claim/complete for context 0
 /// base + 0x200008: Reserved
@@ -54,14 +51,10 @@ const ENABLE: RangeInclusive<u64> = RangeInclusive::new(PLIC_BASE + 0x2000, PLIC
 /// base + 0x200FFC: Reserved
 /// base + 0x201000: Priority threshold for context 1
 /// base + 0x201004: Claim/complete for context 1
-const THRESHOLD_AND_CLAIM: RangeInclusive<u64> =
-    RangeInclusive::new(PLIC_BASE + 0x200000, PLIC_BASE + 0x201007);
+const PLIC_THRESHOLD_AND_CLAIM_END: u64 = PLIC_THRESHOLD_AND_CLAIM + 0x1007;
 
 /// The address of the claim/complete registers for S-mode (context 1).
 pub const PLIC_SCLAIM: u64 = PLIC_BASE + 0x201004;
-
-const WORD_SIZE: u64 = 0x4;
-const CONTEXT_OFFSET: u64 = 0x1000;
 
 /// The platform-level-interrupt controller (PLIC).
 pub struct Plic {
@@ -94,19 +87,6 @@ impl Plic {
         }
     }
 
-    /// Returns true if the pending bit for the `irq` is set.
-    fn is_pending(&self, irq: u64) -> bool {
-        let index = irq.wrapping_div(WORD_SIZE);
-        return ((self.pending[index as usize] >> irq) & 1) == 1;
-    }
-
-    /// Returns true if the enable bit for the `irq` of the `context` is set.
-    fn is_enable(&self, context: u64, irq: u64) -> bool {
-        // One context uses 32 elements in the `self.enable` array.
-        let index = irq.wrapping_div(WORD_SIZE) + context * 32;
-        return ((self.enable[index as usize] >> irq) & 1) == 1;
-    }
-
     /// Load `size`-bit data from a register located at `addr` in PLIC.
     pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
         // TODO: should support byte-base access.
@@ -115,36 +95,25 @@ impl Plic {
         }
 
         match addr {
-            addr if SOURCE_PRIORITY.contains(&addr) => {
-                if (addr - SOURCE_PRIORITY.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::LoadAccessFault);
-                }
-                let index = (addr - SOURCE_PRIORITY.start()).wrapping_div(WORD_SIZE);
+            PLIC_SOURCE_PRIORITY..=PLIC_SOURCE_PRIORITY_END => {
+                let index = (addr - PLIC_SOURCE_PRIORITY).wrapping_div(0x4);
                 Ok(self.priority[index as usize] as u64)
             }
-            addr if PENDING.contains(&addr) => {
-                if (addr - PENDING.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::LoadAccessFault);
-                }
-                let index = (addr - PENDING.start()).wrapping_div(WORD_SIZE);
+            PLIC_PENDING..=PLIC_PENDING_END => {
+                let index = (addr - PLIC_PENDING).wrapping_div(0x4);
                 Ok(self.pending[index as usize] as u64)
             }
-            addr if ENABLE.contains(&addr) => {
-                if (addr - ENABLE.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::LoadAccessFault);
-                }
-                let index = (addr - ENABLE.start()).wrapping_div(WORD_SIZE);
+            PLIC_ENABLE..=PLIC_ENABLE_END => {
+                let index = (addr - PLIC_ENABLE).wrapping_div(0x4);
                 Ok(self.enable[index as usize] as u64)
             }
-            addr if THRESHOLD_AND_CLAIM.contains(&addr) => {
-                let context = (addr - THRESHOLD_AND_CLAIM.start()).wrapping_div(CONTEXT_OFFSET);
-                let offset = addr - (THRESHOLD_AND_CLAIM.start() + CONTEXT_OFFSET * context);
-                if offset == 0 {
+            PLIC_THRESHOLD_AND_CLAIM..=PLIC_THRESHOLD_AND_CLAIM_END => {
+                let context = (addr - PLIC_THRESHOLD_AND_CLAIM).wrapping_div(0x1000);
+                let offset = addr - (PLIC_THRESHOLD_AND_CLAIM + 0x1000 * context);
+                if offset % 4 == 0 {
                     Ok(self.threshold[context as usize] as u64)
-                } else if offset == 4 {
-                    Ok(self.claim[context as usize] as u64)
                 } else {
-                    return Err(Exception::LoadAccessFault);
+                    Ok(self.claim[context as usize] as u64)
                 }
             }
             _ => return Err(Exception::LoadAccessFault),
@@ -159,36 +128,25 @@ impl Plic {
         }
 
         match addr {
-            addr if SOURCE_PRIORITY.contains(&addr) => {
-                if (addr - SOURCE_PRIORITY.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::StoreAMOAccessFault);
-                }
-                let index = (addr - SOURCE_PRIORITY.start()).wrapping_div(WORD_SIZE);
+            PLIC_SOURCE_PRIORITY..=PLIC_SOURCE_PRIORITY_END => {
+                let index = (addr - PLIC_SOURCE_PRIORITY).wrapping_div(0x4);
                 self.priority[index as usize] = value as u32;
             }
-            addr if PENDING.contains(&addr) => {
-                if (addr - PENDING.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::StoreAMOAccessFault);
-                }
-                let index = (addr - PENDING.start()).wrapping_div(WORD_SIZE);
+            PLIC_PENDING..=PLIC_PENDING_END => {
+                let index = (addr - PLIC_PENDING).wrapping_div(0x4);
                 self.pending[index as usize] = value as u32;
             }
-            addr if ENABLE.contains(&addr) => {
-                if (addr - ENABLE.start()).wrapping_rem(WORD_SIZE) != 0 {
-                    return Err(Exception::StoreAMOAccessFault);
-                }
-                let index = (addr - ENABLE.start()).wrapping_div(WORD_SIZE);
+            PLIC_ENABLE..=PLIC_ENABLE_END => {
+                let index = (addr - PLIC_ENABLE).wrapping_div(0x4);
                 self.enable[index as usize] = value as u32;
             }
-            addr if THRESHOLD_AND_CLAIM.contains(&addr) => {
-                let context = (addr - THRESHOLD_AND_CLAIM.start()).wrapping_div(CONTEXT_OFFSET);
-                let offset = addr - (THRESHOLD_AND_CLAIM.start() + CONTEXT_OFFSET * context);
-                if offset == 0 {
+            PLIC_THRESHOLD_AND_CLAIM..=PLIC_THRESHOLD_AND_CLAIM_END => {
+                let context = (addr - PLIC_THRESHOLD_AND_CLAIM).wrapping_div(0x1000);
+                let offset = addr - (PLIC_THRESHOLD_AND_CLAIM + 0x1000 * context);
+                if offset % 4 == 0 {
                     self.threshold[context as usize] = value as u32;
-                } else if offset == 4 {
-                    self.claim[context as usize] = value as u32;
                 } else {
-                    return Err(Exception::StoreAMOAccessFault);
+                    self.claim[context as usize] = value as u32;
                 }
             }
             _ => return Err(Exception::StoreAMOAccessFault),
