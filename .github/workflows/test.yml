@@ -34,7 +34,7 @@ jobs:
 
     - name: Run xv6
       run: |
-        make
+        make rvemu-cli
         ./target/release/rvemu-cli -k bin/xv6/kernel.bin -f bin/xv6/fs.img > out &
         pid=$!
         sleep 120
