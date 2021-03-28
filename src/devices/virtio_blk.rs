@@ -31,29 +31,37 @@ const _VIRTQ_DESC_F_INDIRECT: u64 = 4;
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Magic value. Always return 0x74726976 (a Little Endian equivalent of the “virt” string).
 const MAGIC_RANGE: RangeInclusive<u64> = RangeInclusive::new(VIRTIO_BASE, VIRTIO_BASE + 0x3);
+
 /// Device version number. 1 is legacy.
 const VERSION_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x4, VIRTIO_BASE + 0x7);
+
 /// Virtio Subsystem Device ID. 1 is network, 2 is block device.
 const DEVICE_ID_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x8, VIRTIO_BASE + 0xb);
+
 /// Virtio Subsystem Vendor ID. Always return 0x554d4551
 const VENDOR_ID_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0xc, VIRTIO_BASE + 0xf);
+
 /// Flags representing features the device supports. Access to this register returns bits
 /// DeviceFeaturesSel ∗ 32 to (DeviceFeaturesSel ∗ 32) + 31.
 const DEVICE_FEATURES_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x10, VIRTIO_BASE + 0x13);
+
 /// Device (host) features word selection.
 const DEVICE_FEATURES_SEL_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x14, VIRTIO_BASE + 0x17);
+
 /// Flags representing device features understood and activated by the driver. Access to this
 /// register sets bits DriverFeaturesSel ∗ 32 to (DriverFeaturesSel ∗ 32) + 31.
 const DRIVER_FEATURES_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x20, VIRTIO_BASE + 0x23);
+
 /// Activated (guest) features word selection.
 const DRIVER_FEATURES_SEL_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x24, VIRTIO_BASE + 0x27);
+
 // 4.2.4 Legacy interface
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
 /// Guest page size. The driver writes the guest page size in bytes to the register during
@@ -61,26 +69,31 @@ const DRIVER_FEATURES_SEL_RANGE: RangeInclusive<u64> =
 /// the device to calculate the Guest address of the first queue page. Write-only.
 const GUEST_PAGE_SIZE_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x28, VIRTIO_BASE + 0x2b);
+
 /// Virtual queue index. Writing to this register selects the virtual queue that the following
 /// operations on the QueueNumMax, QueueNum, QueueAlign and QueuePFN registers apply to. The index
 /// number of the first queue is zero (0x0). Write-only.
 const QUEUE_SEL_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x30, VIRTIO_BASE + 0x33);
+
 /// Maximum virtual queue size. Reading from the register returns the maximum size of the queue the
 /// device is ready to process or zero (0x0) if the queue is not available. This applies to the
 /// queue selected by writing to QueueSel and is allowed only when QueuePFN is set to zero (0x0),
 /// so when the queue is not actively used. Read-only. In QEMU, `VIRTIO_COUNT = 8`.
 const QUEUE_NUM_MAX_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x34, VIRTIO_BASE + 0x37);
+
 /// Virtual queue size. Queue size is the number of elements in the queue, therefore size of the
 /// descriptor table and both available and used rings. Writing to this register notifies the
 /// device what size of the queue the driver will use. This applies to the queue selected by
 /// writing to QueueSel. Write-only.
 const QUEUE_NUM_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x38, VIRTIO_BASE + 0x3b);
+
 /// Used Ring alignment in the virtual queue.
 const QUEUE_ALIGN_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x3c, VIRTIO_BASE + 0x3f);
+
 /// Guest physical page number of the virtual queue. Writing to this register notifies the device
 /// about location of the virtual queue in the Guest’s physical address space. This value is the
 /// index number of a page starting with the queue Descriptor Table. Value zero (0x0) means
@@ -90,25 +103,30 @@ const QUEUE_ALIGN_RANGE: RangeInclusive<u64> =
 /// Both read and write accesses apply to the queue selected by writing to QueueSel.
 const QUEUE_PFN_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x40, VIRTIO_BASE + 0x43);
+
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Queue notifier. Writing a queue index to this register notifies the device that there are new
 /// buffers to process in the queue. Write-only.
 const QUEUE_NOTIFY_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x50, VIRTIO_BASE + 0x53);
+
 /// Interrupt status. Reading from this register returns a bit mask of events that caused the
 /// device interrupt to be asserted.
 const INTERRUPT_STATUS_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x60, VIRTIO_BASE + 0x63);
+
 /// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this
 /// register notifies the device that events causing the interrupt have been handled.
 const INTERRUPT_ACK_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x64, VIRTIO_BASE + 0x67);
+
 /// Device status. Reading from this register returns the current device status flags. Writing
 /// non-zero values to this register sets the status flags, indicating the driver progress. Writing
 /// zero (0x0) to this register triggers a device reset.
 const STATUS_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x70, VIRTIO_BASE + 0x73);
+
 /// Configuration space.
 const CONFIG_RANGE: RangeInclusive<u64> =
     RangeInclusive::new(VIRTIO_BASE + 0x100, VIRTIO_BASE + 0x107);
@@ -160,7 +178,7 @@ impl VirtqueueAddr {
             desc_addr: base_addr,
             avail_addr: base_addr + 16 * size,
             // Used ring starts with the `queue_align` boundary after the available ring ends.
-            used_addr: ((avail_ring_end / align) + 1) * align,
+            used_addr: (avail_ring_end.wrapping_div(align) + 1).wrapping_mul(align),
         }
     }
 }
@@ -471,6 +489,14 @@ impl Virtio {
             }
             addr if INTERRUPT_ACK_RANGE.contains(&addr) => {
                 (self.interrupt_status, addr - INTERRUPT_ACK_RANGE.start())
+                /*
+                if (value & 0x1) == 1 {
+                    self.interrupt_status &= !0x1;
+                } else {
+                    panic!("unexpected value for INTERRUPT_ACK: {:#x}", value);
+                }
+                return Ok(());
+                */
             }
             addr if STATUS_RANGE.contains(&addr) => (self.status, addr - STATUS_RANGE.start()),
             addr if CONFIG_RANGE.contains(&addr) => {
