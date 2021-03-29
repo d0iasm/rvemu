@@ -24,7 +24,7 @@ jobs:
         override: true
 
     - name: Install dependencies
-      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      run: cargo install wasm-pack
 
     - name: Build
       run: make rvemu
