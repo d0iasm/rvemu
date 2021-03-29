@@ -139,10 +139,12 @@ impl Plic {
             addr if THRESHOLD_AND_CLAIM.contains(&addr) => {
                 let context = (addr - THRESHOLD_AND_CLAIM.start()).wrapping_div(CONTEXT_OFFSET);
                 let offset = addr - (THRESHOLD_AND_CLAIM.start() + CONTEXT_OFFSET * context);
-                if offset % 4 == 0 {
+                if offset == 0 {
                     Ok(self.threshold[context as usize] as u64)
-                } else {
+                } else if offset == 4 {
                     Ok(self.claim[context as usize] as u64)
+                } else {
+                    return Err(Exception::LoadAccessFault);
                 }
             }
             _ => return Err(Exception::LoadAccessFault),
@@ -181,10 +183,12 @@ impl Plic {
             addr if THRESHOLD_AND_CLAIM.contains(&addr) => {
                 let context = (addr - THRESHOLD_AND_CLAIM.start()).wrapping_div(CONTEXT_OFFSET);
                 let offset = addr - (THRESHOLD_AND_CLAIM.start() + CONTEXT_OFFSET * context);
-                if offset % 4 == 0 {
+                if offset == 0 {
                     self.threshold[context as usize] = value as u32;
-                } else {
+                } else if offset == 4 {
                     self.claim[context as usize] = value as u32;
+                } else {
+                    return Err(Exception::StoreAMOAccessFault);
                 }
             }
             _ => return Err(Exception::StoreAMOAccessFault),
