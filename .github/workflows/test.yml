@@ -17,10 +17,10 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    - name: Install latest nightly
+    - name: Install nightly-2021-02-22
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: nightly-2021-02-22
         override: true
 
     - name: Install dependencies
