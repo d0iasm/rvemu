@@ -1,7 +1,7 @@
 [package]
 name = "rvemu"
 description = "RISC-V emulator core implementation."
-version = "0.0.10"
+version = "0.0.11"
 authors = ["Asami Doi"]
 edition = "2018"
 repository = "https://github.com/d0iasm/rvemu"
@@ -23,12 +23,12 @@ include = [
 crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-js-sys = "0.3.36"
-wasm-bindgen = "0.2.59"
-wasm-bindgen-futures = "0.4.9"
+js-sys = "0.3.50"
+wasm-bindgen = "0.2.73"
+wasm-bindgen-futures = "0.4.23"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
-version = "0.3.36"
+version = "0.3.50"
 features = [
   'Document',
   'Element',

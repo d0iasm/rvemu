@@ -3,9 +3,7 @@ ROOT_DIR := $(shell pwd)
 rvemu: rvemu-wasm rvemu-cli
 
 rvemu-wasm:
-	# Disable temporarily for this issue:
-	# https://github.com/rustwasm/wasm-bindgen/issues/2508
-	#rustup run nightly wasm-pack build lib/rvemu-wasm --out-dir $(ROOT_DIR)/public/pkg --target web --no-typescript
+	rustup run nightly wasm-pack build lib/rvemu-wasm --out-dir $(ROOT_DIR)/public/pkg --target web --no-typescript
 
 rvemu-cli:
 	cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml

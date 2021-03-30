@@ -4,9 +4,7 @@ rust:
 before-install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 install:
-  # Disable it temporarily due to this issue:
-  # https://github.com/rustwasm/wasm-bindgen/issues/2508
-  #- wasm-pack build lib/rvemu-wasm --target web
+  - wasm-pack build lib/rvemu-wasm --target web
   - cargo build --release --manifest-path lib/rvemu-cli/Cargo.toml
 script:
   - make test
