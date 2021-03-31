@@ -37,6 +37,6 @@ jobs:
         make rvemu-cli
         ./target/release/rvemu-cli -k bin/xv6/kernel.bin -f bin/xv6/fs.img > out &
         pid=$!
-        sleep 120
+        sleep 300
         kill $pid
         grep -q "init: starting sh" ./out
