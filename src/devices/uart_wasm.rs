@@ -20,21 +20,21 @@ extern "C" {
 pub const UART_IRQ: u64 = 10;
 
 /// Receive holding register (for input bytes).
-pub const UART_RHR: u64 = UART_BASE + 0;
+const UART_RHR: u64 = UART_BASE + 0;
 /// Transmit holding register (for output bytes).
-pub const UART_THR: u64 = UART_BASE + 0;
+const UART_THR: u64 = UART_BASE + 0;
 /// Interrupt enable register.
-pub const UART_IER: u64 = UART_BASE + 1;
+const _UART_IER: u64 = UART_BASE + 1;
 /// FIFO control register.
-pub const UART_FCR: u64 = UART_BASE + 2;
+const _UART_FCR: u64 = UART_BASE + 2;
 /// Interrupt status register.
 /// ISR BIT-0:
 ///     0 = an interrupt is pending and the ISR contents may be used as a pointer to the appropriate
 /// interrupt service routine.
 ///     1 = no interrupt is pending.
-pub const UART_ISR: u64 = UART_BASE + 2;
+const UART_ISR: u64 = UART_BASE + 2;
 /// Line control register.
-pub const UART_LCR: u64 = UART_BASE + 3;
+const _UART_LCR: u64 = UART_BASE + 3;
 /// Line status register.
 /// LSR BIT 0:
 ///     0 = no data in receive holding register or FIFO.
@@ -42,7 +42,7 @@ pub const UART_LCR: u64 = UART_BASE + 3;
 /// LSR BIT 6:
 ///     0 = transmitter holding and shift registers are full.
 ///     1 = transmit holding register is empty. In FIFO mode this bit is set to one whenever the the transmitter FIFO and transmit shift register are empty.
-pub const UART_LSR: u64 = UART_BASE + 5;
+const UART_LSR: u64 = UART_BASE + 5;
 
 fn get_input(window: &Window) -> u8 {
     let document = window.document().expect("failed to get a document object");

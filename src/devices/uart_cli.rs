@@ -18,21 +18,21 @@ use crate::exception::Exception;
 pub const UART_IRQ: u64 = 10;
 
 /// Receive holding register (for input bytes).
-pub const UART_RHR: u64 = UART_BASE + 0;
+const UART_RHR: u64 = UART_BASE + 0;
 /// Transmit holding register (for output bytes).
-pub const UART_THR: u64 = UART_BASE + 0;
+const UART_THR: u64 = UART_BASE + 0;
 /// Interrupt enable register.
-pub const UART_IER: u64 = UART_BASE + 1;
+const _UART_IER: u64 = UART_BASE + 1;
 /// FIFO control register.
-pub const UART_FCR: u64 = UART_BASE + 2;
+const _UART_FCR: u64 = UART_BASE + 2;
 /// Interrupt status register.
 /// ISR BIT-0:
 ///     0 = an interrupt is pending and the ISR contents may be used as a pointer to the appropriate
 /// interrupt service routine.
 ///     1 = no interrupt is pending.
-pub const UART_ISR: u64 = UART_BASE + 2;
+const UART_ISR: u64 = UART_BASE + 2;
 /// Line control register.
-pub const UART_LCR: u64 = UART_BASE + 3;
+const _UART_LCR: u64 = UART_BASE + 3;
 /// Line status register.
 /// LSR BIT 0:
 ///     0 = no data in receive holding register or FIFO.
@@ -40,12 +40,12 @@ pub const UART_LCR: u64 = UART_BASE + 3;
 /// LSR BIT 5:
 ///     0 = transmit holding register is full. 16550 will not accept any data for transmission.
 ///     1 = transmitter hold register (or FIFO) is empty. CPU can load the next character.
-pub const UART_LSR: u64 = UART_BASE + 5;
+const UART_LSR: u64 = UART_BASE + 5;
 
 /// The receiver (RX).
-pub const UART_LSR_RX: u8 = 1;
+const UART_LSR_RX: u8 = 1;
 /// The transmitter (TX).
-pub const UART_LSR_TX: u8 = 1 << 5;
+const UART_LSR_TX: u8 = 1 << 5;
 
 /// The UART, the size of which is 0x100 (2**8).
 pub struct Uart {
@@ -93,8 +93,7 @@ impl Uart {
     }
 
     /// Return true if an interrupt is pending. Clear the interrupting flag by swapping a value.
-    pub fn is_interrupting(&self) -> bool {
-        self.interrupting.swap(false, Ordering::Acquire)
+    pub fn is_interrupting(&self) -> bool { self.interrupting.swap(false, Ordering::Acquire)
     }
 
     /// Read a byte from the receive holding register.
