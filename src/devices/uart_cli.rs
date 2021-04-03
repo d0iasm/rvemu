@@ -30,7 +30,7 @@ const _UART_FCR: u64 = UART_BASE + 2;
 ///     0 = an interrupt is pending and the ISR contents may be used as a pointer to the appropriate
 /// interrupt service routine.
 ///     1 = no interrupt is pending.
-const UART_ISR: u64 = UART_BASE + 2;
+const _UART_ISR: u64 = UART_BASE + 2;
 /// Line control register.
 const _UART_LCR: u64 = UART_BASE + 3;
 /// Line status register.
