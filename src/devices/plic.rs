@@ -59,18 +59,16 @@ const ENABLE_END: u64 = PLIC_BASE + 0x20ff;
 const THRESHOLD_AND_CLAIM: u64 = PLIC_BASE + 0x200000;
 const THRESHOLD_AND_CLAIM_END: u64 = PLIC_BASE + 0x201007;
 
-/// The address of the claim/complete registers for S-mode (context 1).
-pub const PLIC_SCLAIM: u64 = PLIC_BASE + 0x201004;
-
 const WORD_SIZE: u64 = 0x4;
 const CONTEXT_OFFSET: u64 = 0x1000;
+const SOURCE_NUM: u64 = 1024;
 
 /// The platform-level-interrupt controller (PLIC).
 pub struct Plic {
     /// The interrupt priority for each interrupt source. A priority value of 0 is reserved to mean
     /// "never interrupt" and effectively disables the interrupt. Priority 1 is the lowest active
     /// priority, and priority 7 is the highest.
-    priority: [u32; 1024],
+    priority: [u32; SOURCE_NUM as usize],
     /// Interrupt pending bits. If bit 1 is set, a global interrupt 1 is pending. A pending bit in
     /// the PLIC core can be cleared by setting the associated enable bit then performing a claim.
     pending: [u32; 32],
@@ -96,17 +94,36 @@ impl Plic {
         }
     }
 
-    /// Returns true if the pending bit for the `irq` is set.
-    fn _is_pending(&self, irq: u64) -> bool {
+    /// Sets IRQ bit in `pending`.
+    pub fn update_pending(&mut self, irq: u64) {
         let index = irq.wrapping_div(WORD_SIZE);
-        return ((self.pending[index as usize] >> irq) & 1) == 1;
+        self.pending[index as usize] = self.pending[index as usize] | (1 << irq);
+
+        self.update_claim(irq);
+    }
+
+    /// Clears IRQ bit in `pending`.
+    fn clear_pending(&mut self, irq: u64) {
+        let index = irq.wrapping_div(WORD_SIZE);
+        self.pending[index as usize] = self.pending[index as usize] & !(1 << irq);
+
+        self.update_claim(0);
+    }
+
+    /// Sets IRQ bit in `claim` for context 1.
+    fn update_claim(&mut self, irq: u64) {
+        // TODO: Support highest priority to the `claim` register.
+        // claim[1] is claim/complete registers for S-mode (context 1). SCLAIM.
+        if self.is_enable(1, irq) || irq == 0 {
+            self.claim[1] = irq as u32;
+        }
     }
 
     /// Returns true if the enable bit for the `irq` of the `context` is set.
-    fn _is_enable(&self, context: u64, irq: u64) -> bool {
-        // One context uses 32 elements in the `self.enable` array.
-        let index = irq.wrapping_div(WORD_SIZE) + context * 32;
-        return ((self.enable[index as usize] >> irq) & 1) == 1;
+    fn is_enable(&self, context: u64, irq: u64) -> bool {
+        let index = (irq.wrapping_rem(SOURCE_NUM)).wrapping_div(WORD_SIZE * 8);
+        let offset = (irq.wrapping_rem(SOURCE_NUM)).wrapping_rem(WORD_SIZE * 8);
+        return ((self.enable[(context * 32 + index) as usize] >> offset) & 1) == 1;
     }
 
     /// Load `size`-bit data from a register located at `addr` in PLIC.
@@ -188,7 +205,10 @@ impl Plic {
                 if offset == 0 {
                     self.threshold[context as usize] = value as u32;
                 } else if offset == 4 {
-                    self.claim[context as usize] = value as u32;
+                    //self.claim[context as usize] = value as u32;
+
+                    // Clear pending bit.
+                    self.clear_pending(value);
                 } else {
                     return Err(Exception::StoreAMOAccessFault);
                 }

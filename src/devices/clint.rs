@@ -19,21 +19,21 @@ use crate::exception::Exception;
 
 /// The address that a msip register starts. A msip is a machine mode software interrupt pending
 /// register, used to assert a software interrupt for a CPU.
-const CLINT_MSIP: u64 = CLINT_BASE;
+const MSIP: u64 = CLINT_BASE;
 /// The address that a msip register ends. `msip` is a 4-byte register.
-const CLINT_MSIP_END: u64 = CLINT_MSIP + 4;
+const MSIP_END: u64 = MSIP + 0x4;
 
 /// The address that a mtimecmp register starts. A mtimecmp is a memory mapped machine mode timer
 /// compare register, used to trigger an interrupt when mtimecmp is greater than or equal to mtime.
-const CLINT_MTIMECMP: u64 = CLINT_BASE + 0x4000;
+const MTIMECMP: u64 = CLINT_BASE + 0x4000;
 /// The address that a mtimecmp register ends. `mtimecmp` is a 8-byte register.
-const CLINT_MTIMECMP_END: u64 = CLINT_MTIMECMP + 8;
+const MTIMECMP_END: u64 = MTIMECMP + 0x8;
 
 /// The address that a timer register starts. A mtime is a machine mode timer register which runs
 /// at a constant frequency.
-const CLINT_MTIME: u64 = CLINT_BASE + 0xbff8;
+const MTIME: u64 = CLINT_BASE + 0xbff8;
 /// The address that a timer register ends. `mtime` is a 8-byte register.
-const CLINT_MTIME_END: u64 = CLINT_MTIME + 8;
+const MTIME_END: u64 = MTIME + 0x8;
 
 /// The core-local interruptor (CLINT).
 /// 0x0000 msip for hart 0 (4 bytes)
@@ -94,9 +94,9 @@ impl Clint {
         // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
         // position in the register.
         let (reg, offset) = match addr {
-            CLINT_MSIP..=CLINT_MSIP_END => (self.msip as u64, addr - CLINT_MSIP),
-            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => (self.mtimecmp, addr - CLINT_MTIMECMP),
-            CLINT_MTIME..=CLINT_MTIME_END => (self.mtime, addr - CLINT_MTIME),
+            MSIP..=MSIP_END => (self.msip as u64, addr - MSIP),
+            MTIMECMP..=MTIMECMP_END => (self.mtimecmp, addr - MTIMECMP),
+            MTIME..=MTIME_END => (self.mtime, addr - MTIME),
             _ => return Err(Exception::LoadAccessFault),
         };
 
@@ -114,9 +114,9 @@ impl Clint {
         // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
         // position in the register.
         let (mut reg, offset) = match addr {
-            CLINT_MSIP..=CLINT_MSIP_END => (self.msip as u64, addr - CLINT_MSIP),
-            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => (self.mtimecmp, addr - CLINT_MTIMECMP),
-            CLINT_MTIME..=CLINT_MTIME_END => (self.mtime, addr - CLINT_MTIME),
+            MSIP..=MSIP_END => (self.msip as u64, addr - MSIP),
+            MTIMECMP..=MTIMECMP_END => (self.mtimecmp, addr - MTIMECMP),
+            MTIME..=MTIME_END => (self.mtime, addr - MTIME),
             _ => return Err(Exception::StoreAMOAccessFault),
         };
 
@@ -144,9 +144,9 @@ impl Clint {
 
         // Store the new value to the target register.
         match addr {
-            CLINT_MSIP..=CLINT_MSIP_END => self.msip = reg as u32,
-            CLINT_MTIMECMP..=CLINT_MTIMECMP_END => self.mtimecmp = reg,
-            CLINT_MTIME..=CLINT_MTIME_END => self.mtime = reg,
+            MSIP..=MSIP_END => self.msip = reg as u32,
+            MTIMECMP..=MTIMECMP_END => self.mtimecmp = reg,
+            MTIME..=MTIME_END => self.mtime = reg,
             _ => return Err(Exception::StoreAMOAccessFault),
         }
 

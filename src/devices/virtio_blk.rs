@@ -262,43 +262,6 @@ impl VirtqAvail {
     }
 }
 
-/// "The used ring is where the device returns buffers once it is done with them: it is only
-/// written to by the device, and read by the driver."
-///
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
-///
-/// ```c
-/// #define VIRTQ_USED_F_NO_NOTIFY 1
-/// struct virtq_used {
-///   le16 flags;
-///   le16 idx;
-///   struct virtq_used_elem ring[ /* Queue Size */];
-///   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
-/// };
-/// ```
-struct _VirtqUsed {
-    flags: u16,
-    idx: u16,
-    ring: Vec<_VirtqUsedElem>,
-}
-
-/// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
-///
-/// ```c
-/// struct virtq_used_elem {
-///   le32 id;
-///   le32 len;
-/// };
-/// ```
-struct _VirtqUsedElem {
-    /// Index of start of used descriptor chain. Indicates the head entry of the descriptor chain
-    /// describing the buffer (this matches an entry placed in the available ring by the guest
-    /// earlier).
-    id: u32,
-    /// Total length of the descriptor chain which was used (written to).
-    len: u32,
-}
-
 /// Paravirtualized drivers for IO virtualization.
 pub struct Virtio {
     id: u64,
@@ -622,6 +585,20 @@ impl Virtio {
         //   If flags is 0, the device MUST send a notification.
         // TODO: check the flags in the available ring.
 
+        // "The used ring is where the device returns buffers once it is done with them: it is only
+        // written to by the device, and read by the driver."
+        //
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
+        //
+        // ```c
+        // #define VIRTQ_USED_F_NO_NOTIFY 1
+        // struct virtq_used {
+        //   le16 flags;
+        //   le16 idx;
+        //   struct virtq_used_elem ring[ /* Queue Size */];
+        //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
+        // };
+        // ```
         cpu.bus.write(
             virtq
                 .used_addr

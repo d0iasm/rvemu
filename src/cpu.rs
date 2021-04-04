@@ -10,7 +10,6 @@ use crate::{
     bus::{Bus, DRAM_BASE},
     csr::*,
     devices::{
-        plic::PLIC_SCLAIM,
         uart::UART_IRQ,
         virtio_blk::{Virtio, VIRTIO_IRQ},
     },
@@ -316,9 +315,7 @@ impl Cpu {
         if irq != 0 {
             // TODO: assume that hart is 0
             // TODO: write a value to MCLAIM if the mode is machine
-            self.bus
-                .write(PLIC_SCLAIM, irq, WORD)
-                .expect("failed to write an IRQ to the PLIC_SCLAIM");
+            self.bus.plic.update_pending(irq);
             self.state.write(MIP, self.state.read(MIP) | SEIP_BIT);
         }
 
