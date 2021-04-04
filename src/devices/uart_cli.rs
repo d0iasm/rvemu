@@ -93,7 +93,8 @@ impl Uart {
     }
 
     /// Return true if an interrupt is pending. Clear the interrupting flag by swapping a value.
-    pub fn is_interrupting(&self) -> bool { self.interrupting.swap(false, Ordering::Acquire)
+    pub fn is_interrupting(&self) -> bool {
+        self.interrupting.swap(false, Ordering::Acquire)
     }
 
     /// Read a byte from the receive holding register.
