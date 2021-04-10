@@ -189,6 +189,7 @@ impl State {
     pub fn new() -> Self {
         let mut csrs = [0; CSR_SIZE];
         let misa: u64 = (2 << 62) | // MXL[1:0]=2 (XLEN is 64)
+            (1 << 20) | // Extensions[20] (User mode implemented)
             (1 << 18) | // Extensions[18] (Supervisor mode implemented)
             (1 << 12) | // Extensions[12] (Integer Multiply/Divide extension)
             (1 << 8) | // Extensions[8] (RV32I/64I/128I base ISA)
