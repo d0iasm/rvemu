@@ -63,13 +63,31 @@ impl Exception {
         }
     }
 
+    fn is_ecall(&self) -> bool {
+        match self {
+            Exception::Breakpoint
+            | Exception::EnvironmentCallFromUMode
+            | Exception::EnvironmentCallFromSMode
+            | Exception::EnvironmentCallFromMMode => true,
+            _ => false,
+        }
+    }
+
     /// Update CSRs and the program counter depending on an exception.
     pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
         // 1.2 Privilege Levels
         // "Traps that increase privilege level are termed vertical traps, while traps that remain
         // at the same privilege level are termed horizontal traps."
 
-        let exception_pc = cpu.pc.wrapping_sub(4);
+        let mut exception_pc = cpu.pc;
+        // 3.2.1 Environment Call and Breakpoint
+        // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to the
+        // address of the ECALL or EBREAK instruction itself, not the address of the following
+        // instruction."
+        if self.is_ecall() {
+            exception_pc = exception_pc.wrapping_sub(4);
+        }
+
         cpu.prev_mode = cpu.mode;
 
         let cause = self.exception_code();
