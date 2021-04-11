@@ -14,29 +14,29 @@ pub const CSR_SIZE: usize = 4096;
 //////////////////////////////
 // User trap setup.
 /// User status register.
-pub const USTATUS: CsrAddress = 0x000;
+const USTATUS: CsrAddress = 0x000;
 /// User trap handler base address.
-pub const UTVEC: CsrAddress = 0x005;
+const UTVEC: CsrAddress = 0x005;
 
 // User trap handling.
 /// User exception program counter.
-pub const UEPC: CsrAddress = 0x041;
+const UEPC: CsrAddress = 0x041;
 /// User trap cause.
-pub const UCAUSE: CsrAddress = 0x042;
+const UCAUSE: CsrAddress = 0x042;
 /// User bad address or instruction.
-pub const UTVAL: CsrAddress = 0x043;
+const _UTVAL: CsrAddress = 0x043;
 
 // User floating-point CSRs.
 /// Flating-point accrued exceptions.
-pub const FFLAGS: CsrAddress = 0x001;
+const _FFLAGS: CsrAddress = 0x001;
 /// Floating-point dynamic rounding mode.
-pub const FRB: CsrAddress = 0x002;
+const _FRB: CsrAddress = 0x002;
 /// Floating-point control and status register (frm + fflags).
 pub const FCSR: CsrAddress = 0x003;
 
 // User Counter/Timers.
 /// Timer for RDTIME instruction.
-pub const TIME: CsrAddress = 0xc01;
+const TIME: CsrAddress = 0xc01;
 
 /////////////////////////////////////
 // Supervisor-level CSR addresses //
@@ -45,9 +45,9 @@ pub const TIME: CsrAddress = 0xc01;
 /// Supervisor status register.
 pub const SSTATUS: CsrAddress = 0x100;
 /// Supervisor exception delegation register.
-pub const SEDELEG: CsrAddress = 0x102;
+const SEDELEG: CsrAddress = 0x102;
 /// Supervisor interrupt delegation register.
-pub const SIDELEG: CsrAddress = 0x103;
+const SIDELEG: CsrAddress = 0x103;
 /// Supervisor interrupt-enable register.
 pub const SIE: CsrAddress = 0x104;
 /// Supervisor trap handler base address.
@@ -55,7 +55,7 @@ pub const STVEC: CsrAddress = 0x105;
 
 // Supervisor trap handling.
 /// Scratch register for supervisor trap handlers.
-pub const SSCRATCH: CsrAddress = 0x140;
+const _SSCRATCH: CsrAddress = 0x140;
 /// Supervisor exception program counter.
 pub const SEPC: CsrAddress = 0x141;
 /// Supervisor trap cause.
@@ -70,35 +70,43 @@ pub const SIP: CsrAddress = 0x144;
 pub const SATP: CsrAddress = 0x180;
 
 // SSTATUS fields.
-//pub const SSTATUS_UIE: u64 = 0x00000001;
-pub const SSTATUS_SIE: u64 = 0x00000002;
-//pub const SSTATUS_UPIE: u64 = 0x00000010;
-pub const SSTATUS_SPIE: u64 = 0x00000020;
-pub const SSTATUS_SPP: u64 = 0x00000100;
-pub const SSTATUS_FS: u64 = 0x00006000;
-pub const SSTATUS_XS: u64 = 0x00018000;
-pub const SSTATUS_SUM: u64 = 0x00040000;
-pub const SSTATUS_MXR: u64 = 0x00080000;
-pub const SSTATUS_UXL: u64 = 0x0000000300000000;
+const SSTATUS_SIE: u64 = 0x2; // sstatus[1]
+const SSTATUS_SPIE: u64 = 0x20; // sstatus[5]
+const SSTATUS_UBE: u64 = 0x40; // sstatus[6]
+const SSTATUS_SPP: u64 = 0x100; // sstatus[8]
+const SSTATUS_FS: u64 = 0x6000; // sstatus[14:13]
+const SSTATUS_XS: u64 = 0x18000; // sstatus[16:15]
+const SSTATUS_SUM: u64 = 0x40000; // sstatus[18]
+const SSTATUS_MXR: u64 = 0x80000; // sstatus[19]
+const SSTATUS_UXL: u64 = 0x3_00000000; // sstatus[33:32]
+const SSTATUS_MASK: u64 = SSTATUS_SIE
+    | SSTATUS_SPIE
+    | SSTATUS_UBE
+    | SSTATUS_SPP
+    | SSTATUS_FS
+    | SSTATUS_XS
+    | SSTATUS_SUM
+    | SSTATUS_MXR
+    | SSTATUS_UXL;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
 /////////////////////////////////
 // Machine information registers.
 /// Vendor ID.
-pub const MVENDORID: CsrAddress = 0xf11;
+const MVENDORID: CsrAddress = 0xf11;
 /// Architecture ID.
-pub const MARCHID: CsrAddress = 0xf12;
+const MARCHID: CsrAddress = 0xf12;
 /// Implementation ID.
-pub const MIMPID: CsrAddress = 0xf13;
+const MIMPID: CsrAddress = 0xf13;
 /// Hardware thread ID.
-pub const MHARTID: CsrAddress = 0xf14;
+const MHARTID: CsrAddress = 0xf14;
 
 // Machine trap setup.
 /// Machine status register.
 pub const MSTATUS: CsrAddress = 0x300;
 /// ISA and extensions.
-pub const MISA: CsrAddress = 0x301;
+const MISA: CsrAddress = 0x301;
 /// Machine exception delefation register.
 pub const MEDELEG: CsrAddress = 0x302;
 /// Machine interrupt delefation register.
@@ -108,11 +116,11 @@ pub const MIE: CsrAddress = 0x304;
 /// Machine trap-handler base address.
 pub const MTVEC: CsrAddress = 0x305;
 /// Machine counter enable.
-pub const MCOUNTEREN: CsrAddress = 0x306;
+const _MCOUNTEREN: CsrAddress = 0x306;
 
 // Machine trap handling.
 /// Scratch register for machine trap handlers.
-pub const MSCRATCH: CsrAddress = 0x340;
+const _MSCRATCH: CsrAddress = 0x340;
 /// Machine exception program counter.
 pub const MEPC: CsrAddress = 0x341;
 /// Machine trap cause.
@@ -124,9 +132,9 @@ pub const MIP: CsrAddress = 0x344;
 
 // Machine memory protection.
 /// Physical memory protection configuration.
-pub const PMPCFG0: CsrAddress = 0x3a0;
+const _PMPCFG0: CsrAddress = 0x3a0;
 /// Physical memory protection address register.
-pub const PMPADDR0: CsrAddress = 0x3b0;
+const _PMPADDR0: CsrAddress = 0x3b0;
 
 // MIP fields.
 /// Supervisor software interrupt.
@@ -217,17 +225,7 @@ impl State {
         // machine-mode CSR, and the machinemode chapter should be read first to help understand
         // the supervisor-level CSR descriptions."
         match addr {
-            SSTATUS => {
-                let mask = SSTATUS_SIE
-                    | SSTATUS_SPIE
-                    | SSTATUS_SPP
-                    | SSTATUS_FS
-                    | SSTATUS_XS
-                    | SSTATUS_SUM
-                    | SSTATUS_MXR
-                    | SSTATUS_UXL;
-                self.csrs[MSTATUS as usize] & mask
-            }
+            SSTATUS => self.csrs[MSTATUS as usize] & SSTATUS_MASK,
             SIE => self.csrs[MIE as usize] & self.csrs[MIDELEG as usize],
             SIP => self.csrs[MIP as usize] & self.csrs[MIDELEG as usize],
             _ => self.csrs[addr as usize],
@@ -249,14 +247,8 @@ impl State {
             MIMPID => {}
             MHARTID => {}
             SSTATUS => {
-                let mask = SSTATUS_SIE
-                    | SSTATUS_SPIE
-                    | SSTATUS_SPP
-                    | SSTATUS_FS
-                    | SSTATUS_XS
-                    | SSTATUS_SUM
-                    | SSTATUS_MXR;
-                self.csrs[MSTATUS as usize] = (self.csrs[MSTATUS as usize] & !mask) | (val & mask);
+                self.csrs[MSTATUS as usize] =
+                    (self.csrs[MSTATUS as usize] & !SSTATUS_MASK) | (val & SSTATUS_MASK);
             }
             SIE => {
                 self.csrs[MIE as usize] = (self.csrs[MIE as usize] & !self.csrs[MIDELEG as usize])
