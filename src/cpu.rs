@@ -3110,10 +3110,15 @@ impl Cpu {
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for supervisor mode (SPP, 8).
                                 self.mode = match self.state.read_bit(SSTATUS, 8) {
-                                    0 => Mode::User,
-                                    1 => Mode::Supervisor,
+                                    0b0 => Mode::User,
+                                    0b1 => {
+                                        // If SPP != M-mode, SRET also sets MPRV=0.
+                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        Mode::Supervisor
+                                    }
                                     _ => Mode::Debug,
                                 };
+
                                 // Read a privious interrupt-enable bit for supervisor mode (SPIE,
                                 // 5), and set a global interrupt-enable bit for supervisor mode
                                 // (SIE, 1) to it.
@@ -3144,8 +3149,16 @@ impl Cpu {
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_bits(MSTATUS, 11..13) {
-                                    0b00 => Mode::User,
-                                    0b01 => Mode::Supervisor,
+                                    0b00 => {
+                                        // If MPP != M-mode, MRET also sets MPRV=0.
+                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        Mode::User
+                                    }
+                                    0b01 => {
+                                        // If MPP != M-mode, MRET also sets MPRV=0.
+                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        Mode::Supervisor
+                                    }
                                     0b11 => Mode::Machine,
                                     _ => Mode::Debug,
                                 };
