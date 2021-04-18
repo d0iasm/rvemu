@@ -88,8 +88,7 @@ impl Exception {
             exception_pc = exception_pc.wrapping_sub(4);
         }
 
-        cpu.prev_mode = cpu.mode;
-
+        let previous_mode = cpu.mode;
         let cause = self.exception_code();
 
         // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
@@ -102,7 +101,7 @@ impl Exception {
         // on page 37, with the index of the bit position equal to the value returned in the mcause
         // register (i.e., setting bit 8 allows user-mode environment calls to be delegated to a
         // lower-privilege trap handler)."
-        if cpu.mode <= Mode::Supervisor && ((cpu.state.read(MEDELEG) >> cause) & 1) == 1 {
+        if previous_mode <= Mode::Supervisor && ((cpu.state.read(MEDELEG) >> cause) & 1) == 1 {
             // Handle the trap in S-mode.
             cpu.mode = Mode::Supervisor;
 
@@ -143,7 +142,7 @@ impl Exception {
             // 4.1.1 Supervisor Status Register (sstatus)
             // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
             // 1 otherwise."
-            match cpu.prev_mode {
+            match previous_mode {
                 Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
                 _ => cpu.state.write_bit(SSTATUS, 8, 1),
             }
@@ -188,7 +187,7 @@ impl Exception {
             cpu.state.write_bit(MSTATUS, 3, 0);
             // When a trap is taken from privilege mode y into privilege mode x, xPIE is set
             // to the value of x IE; x IE is set to 0; and xPP is set to y.
-            match cpu.prev_mode {
+            match previous_mode {
                 Mode::User => cpu.state.write_bits(MSTATUS, 11..13, 0b00),
                 Mode::Supervisor => cpu.state.write_bits(MSTATUS, 11..13, 0b01),
                 Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, 0b11),

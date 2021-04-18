@@ -221,8 +221,6 @@ pub struct Cpu {
     pub state: State,
     /// Privilege level.
     pub mode: Mode,
-    /// Previous privilege level.
-    pub prev_mode: Mode,
     /// System bus.
     pub bus: Bus,
     /// SV39 paging flag.
@@ -249,7 +247,6 @@ impl Cpu {
             pc: 0,
             state: State::new(),
             mode: Mode::Machine,
-            prev_mode: Mode::Machine,
             bus: Bus::new(),
             enable_paging: false,
             page_table: 0,
@@ -264,7 +261,6 @@ impl Cpu {
     pub fn reset(&mut self) {
         self.pc = 0;
         self.mode = Mode::Machine;
-        self.prev_mode = Mode::Machine;
         self.state.reset();
         for i in 0..REGISTERS_COUNT {
             self.xregs.write(i as u64, 0);
@@ -377,34 +373,8 @@ impl Cpu {
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
     fn translate(&mut self, addr: u64, access_type: AccessType) -> Result<u64, Exception> {
-        if !self.enable_paging {
+        if !self.enable_paging || self.mode == Mode::Machine {
             return Ok(addr);
-        }
-
-        if self.mode == Mode::Machine
-            && (self.state.read_bit(MSTATUS, 17) == 0 || access_type == AccessType::Instruction)
-        {
-            return Ok(addr);
-        }
-
-        let mode = self.mode;
-        let mut mprv = false;
-        if self.state.read_bit(MSTATUS, 17) == 1
-            && (access_type == AccessType::Load || access_type == AccessType::Store)
-        {
-            mprv = true;
-        }
-
-        // 3.1.6.3 Memory Privilege in mstatus Register
-        // "When MPRV=1, load and store memory addresses are translated and protected, and
-        // endianness is applied, as though the current privilege mode were set to MPP."
-        if mprv {
-            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
-                0b00 => Mode::User,
-                0b01 => Mode::Supervisor,
-                0b11 => Mode::Machine,
-                _ => Mode::Debug,
-            };
         }
 
         // 4.3.2 Virtual Address Translation Process
@@ -526,13 +496,7 @@ impl Cpu {
             // Update the value of address satp.ppn × PAGESIZE + va.vpn[i] × PTESIZE with new pte
             // value.
             // TODO: If this is enabled, running xv6 fails.
-            //self.bus
-            //.write(self.page_table + vpn[i as usize] * 8, pte, 64)?;
-        }
-
-        if mprv {
-            // Restore the privilege mode.
-            self.mode = mode;
+            //self.bus.write(self.page_table + vpn[i as usize] * 8, pte, 64)?;
         }
 
         // 8. The translation is successful. The translated physical address is given as
@@ -568,13 +532,47 @@ impl Cpu {
     /// Read `size`-bit data from the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     fn read(&mut self, v_addr: u64, size: u8) -> Result<u64, Exception> {
+        let previous_mode = self.mode;
+
+        // 3.1.6.3 Memory Privilege in mstatus Register
+        // "When MPRV=1, load and store memory addresses are translated and protected, and
+        // endianness is applied, as though the current privilege mode were set to MPP."
+        if self.state.read_bit(MSTATUS, 17) == 1 {
+            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+                0b00 => Mode::User,
+                0b01 => Mode::Supervisor,
+                0b11 => Mode::Machine,
+                _ => Mode::Debug,
+            };
+        }
+
         let p_addr = self.translate(v_addr, AccessType::Load)?;
-        self.bus.read(p_addr, size)
+        let result = self.bus.read(p_addr, size);
+
+        if self.state.read_bit(MSTATUS, 17) == 1 {
+            self.mode = previous_mode;
+        }
+
+        result
     }
 
     /// Write `size`-bit data to the system bus with the translation a virtual address to a physical address
     /// if it is enabled.
     fn write(&mut self, v_addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        let previous_mode = self.mode;
+
+        // 3.1.6.3 Memory Privilege in mstatus Register
+        // "When MPRV=1, load and store memory addresses are translated and protected, and
+        // endianness is applied, as though the current privilege mode were set to MPP."
+        if self.state.read_bit(MSTATUS, 17) == 1 {
+            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+                0b00 => Mode::User,
+                0b01 => Mode::Supervisor,
+                0b11 => Mode::Machine,
+                _ => Mode::Debug,
+            };
+        }
+
         // "The SC must fail if a write from some other device to the bytes accessed by the LR can
         // be observed to occur between the LR and SC."
         if self.reservation_set.contains(&v_addr) {
@@ -582,7 +580,13 @@ impl Cpu {
         }
 
         let p_addr = self.translate(v_addr, AccessType::Store)?;
-        self.bus.write(p_addr, value, size)
+        let result = self.bus.write(p_addr, value, size);
+
+        if self.state.read_bit(MSTATUS, 17) == 1 {
+            self.mode = previous_mode;
+        }
+
+        result
     }
 
     /// Fetch the `size`-bit next instruction from the memory at the current program counter.

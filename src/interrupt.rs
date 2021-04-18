@@ -43,8 +43,7 @@ impl Interrupt {
         cpu.idle = false;
 
         let exception_pc = cpu.pc;
-        cpu.prev_mode = cpu.mode;
-
+        let previous_mode = cpu.mode;
         let cause = self.exception_code();
 
         // 3.1.8 Machine Trap Delegation Registers (medeleg and mideleg)
@@ -57,7 +56,7 @@ impl Interrupt {
         // matching those in the mip register (i.e., STIP interrupt delegation control is located
         // in bit 5)."
         // TODO: Why should a M-mode timer interrupt be taken in M-mode?
-        if cpu.mode <= Mode::Supervisor
+        if previous_mode <= Mode::Supervisor
             && ((cpu.state.read(MIDELEG) >> cause) & 1) == 1
             && cause != Interrupt::MachineTimerInterrupt.exception_code()
         {
@@ -106,7 +105,7 @@ impl Interrupt {
             // 4.1.1 Supervisor Status Register (sstatus)
             // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
             // 1 otherwise."
-            match cpu.prev_mode {
+            match previous_mode {
                 Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
                 _ => cpu.state.write_bit(SSTATUS, 8, 1),
             }
@@ -156,7 +155,7 @@ impl Interrupt {
             cpu.state.write_bit(MSTATUS, 3, 0);
             // When a trap is taken from privilege mode y into privilege mode x, xPIE is set
             // to the value of x IE; x IE is set to 0; and xPP is set to y.
-            match cpu.prev_mode {
+            match previous_mode {
                 Mode::User => cpu.state.write_bits(MSTATUS, 11..13, 0b00),
                 Mode::Supervisor => cpu.state.write_bits(MSTATUS, 11..13, 0b01),
                 Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, 0b11),
