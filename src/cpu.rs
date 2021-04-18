@@ -377,8 +377,34 @@ impl Cpu {
 
     /// Translate a virtual address to a physical address for the paged virtual-memory system.
     fn translate(&mut self, addr: u64, access_type: AccessType) -> Result<u64, Exception> {
-        if !self.enable_paging || self.mode == Mode::Machine {
+        if !self.enable_paging {
             return Ok(addr);
+        }
+
+        if self.mode == Mode::Machine
+            && (self.state.read_bit(MSTATUS, 17) == 0 || access_type == AccessType::Instruction)
+        {
+            return Ok(addr);
+        }
+
+        let mode = self.mode;
+        let mut mprv = false;
+        if self.state.read_bit(MSTATUS, 17) == 1
+            && (access_type == AccessType::Load || access_type == AccessType::Store)
+        {
+            mprv = true;
+        }
+
+        // 3.1.6.3 Memory Privilege in mstatus Register
+        // "When MPRV=1, load and store memory addresses are translated and protected, and
+        // endianness is applied, as though the current privilege mode were set to MPP."
+        if mprv {
+            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+                0b00 => Mode::User,
+                0b01 => Mode::Supervisor,
+                0b11 => Mode::Machine,
+                _ => Mode::Debug,
+            };
         }
 
         // 4.3.2 Virtual Address Translation Process
@@ -501,7 +527,12 @@ impl Cpu {
             // value.
             // TODO: If this is enabled, running xv6 fails.
             //self.bus
-            //.write64(self.page_table + vpn[i as usize] * 8, pte)?;
+            //.write(self.page_table + vpn[i as usize] * 8, pte, 64)?;
+        }
+
+        if mprv {
+            // Restore the privilege mode.
+            self.mode = mode;
         }
 
         // 8. The translation is successful. The translated physical address is given as
@@ -550,7 +581,7 @@ impl Cpu {
             self.reservation_set.retain(|&x| x != v_addr);
         }
 
-        let p_addr = self.translate(v_addr, AccessType::Load)?;
+        let p_addr = self.translate(v_addr, AccessType::Store)?;
         self.bus.write(p_addr, value, size)
     }
 
