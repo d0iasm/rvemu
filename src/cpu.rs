@@ -634,19 +634,20 @@ impl Cpu {
                     // Unimplemented instruction, since all bits are 0.
                     return Err(Exception::IllegalInstruction);
                 }
-                inst = self.execute_compressed()?
+                inst = inst16;
+                self.execute_compressed(inst16)?
             }
-            _ => inst = self.execute_general()?,
+            _ => {
+                inst = self.fetch(WORD)?;
+                self.execute_general(inst)?
+            }
         }
         Ok(inst)
     }
 
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
     /// returns a fetched instruction. It also increments the program counter by 2 bytes.
-    pub fn execute_compressed(&mut self) -> Result<u64, Exception> {
-        // 1. Fetch.
-        let inst = self.fetch(HALFWORD)?;
-
+    pub fn execute_compressed(&mut self, inst: u64) -> Result<(), Exception> {
         // Add 2 bytes to the program counter.
         self.pc += 2;
 
@@ -1226,15 +1227,12 @@ impl Cpu {
                 return Err(Exception::IllegalInstruction);
             }
         }
-        Ok(inst)
+        Ok(())
     }
 
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
     /// otherwise, returns a fetched instruction. It also increments the program counter by 4 bytes.
-    fn execute_general(&mut self) -> Result<u64, Exception> {
-        // 1. Fetch.
-        let inst = self.fetch(WORD)?;
-
+    fn execute_general(&mut self, inst: u64) -> Result<(), Exception> {
         // Add 4 bytes to the program counter.
         self.pc += 4;
 
@@ -3323,6 +3321,6 @@ impl Cpu {
                 return Err(Exception::IllegalInstruction);
             }
         }
-        Ok(inst)
+        Ok(())
     }
 }
