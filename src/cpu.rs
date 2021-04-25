@@ -406,9 +406,9 @@ impl Cpu {
             let x = (pte >> 3) & 1;
             if v == 0 || (r == 0 && w == 1) {
                 match access_type {
-                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
-                    AccessType::Load => return Err(Exception::LoadPageFault),
-                    AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                    AccessType::Instruction => return Err(Exception::InstructionPageFault(addr)),
+                    AccessType::Load => return Err(Exception::LoadPageFault(addr)),
+                    AccessType::Store => return Err(Exception::StoreAMOPageFault(addr)),
                 }
             }
 
@@ -425,9 +425,9 @@ impl Cpu {
             a = ppn * PAGE_SIZE;
             if i < 0 {
                 match access_type {
-                    AccessType::Instruction => return Err(Exception::InstructionPageFault),
-                    AccessType::Load => return Err(Exception::LoadPageFault),
-                    AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                    AccessType::Instruction => return Err(Exception::InstructionPageFault(addr)),
+                    AccessType::Load => return Err(Exception::LoadPageFault(addr)),
+                    AccessType::Store => return Err(Exception::StoreAMOPageFault(addr)),
                 }
             }
         }
@@ -464,9 +464,11 @@ impl Cpu {
                 if ppn[j as usize] != 0 {
                     // A misaligned superpage.
                     match access_type {
-                        AccessType::Instruction => return Err(Exception::InstructionPageFault),
-                        AccessType::Load => return Err(Exception::LoadPageFault),
-                        AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                        AccessType::Instruction => {
+                            return Err(Exception::InstructionPageFault(addr))
+                        }
+                        AccessType::Load => return Err(Exception::LoadPageFault(addr)),
+                        AccessType::Store => return Err(Exception::StoreAMOPageFault(addr)),
                     }
                 }
             }
@@ -522,9 +524,9 @@ impl Cpu {
                 Ok((ppn[2] << 30) | (vpn[1] << 21) | (vpn[0] << 12) | offset)
             }
             _ => match access_type {
-                AccessType::Instruction => return Err(Exception::InstructionPageFault),
-                AccessType::Load => return Err(Exception::LoadPageFault),
-                AccessType::Store => return Err(Exception::StoreAMOPageFault),
+                AccessType::Instruction => return Err(Exception::InstructionPageFault(addr)),
+                AccessType::Load => return Err(Exception::LoadPageFault(addr)),
+                AccessType::Store => return Err(Exception::StoreAMOPageFault(addr)),
             },
         }
     }

@@ -21,9 +21,10 @@ pub enum Exception {
     EnvironmentCallFromUMode,
     EnvironmentCallFromSMode,
     EnvironmentCallFromMMode,
-    InstructionPageFault,
-    LoadPageFault,
-    StoreAMOPageFault,
+    // Stores a trap value (the faulting address) for page fault exceptions.
+    InstructionPageFault(u64),
+    LoadPageFault(u64),
+    StoreAMOPageFault(u64),
 }
 
 /// All the trap kinds.
@@ -57,9 +58,9 @@ impl Exception {
             Exception::EnvironmentCallFromUMode => 8,
             Exception::EnvironmentCallFromSMode => 9,
             Exception::EnvironmentCallFromMMode => 11,
-            Exception::InstructionPageFault => 12,
-            Exception::LoadPageFault => 13,
-            Exception::StoreAMOPageFault => 15,
+            Exception::InstructionPageFault(_) => 12,
+            Exception::LoadPageFault(_) => 13,
+            Exception::StoreAMOPageFault(_) => 15,
         }
     }
 
@@ -70,6 +71,32 @@ impl Exception {
             | Exception::EnvironmentCallFromSMode
             | Exception::EnvironmentCallFromMMode => true,
             _ => false,
+        }
+    }
+
+    fn trap_value(&self, pc: u64) -> u64 {
+        // 3.1.17 Machine Trap Value Register (mtval)
+        // 4.1.9 Supervisor Trap Value Register (stval)
+        // "When a hardware breakpoint is triggered, or an address-misaligned, access-fault, or
+        // page-fault exception occurs on an instruction fetch, load, or store, mtval (stval) is
+        // written with the faulting virtual address. On an illegal instruction trap, mtval (stval)
+        // may be written with the first XLEN or ILEN bits of the faulting instruction as described
+        // below. For other traps, mtval (stval) is set to zero, but a future standard may redefine
+        // mtval's (stval's) setting for other traps."
+        //
+        // TODO: support illegal instruction trap.
+        match self {
+            Exception::InstructionAddressMisaligned
+            | Exception::InstructionAccessFault
+            | Exception::Breakpoint
+            | Exception::LoadAddressMisaligned
+            | Exception::LoadAccessFault
+            | Exception::StoreAMOAddressMisaligned
+            | Exception::StoreAMOAccessFault => pc,
+            Exception::InstructionPageFault(val)
+            | Exception::LoadPageFault(val)
+            | Exception::StoreAMOPageFault(val) => *val,
+            _ => 0,
         }
     }
 
@@ -126,12 +153,7 @@ impl Exception {
             // "When a trap is taken into S-mode, stval is written with exception-specific
             // information to assist software in handling the trap. Otherwise, stval is never
             // written by the implementation, though it may be explicitly written by software."
-            // "When a hardware breakpoint is triggered, or an instruction-fetch, load, or
-            // store address-misaligned, access, or page-fault exception occurs, stval is
-            // written with the faulting virtual address. On an illegal instruction trap,
-            // stval may be written with the first XLEN or ILEN bits of the faulting
-            // instruction as described below. For other exceptions, stval is set to zero."
-            cpu.state.write(STVAL, 0);
+            cpu.state.write(STVAL, self.trap_value(exception_pc));
 
             // Set a previous interrupt-enable bit for supervisor mode (SPIE, 5) to the value
             // of a global interrupt-enable bit for supervisor mode (SIE, 1).
@@ -172,12 +194,7 @@ impl Exception {
             // exception-specific information to assist software in handling the trap.
             // Otherwise, mtval is never written by the implementation, though it may be
             // explicitly written by software."
-            // "When a hardware breakpoint is triggered, or an instruction-fetch, load, or
-            // store address-misaligned, access, or page-fault exception occurs, mtval is
-            // written with the faulting virtual address. On an illegal instruction trap,
-            // mtval may be written with the first XLEN or ILEN bits of the faulting
-            // instruction as described below. For other traps, mtval is set to zero."
-            cpu.state.write(MTVAL, 0);
+            cpu.state.write(MTVAL, self.trap_value(exception_pc));
 
             // Set a previous interrupt-enable bit for supervisor mode (MPIE, 7) to the value
             // of a global interrupt-enable bit for supervisor mode (MIE, 3).
@@ -208,9 +225,9 @@ impl Exception {
             Exception::EnvironmentCallFromUMode
             | Exception::EnvironmentCallFromSMode
             | Exception::EnvironmentCallFromMMode => Trap::Requested,
-            Exception::InstructionPageFault
-            | Exception::LoadPageFault
-            | Exception::StoreAMOPageFault => Trap::Invisible,
+            Exception::InstructionPageFault(_)
+            | Exception::LoadPageFault(_)
+            | Exception::StoreAMOPageFault(_) => Trap::Invisible,
         }
     }
 }
