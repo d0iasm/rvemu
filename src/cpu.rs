@@ -558,8 +558,8 @@ impl Cpu {
         result
     }
 
-    /// Write `size`-bit data to the system bus with the translation a virtual address to a physical address
-    /// if it is enabled.
+    /// Write `size`-bit data to the system bus with the translation a virtual address to a physical
+    /// address if it is enabled.
     fn write(&mut self, v_addr: u64, value: u64, size: u8) -> Result<(), Exception> {
         let previous_mode = self.mode;
 
@@ -593,16 +593,15 @@ impl Cpu {
 
     /// Fetch the `size`-bit next instruction from the memory at the current program counter.
     pub fn fetch(&mut self, size: u8) -> Result<u64, Exception> {
+        if size != HALFWORD && size != WORD {
+            return Err(Exception::InstructionAccessFault);
+        }
+
         let p_pc = self.translate(self.pc, AccessType::Instruction)?;
+
         // The result of the read method can be `Exception::LoadAccessFault`. In fetch(), an error
         // should be `Exception::InstructionAccessFault`.
-        let result = match size {
-            HALFWORD => self.bus.read(p_pc, HALFWORD),
-            WORD => self.bus.read(p_pc, WORD),
-            _ => Err(Exception::InstructionAccessFault),
-        };
-
-        match result {
+        match self.bus.read(p_pc, size) {
             Ok(value) => Ok(value),
             Err(_) => Err(Exception::InstructionAccessFault),
         }
@@ -635,11 +634,15 @@ impl Cpu {
                     return Err(Exception::IllegalInstruction);
                 }
                 inst = inst16;
-                self.execute_compressed(inst16)?
+                self.execute_compressed(inst16)?;
+                // Add 2 bytes to the program counter.
+                self.pc += 2;
             }
             _ => {
                 inst = self.fetch(WORD)?;
-                self.execute_general(inst)?
+                self.execute_general(inst)?;
+                // Add 4 bytes to the program counter.
+                self.pc += 4;
             }
         }
         Ok(inst)
@@ -648,9 +651,6 @@ impl Cpu {
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,
     /// returns a fetched instruction. It also increments the program counter by 2 bytes.
     pub fn execute_compressed(&mut self, inst: u64) -> Result<(), Exception> {
-        // Add 2 bytes to the program counter.
-        self.pc += 2;
-
         // 2. Decode.
         let opcode = inst & 0x3;
         let funct3 = (inst >> 13) & 0x7;
@@ -1011,7 +1011,8 @@ impl Cpu {
                             | ((inst << 3) & 0x20) // offset[5]
                             | ((inst >> 7) & 0x10) // offset[4]
                             | ((inst >> 2) & 0xe); // offset[3:1]
-                                                   // Sign-extended.
+
+                        // Sign-extended.
                         offset = match (offset & 0x800) == 0 {
                             true => offset,
                             false => (0xf000 | offset) as i16 as i64 as u64,
@@ -1129,7 +1130,7 @@ impl Cpu {
 
                                 let rs1 = (inst >> 7) & 0x1f;
                                 if rs1 != 0 {
-                                    self.pc = self.xregs.read(rs1);
+                                    self.pc = self.xregs.read(rs1).wrapping_sub(2);
                                 }
                             }
                             (0, _) => {
@@ -1157,9 +1158,8 @@ impl Cpu {
                                     inst_count!(self, "c.jalr");
 
                                     let rs1 = (inst >> 7) & 0x1f;
-                                    // Don't add 2 because the pc already moved on.
-                                    let t = self.pc;
-                                    self.pc = self.xregs.read(rs1);
+                                    let t = self.pc.wrapping_add(2);
+                                    self.pc = self.xregs.read(rs1).wrapping_sub(2);
                                     self.xregs.write(1, t);
                                 }
                             }
@@ -1233,9 +1233,6 @@ impl Cpu {
     /// Execute a general-purpose instruction. Raises an exception if something is wrong,
     /// otherwise, returns a fetched instruction. It also increments the program counter by 4 bytes.
     fn execute_general(&mut self, inst: u64) -> Result<(), Exception> {
-        // Add 4 bytes to the program counter.
-        self.pc += 4;
-
         // 2. Decode.
         let opcode = inst & 0x0000007f;
         let rd = (inst & 0x00000f80) >> 7;
@@ -1446,8 +1443,7 @@ impl Cpu {
                 // in the lowest 12 bits with zeros.
                 // imm[31:12] = inst[31:12]
                 let imm = (inst & 0xfffff000) as i32 as i64 as u64;
-                self.xregs
-                    .write(rd, self.pc.wrapping_add(imm).wrapping_sub(4));
+                self.xregs.write(rd, self.pc.wrapping_add(imm));
             }
             0x1b => {
                 // RV64I
@@ -3062,20 +3058,19 @@ impl Cpu {
                 // jalr
                 inst_count!(self, "jalr");
 
-                // Don't add 4 because the pc already moved on.
-                let t = self.pc;
+                let t = self.pc.wrapping_add(4);
 
                 let offset = (inst as i32 as i64) >> 20;
                 let target = ((self.xregs.read(rs1) as i64).wrapping_add(offset)) & !1;
 
-                self.pc = target as u64;
+                self.pc = (target as u64).wrapping_sub(4);
                 self.xregs.write(rd, t);
             }
             0x6F => {
                 // jal
                 inst_count!(self, "jal");
 
-                self.xregs.write(rd, self.pc);
+                self.xregs.write(rd, self.pc.wrapping_add(4));
 
                 // imm[20|10:1|11|19:12] = inst[31|30:21|20|19:12]
                 let offset = (((inst & 0x80000000) as i32 as i64 >> 11) as u64) // imm[20]
@@ -3138,7 +3133,7 @@ impl Cpu {
 
                                 // Set the program counter to the supervisor exception program
                                 // counter (SEPC).
-                                self.pc = self.state.read(SEPC);
+                                self.pc = self.state.read(SEPC).wrapping_sub(4);
 
                                 // TODO: Check TSR field
 
@@ -3179,7 +3174,7 @@ impl Cpu {
 
                                 // Set the program counter to the machine exception program
                                 // counter (MEPC).
-                                self.pc = self.state.read(MEPC);
+                                self.pc = self.state.read(MEPC).wrapping_sub(4);
 
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for machine  mode (MPP, 11..13).

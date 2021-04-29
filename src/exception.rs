@@ -73,8 +73,12 @@ impl Exception {
             Exception::Breakpoint
             | Exception::EnvironmentCallFromUMode
             | Exception::EnvironmentCallFromSMode
-            | Exception::EnvironmentCallFromMMode => pc.wrapping_sub(4),
-            _ => pc,
+            | Exception::EnvironmentCallFromMMode
+            // TODO: why page fault needs this?
+            | Exception::InstructionPageFault(_)
+            | Exception::LoadPageFault(_)
+            | Exception::StoreAMOPageFault(_) => pc,
+            _ => pc.wrapping_add(4),
         }
     }
 
