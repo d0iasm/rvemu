@@ -79,6 +79,7 @@ const SSTATUS_XS: u64 = 0x18000; // sstatus[16:15]
 const SSTATUS_SUM: u64 = 0x40000; // sstatus[18]
 const SSTATUS_MXR: u64 = 0x80000; // sstatus[19]
 const SSTATUS_UXL: u64 = 0x3_00000000; // sstatus[33:32]
+const SSTATUS_SD: u64 = 0x80000000_00000000; // sstatus[63]
 const SSTATUS_MASK: u64 = SSTATUS_SIE
     | SSTATUS_SPIE
     | SSTATUS_UBE
@@ -87,7 +88,8 @@ const SSTATUS_MASK: u64 = SSTATUS_SIE
     | SSTATUS_XS
     | SSTATUS_SUM
     | SSTATUS_MXR
-    | SSTATUS_UXL;
+    | SSTATUS_UXL
+    | SSTATUS_SD;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
