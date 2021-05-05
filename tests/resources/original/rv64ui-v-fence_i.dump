@@ -443,7 +443,7 @@ Disassembly of section .text:
     80002454:	10100613          	li	a2,257
     80002458:	04100713          	li	a4,65
     8000245c:	00000697          	auipc	a3,0x0
-    80002460:	7cc68693          	addi	a3,a3,1996 # 80002c28 <pass+0x40>
+    80002460:	7c468693          	addi	a3,a3,1988 # 80002c20 <pass+0x30>
     80002464:	fffff797          	auipc	a5,0xfffff
     80002468:	b9c78793          	addi	a5,a5,-1124 # 80001000 <tohost>
     8000246c:	03061613          	slli	a2,a2,0x30
@@ -465,7 +465,7 @@ Disassembly of section .text:
     800024ac:	10100613          	li	a2,257
     800024b0:	04100713          	li	a4,65
     800024b4:	00000697          	auipc	a3,0x0
-    800024b8:	7bc68693          	addi	a3,a3,1980 # 80002c70 <pass+0x88>
+    800024b8:	7b468693          	addi	a3,a3,1972 # 80002c68 <pass+0x78>
     800024bc:	fffff797          	auipc	a5,0xfffff
     800024c0:	b4478793          	addi	a5,a5,-1212 # 80001000 <tohost>
     800024c4:	03061613          	slli	a2,a2,0x30
@@ -484,7 +484,7 @@ Disassembly of section .text:
     800024f8:	10100693          	li	a3,257
     800024fc:	04100713          	li	a4,65
     80002500:	00000617          	auipc	a2,0x0
-    80002504:	7b860613          	addi	a2,a2,1976 # 80002cb8 <pass+0xd0>
+    80002504:	7b060613          	addi	a2,a2,1968 # 80002cb0 <pass+0xc0>
     80002508:	fffff797          	auipc	a5,0xfffff
     8000250c:	af878793          	addi	a5,a5,-1288 # 80001000 <tohost>
     80002510:	03069693          	slli	a3,a3,0x30
@@ -503,7 +503,7 @@ Disassembly of section .text:
     80002544:	10100693          	li	a3,257
     80002548:	04100713          	li	a4,65
     8000254c:	00000617          	auipc	a2,0x0
-    80002550:	78460613          	addi	a2,a2,1924 # 80002cd0 <pass+0xe8>
+    80002550:	77c60613          	addi	a2,a2,1916 # 80002cc8 <pass+0xd8>
     80002554:	fffff797          	auipc	a5,0xfffff
     80002558:	aac78793          	addi	a5,a5,-1364 # 80001000 <tohost>
     8000255c:	03069693          	slli	a3,a3,0x30
@@ -575,7 +575,7 @@ Disassembly of section .text:
     8000265c:	10100513          	li	a0,257
     80002660:	04100793          	li	a5,65
     80002664:	00000697          	auipc	a3,0x0
-    80002668:	74468693          	addi	a3,a3,1860 # 80002da8 <pass+0x1c0>
+    80002668:	73c68693          	addi	a3,a3,1852 # 80002da0 <pass+0x1b0>
     8000266c:	fffff717          	auipc	a4,0xfffff
     80002670:	99470713          	addi	a4,a4,-1644 # 80001000 <tohost>
     80002674:	03051513          	slli	a0,a0,0x30
@@ -596,7 +596,7 @@ Disassembly of section .text:
     800026b0:	b89ff0ef          	jal	ra,80002238 <terminate>
     800026b4:	10100793          	li	a5,257
     800026b8:	00000617          	auipc	a2,0x0
-    800026bc:	6c860613          	addi	a2,a2,1736 # 80002d80 <pass+0x198>
+    800026bc:	6c060613          	addi	a2,a2,1728 # 80002d78 <pass+0x188>
     800026c0:	04100693          	li	a3,65
     800026c4:	fffff717          	auipc	a4,0xfffff
     800026c8:	93c70713          	addi	a4,a4,-1732 # 80001000 <tohost>
@@ -667,7 +667,7 @@ Disassembly of section .text:
     800027cc:	10100793          	li	a5,257
     800027d0:	04100613          	li	a2,65
     800027d4:	00000697          	auipc	a3,0x0
-    800027d8:	60468693          	addi	a3,a3,1540 # 80002dd8 <pass+0x1f0>
+    800027d8:	5fc68693          	addi	a3,a3,1532 # 80002dd0 <pass+0x1e0>
     800027dc:	fffff717          	auipc	a4,0xfffff
     800027e0:	82470713          	addi	a4,a4,-2012 # 80001000 <tohost>
     800027e4:	03079793          	slli	a5,a5,0x30
@@ -686,7 +686,7 @@ Disassembly of section .text:
     80002818:	10100793          	li	a5,257
     8000281c:	04100613          	li	a2,65
     80002820:	00000697          	auipc	a3,0x0
-    80002824:	52868693          	addi	a3,a3,1320 # 80002d48 <pass+0x160>
+    80002824:	52068693          	addi	a3,a3,1312 # 80002d40 <pass+0x150>
     80002828:	ffffe717          	auipc	a4,0xffffe
     8000282c:	7d870713          	addi	a4,a4,2008 # 80001000 <tohost>
     80002830:	03079793          	slli	a5,a5,0x30
@@ -704,7 +704,7 @@ Disassembly of section .text:
     80002860:	10100793          	li	a5,257
     80002864:	04100613          	li	a2,65
     80002868:	00000697          	auipc	a3,0x0
-    8000286c:	4a868693          	addi	a3,a3,1192 # 80002d10 <pass+0x128>
+    8000286c:	4a068693          	addi	a3,a3,1184 # 80002d08 <pass+0x118>
     80002870:	ffffe717          	auipc	a4,0xffffe
     80002874:	79070713          	addi	a4,a4,1936 # 80001000 <tohost>
     80002878:	03079793          	slli	a5,a5,0x30
@@ -724,7 +724,7 @@ Disassembly of section .text:
 
 00000000800028b0 <vm_boot>:
     800028b0:	f14027f3          	csrr	a5,mhartid
-    800028b4:	18079463          	bnez	a5,80002a3c <vm_boot+0x18c>
+    800028b4:	18079863          	bnez	a5,80002a44 <vm_boot+0x194>
     800028b8:	00003797          	auipc	a5,0x3
     800028bc:	74878793          	addi	a5,a5,1864 # 80006000 <pt+0x2000>
     800028c0:	ed010113          	addi	sp,sp,-304
@@ -758,7 +758,7 @@ Disassembly of section .text:
     80002930:	0065e7b3          	or	a5,a1,t1
     80002934:	18079073          	csrw	satp,a5
     80002938:	18002773          	csrr	a4,satp
-    8000293c:	14e79863          	bne	a5,a4,80002a8c <vm_boot+0x1dc>
+    8000293c:	14e79c63          	bne	a5,a4,80002a94 <vm_boot+0x1e4>
     80002940:	00b65613          	srli	a2,a2,0xb
     80002944:	01f00793          	li	a5,31
     80002948:	00000297          	auipc	t0,0x0
@@ -766,106 +766,104 @@ Disassembly of section .text:
     80002950:	305292f3          	csrrw	t0,mtvec,t0
     80002954:	3b061073          	csrw	pmpaddr0,a2
     80002958:	3a079073          	csrw	pmpcfg0,a5
-    8000295c:	bff00813          	li	a6,-1025
-    80002960:	01581813          	slli	a6,a6,0x15
-    80002964:	ffffd797          	auipc	a5,0xffffd
-    80002968:	7e078793          	addi	a5,a5,2016 # 80000144 <trap_entry>
-    8000296c:	010787b3          	add	a5,a5,a6
-    80002970:	10579073          	csrw	stvec,a5
-    80002974:	340027f3          	csrr	a5,mscratch
-    80002978:	010787b3          	add	a5,a5,a6
-    8000297c:	14079073          	csrw	sscratch,a5
-    80002980:	0000b7b7          	lui	a5,0xb
-    80002984:	1007879b          	addiw	a5,a5,256
-    80002988:	30279073          	csrw	medeleg,a5
-    8000298c:	0001e7b7          	lui	a5,0x1e
-    80002990:	30079073          	csrw	mstatus,a5
-    80002994:	30405073          	csrwi	mie,0
-    80002998:	00005717          	auipc	a4,0x5
-    8000299c:	66870713          	addi	a4,a4,1640 # 80008000 <freelist_nodes>
-    800029a0:	010707b3          	add	a5,a4,a6
-    800029a4:	3e078693          	addi	a3,a5,992 # 1e3e0 <_start-0x7ffe1c20>
-    800029a8:	00006617          	auipc	a2,0x6
-    800029ac:	e4f63023          	sd	a5,-448(a2) # 800087e8 <freelist_head>
-    800029b0:	000808b7          	lui	a7,0x80
-    800029b4:	00006797          	auipc	a5,0x6
-    800029b8:	e2d7b623          	sd	a3,-468(a5) # 800087e0 <freelist_tail>
-    800029bc:	00006317          	auipc	t1,0x6
-    800029c0:	a3430313          	addi	t1,t1,-1484 # 800083f0 <user_mapping>
-    800029c4:	03300793          	li	a5,51
-    800029c8:	03f88893          	addi	a7,a7,63 # 8003f <_start-0x7ff7ffc1>
-    800029cc:	01080813          	addi	a6,a6,16
-    800029d0:	0017d613          	srli	a2,a5,0x1
-    800029d4:	011786b3          	add	a3,a5,a7
-    800029d8:	00f647b3          	xor	a5,a2,a5
-    800029dc:	010705b3          	add	a1,a4,a6
-    800029e0:	00c69693          	slli	a3,a3,0xc
-    800029e4:	00579793          	slli	a5,a5,0x5
-    800029e8:	00d73023          	sd	a3,0(a4)
-    800029ec:	00b73423          	sd	a1,8(a4)
-    800029f0:	0207f793          	andi	a5,a5,32
-    800029f4:	01070713          	addi	a4,a4,16
-    800029f8:	00f667b3          	or	a5,a2,a5
-    800029fc:	fce31ae3          	bne	t1,a4,800029d0 <vm_boot+0x120>
-    80002a00:	12000613          	li	a2,288
-    80002a04:	00000593          	li	a1,0
-    80002a08:	00010513          	mv	a0,sp
-    80002a0c:	00006797          	auipc	a5,0x6
-    80002a10:	9c07be23          	sd	zero,-1572(a5) # 800083e8 <freelist_nodes+0x3e8>
-    80002a14:	e48ff0ef          	jal	ra,8000205c <memset>
-    80002a18:	800007b7          	lui	a5,0x80000
-    80002a1c:	00f40433          	add	s0,s0,a5
-    80002a20:	00010513          	mv	a0,sp
-    80002a24:	10813423          	sd	s0,264(sp)
-    80002a28:	e94fd0ef          	jal	ra,800000bc <pop_tf>
-    80002a2c:	12813083          	ld	ra,296(sp)
-    80002a30:	12013403          	ld	s0,288(sp)
-    80002a34:	13010113          	addi	sp,sp,304
-    80002a38:	00008067          	ret
-    80002a3c:	00100613          	li	a2,1
-    80002a40:	032fe7b7          	lui	a5,0x32fe
-    80002a44:	000805b7          	lui	a1,0x80
-    80002a48:	01f61513          	slli	a0,a2,0x1f
-    80002a4c:	19f78793          	addi	a5,a5,415 # 32fe19f <_start-0x7cd01e61>
-    80002a50:	ffc58593          	addi	a1,a1,-4 # 7fffc <_start-0x7ff80004>
-    80002a54:	03e61613          	slli	a2,a2,0x3e
-    80002a58:	01c0006f          	j	80002a74 <vm_boot+0x1c4>
-    80002a5c:	0007202f          	amoadd.w	zero,zero,(a4)
-    80002a60:	0017d713          	srli	a4,a5,0x1
-    80002a64:	00e7c7b3          	xor	a5,a5,a4
-    80002a68:	03e79793          	slli	a5,a5,0x3e
-    80002a6c:	00c7f7b3          	and	a5,a5,a2
-    80002a70:	00e7e7b3          	or	a5,a5,a4
-    80002a74:	00b7f733          	and	a4,a5,a1
-    80002a78:	0017f693          	andi	a3,a5,1
-    80002a7c:	00a70733          	add	a4,a4,a0
-    80002a80:	fc069ee3          	bnez	a3,80002a5c <vm_boot+0x1ac>
-    80002a84:	00072003          	lw	zero,0(a4)
-    80002a88:	fd9ff06f          	j	80002a60 <vm_boot+0x1b0>
-    80002a8c:	10100793          	li	a5,257
-    80002a90:	04100613          	li	a2,65
-    80002a94:	00000697          	auipc	a3,0x0
-    80002a98:	37468693          	addi	a3,a3,884 # 80002e08 <pass+0x220>
-    80002a9c:	ffffe717          	auipc	a4,0xffffe
-    80002aa0:	56470713          	addi	a4,a4,1380 # 80001000 <tohost>
-    80002aa4:	03079793          	slli	a5,a5,0x30
-    80002aa8:	00073503          	ld	a0,0(a4)
-    80002aac:	00168693          	addi	a3,a3,1
-    80002ab0:	00f665b3          	or	a1,a2,a5
-    80002ab4:	00050a63          	beqz	a0,80002ac8 <vm_boot+0x218>
-    80002ab8:	ffffe617          	auipc	a2,0xffffe
-    80002abc:	58063423          	sd	zero,1416(a2) # 80001040 <fromhost>
-    80002ac0:	00073603          	ld	a2,0(a4)
-    80002ac4:	fe061ae3          	bnez	a2,80002ab8 <vm_boot+0x208>
-    80002ac8:	0006c603          	lbu	a2,0(a3)
-    80002acc:	00b73023          	sd	a1,0(a4)
-    80002ad0:	fc061ce3          	bnez	a2,80002aa8 <vm_boot+0x1f8>
-    80002ad4:	00300513          	li	a0,3
-    80002ad8:	f60ff0ef          	jal	ra,80002238 <terminate>
-    80002adc:	0000                	unimp
-    80002ade:	0000                	unimp
-    80002ae0:	0000                	unimp
-    80002ae2:	0000                	unimp
+    8000295c:	30529073          	csrw	mtvec,t0
+    80002960:	bff00813          	li	a6,-1025
+    80002964:	01581813          	slli	a6,a6,0x15
+    80002968:	ffffd797          	auipc	a5,0xffffd
+    8000296c:	7dc78793          	addi	a5,a5,2012 # 80000144 <trap_entry>
+    80002970:	010787b3          	add	a5,a5,a6
+    80002974:	10579073          	csrw	stvec,a5
+    80002978:	340027f3          	csrr	a5,mscratch
+    8000297c:	010787b3          	add	a5,a5,a6
+    80002980:	14079073          	csrw	sscratch,a5
+    80002984:	0000b7b7          	lui	a5,0xb
+    80002988:	1007879b          	addiw	a5,a5,256
+    8000298c:	30279073          	csrw	medeleg,a5
+    80002990:	0001e7b7          	lui	a5,0x1e
+    80002994:	6007879b          	addiw	a5,a5,1536
+    80002998:	30079073          	csrw	mstatus,a5
+    8000299c:	30405073          	csrwi	mie,0
+    800029a0:	00005717          	auipc	a4,0x5
+    800029a4:	66070713          	addi	a4,a4,1632 # 80008000 <freelist_nodes>
+    800029a8:	010707b3          	add	a5,a4,a6
+    800029ac:	3e078693          	addi	a3,a5,992 # 1e3e0 <_start-0x7ffe1c20>
+    800029b0:	00006617          	auipc	a2,0x6
+    800029b4:	e2f63c23          	sd	a5,-456(a2) # 800087e8 <freelist_head>
+    800029b8:	000808b7          	lui	a7,0x80
+    800029bc:	00006797          	auipc	a5,0x6
+    800029c0:	e2d7b223          	sd	a3,-476(a5) # 800087e0 <freelist_tail>
+    800029c4:	00006317          	auipc	t1,0x6
+    800029c8:	a2c30313          	addi	t1,t1,-1492 # 800083f0 <user_mapping>
+    800029cc:	03300793          	li	a5,51
+    800029d0:	03f88893          	addi	a7,a7,63 # 8003f <_start-0x7ff7ffc1>
+    800029d4:	01080813          	addi	a6,a6,16
+    800029d8:	0017d613          	srli	a2,a5,0x1
+    800029dc:	011786b3          	add	a3,a5,a7
+    800029e0:	00f647b3          	xor	a5,a2,a5
+    800029e4:	010705b3          	add	a1,a4,a6
+    800029e8:	00c69693          	slli	a3,a3,0xc
+    800029ec:	00579793          	slli	a5,a5,0x5
+    800029f0:	00d73023          	sd	a3,0(a4)
+    800029f4:	00b73423          	sd	a1,8(a4)
+    800029f8:	0207f793          	andi	a5,a5,32
+    800029fc:	01070713          	addi	a4,a4,16
+    80002a00:	00f667b3          	or	a5,a2,a5
+    80002a04:	fce31ae3          	bne	t1,a4,800029d8 <vm_boot+0x128>
+    80002a08:	12000613          	li	a2,288
+    80002a0c:	00000593          	li	a1,0
+    80002a10:	00010513          	mv	a0,sp
+    80002a14:	00006797          	auipc	a5,0x6
+    80002a18:	9c07ba23          	sd	zero,-1580(a5) # 800083e8 <freelist_nodes+0x3e8>
+    80002a1c:	e40ff0ef          	jal	ra,8000205c <memset>
+    80002a20:	800007b7          	lui	a5,0x80000
+    80002a24:	00f40433          	add	s0,s0,a5
+    80002a28:	00010513          	mv	a0,sp
+    80002a2c:	10813423          	sd	s0,264(sp)
+    80002a30:	e8cfd0ef          	jal	ra,800000bc <pop_tf>
+    80002a34:	12813083          	ld	ra,296(sp)
+    80002a38:	12013403          	ld	s0,288(sp)
+    80002a3c:	13010113          	addi	sp,sp,304
+    80002a40:	00008067          	ret
+    80002a44:	00100613          	li	a2,1
+    80002a48:	032fe7b7          	lui	a5,0x32fe
+    80002a4c:	000805b7          	lui	a1,0x80
+    80002a50:	01f61513          	slli	a0,a2,0x1f
+    80002a54:	19f78793          	addi	a5,a5,415 # 32fe19f <_start-0x7cd01e61>
+    80002a58:	ffc58593          	addi	a1,a1,-4 # 7fffc <_start-0x7ff80004>
+    80002a5c:	03e61613          	slli	a2,a2,0x3e
+    80002a60:	01c0006f          	j	80002a7c <vm_boot+0x1cc>
+    80002a64:	0007202f          	amoadd.w	zero,zero,(a4)
+    80002a68:	0017d713          	srli	a4,a5,0x1
+    80002a6c:	00e7c7b3          	xor	a5,a5,a4
+    80002a70:	03e79793          	slli	a5,a5,0x3e
+    80002a74:	00c7f7b3          	and	a5,a5,a2
+    80002a78:	00e7e7b3          	or	a5,a5,a4
+    80002a7c:	00b7f733          	and	a4,a5,a1
+    80002a80:	0017f693          	andi	a3,a5,1
+    80002a84:	00a70733          	add	a4,a4,a0
+    80002a88:	fc069ee3          	bnez	a3,80002a64 <vm_boot+0x1b4>
+    80002a8c:	00072003          	lw	zero,0(a4)
+    80002a90:	fd9ff06f          	j	80002a68 <vm_boot+0x1b8>
+    80002a94:	10100793          	li	a5,257
+    80002a98:	04100613          	li	a2,65
+    80002a9c:	00000697          	auipc	a3,0x0
+    80002aa0:	36468693          	addi	a3,a3,868 # 80002e00 <pass+0x210>
+    80002aa4:	ffffe717          	auipc	a4,0xffffe
+    80002aa8:	55c70713          	addi	a4,a4,1372 # 80001000 <tohost>
+    80002aac:	03079793          	slli	a5,a5,0x30
+    80002ab0:	00073503          	ld	a0,0(a4)
+    80002ab4:	00168693          	addi	a3,a3,1
+    80002ab8:	00f665b3          	or	a1,a2,a5
+    80002abc:	00050a63          	beqz	a0,80002ad0 <vm_boot+0x220>
+    80002ac0:	ffffe617          	auipc	a2,0xffffe
+    80002ac4:	58063023          	sd	zero,1408(a2) # 80001040 <fromhost>
+    80002ac8:	00073603          	ld	a2,0(a4)
+    80002acc:	fe061ae3          	bnez	a2,80002ac0 <vm_boot+0x210>
+    80002ad0:	0006c603          	lbu	a2,0(a3)
+    80002ad4:	00b73023          	sd	a1,0(a4)
+    80002ad8:	fc061ce3          	bnez	a2,80002ab0 <vm_boot+0x200>
+    80002adc:	00300513          	li	a0,3
+    80002ae0:	f58ff0ef          	jal	ra,80002238 <terminate>
     80002ae4:	0000                	unimp
     80002ae6:	0000                	unimp
     80002ae8:	0000                	unimp
@@ -901,27 +899,27 @@ Disassembly of section .text:
     80002b38:	00000013          	nop
     80002b3c:	00000013          	nop
     80002b40:	00000297          	auipc	t0,0x0
-    80002b44:	00a29a23          	sh	a0,20(t0) # 80002b54 <userstart+0x50>
+    80002b44:	4ca29223          	sh	a0,1220(t0) # 80003004 <begin_signature+0x4>
     80002b48:	00000297          	auipc	t0,0x0
-    80002b4c:	00b29723          	sh	a1,14(t0) # 80002b56 <userstart+0x52>
+    80002b4c:	4ab29f23          	sh	a1,1214(t0) # 80003006 <begin_signature+0x6>
     80002b50:	0000100f          	fence.i
-    80002b54:	0de68693          	addi	a3,a3,222
+    80002b54:	00000797          	auipc	a5,0x0
+    80002b58:	4b078793          	addi	a5,a5,1200 # 80003004 <begin_signature+0x4>
+    80002b5c:	00078367          	jalr	t1,a5
 
-0000000080002b58 <test_2>:
-    80002b58:	00000013          	nop
-    80002b5c:	1bc00e93          	li	t4,444
-    80002b60:	00200193          	li	gp,2
-    80002b64:	07d69a63          	bne	a3,t4,80002bd8 <fail>
-    80002b68:	06400713          	li	a4,100
-    80002b6c:	fff70713          	addi	a4,a4,-1
-    80002b70:	fe071ee3          	bnez	a4,80002b6c <test_2+0x14>
-    80002b74:	00000297          	auipc	t0,0x0
-    80002b78:	04a29623          	sh	a0,76(t0) # 80002bc0 <test_2+0x68>
+0000000080002b60 <test_2>:
+    80002b60:	00000013          	nop
+    80002b64:	1bc00393          	li	t2,444
+    80002b68:	00200193          	li	gp,2
+    80002b6c:	06769a63          	bne	a3,t2,80002be0 <fail>
+    80002b70:	06400713          	li	a4,100
+    80002b74:	fff70713          	addi	a4,a4,-1
+    80002b78:	fe071ee3          	bnez	a4,80002b74 <test_2+0x14>
     80002b7c:	00000297          	auipc	t0,0x0
-    80002b80:	04b29323          	sh	a1,70(t0) # 80002bc2 <test_2+0x6a>
-    80002b84:	0000100f          	fence.i
-    80002b88:	00000013          	nop
-    80002b8c:	00000013          	nop
+    80002b80:	48a29823          	sh	a0,1168(t0) # 8000300c <begin_signature+0xc>
+    80002b84:	00000297          	auipc	t0,0x0
+    80002b88:	48b29523          	sh	a1,1162(t0) # 8000300e <begin_signature+0xe>
+    80002b8c:	0000100f          	fence.i
     80002b90:	00000013          	nop
     80002b94:	00000013          	nop
     80002b98:	00000013          	nop
@@ -934,29 +932,27 @@ Disassembly of section .text:
     80002bb4:	00000013          	nop
     80002bb8:	00000013          	nop
     80002bbc:	00000013          	nop
-    80002bc0:	22b68693          	addi	a3,a3,555
+    80002bc0:	00000797          	auipc	a5,0x0
+    80002bc4:	44c78793          	addi	a5,a5,1100 # 8000300c <begin_signature+0xc>
+    80002bc8:	00078367          	jalr	t1,a5
 
-0000000080002bc4 <test_3>:
-    80002bc4:	00000013          	nop
-    80002bc8:	30900e93          	li	t4,777
-    80002bcc:	00300193          	li	gp,3
-    80002bd0:	01d69463          	bne	a3,t4,80002bd8 <fail>
-    80002bd4:	00301a63          	bne	zero,gp,80002be8 <pass>
+0000000080002bcc <test_3>:
+    80002bcc:	00000013          	nop
+    80002bd0:	30900393          	li	t2,777
+    80002bd4:	00300193          	li	gp,3
+    80002bd8:	00769463          	bne	a3,t2,80002be0 <fail>
+    80002bdc:	00301a63          	bne	zero,gp,80002bf0 <pass>
 
-0000000080002bd8 <fail>:
-    80002bd8:	00119513          	slli	a0,gp,0x1
-    80002bdc:	00050063          	beqz	a0,80002bdc <fail+0x4>
-    80002be0:	00156513          	ori	a0,a0,1
-    80002be4:	00000073          	ecall
-
-0000000080002be8 <pass>:
-    80002be8:	00100513          	li	a0,1
+0000000080002be0 <fail>:
+    80002be0:	00119513          	slli	a0,gp,0x1
+    80002be4:	00050063          	beqz	a0,80002be4 <fail+0x4>
+    80002be8:	00156513          	ori	a0,a0,1
     80002bec:	00000073          	ecall
-    80002bf0:	c0001073          	unimp
-    80002bf4:	0000                	unimp
-    80002bf6:	0000                	unimp
-    80002bf8:	0000                	unimp
-    80002bfa:	0000                	unimp
+
+0000000080002bf0 <pass>:
+    80002bf0:	00100513          	li	a0,1
+    80002bf4:	00000073          	ecall
+    80002bf8:	c0001073          	unimp
     80002bfc:	0000                	unimp
     80002bfe:	0000                	unimp
     80002c00:	0000                	unimp
@@ -975,12 +971,12 @@ Disassembly of section .text:
     80002c1a:	0000                	unimp
     80002c1c:	0000                	unimp
     80002c1e:	0000                	unimp
-    80002c20:	0000                	unimp
-    80002c22:	0000                	unimp
-    80002c24:	0000                	unimp
-    80002c26:	0000                	unimp
 
 Disassembly of section .data:
 
 0000000080003000 <begin_signature>:
     80003000:	14d68693          	addi	a3,a3,333
+    80003004:	0de68693          	addi	a3,a3,222
+    80003008:	000307e7          	jalr	a5,t1
+    8000300c:	22b68693          	addi	a3,a3,555
+    80003010:	000307e7          	jalr	a5,t1
