@@ -38,7 +38,6 @@ pub fn run(
 ) {
     let len = data.len() as u64;
 
-    emu.is_test = true;
     emu.is_debug = true;
 
     emu.initialize_dram(data);

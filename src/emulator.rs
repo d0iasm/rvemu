@@ -68,8 +68,8 @@ impl Emulator {
         }
     }
 
-    /// Start executing the emulator.
-    pub fn start(&mut self) {
+    /// Start executing the emulator for debug.
+    fn debug_start(&mut self) {
         let mut count = 0;
         loop {
             count += 1;
@@ -91,13 +91,49 @@ impl Emulator {
                 Ok(inst) => {
                     if self.is_debug {
                         println!(
-                            "pc: {:#x}, inst: {:#x}, is_inst 16? {}",
+                            "pc: {:#x}, inst: {:#x}, is_inst 16? {} pre_inst: {:#x}",
                             self.cpu.pc.wrapping_sub(4),
                             inst,
                             // Check if an instruction is one of the compressed instructions.
-                            inst & 0b11 == 0 || inst & 0b11 == 1 || inst & 0b11 == 2
+                            inst & 0b11 == 0 || inst & 0b11 == 1 || inst & 0b11 == 2,
+                            self.cpu.pre_inst,
                         );
                     }
+                    // Return a placeholder trap.
+                    Trap::Requested
+                }
+                Err(exception) => exception.take_trap(&mut self.cpu),
+            };
+
+            match trap {
+                Trap::Fatal => {
+                    println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
+                    return;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Start executing the emulator.
+    pub fn start(&mut self) {
+        if self.is_debug || self.cpu.is_count {
+            self.debug_start();
+        }
+
+        loop {
+            // Run a cycle on peripheral devices.
+            self.cpu.devices_increment();
+
+            // Take an interrupt.
+            match self.cpu.check_pending_interrupt() {
+                Some(interrupt) => interrupt.take_trap(&mut self.cpu),
+                None => {}
+            }
+
+            // Execute an instruction.
+            let trap = match self.cpu.execute() {
+                Ok(_) => {
                     // Return a placeholder trap.
                     Trap::Requested
                 }

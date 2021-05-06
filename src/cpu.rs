@@ -236,8 +236,8 @@ pub struct Cpu {
     pub inst_counter: BTreeMap<String, u64>,
     /// The count flag. Count the number of each instruction executed.
     pub is_count: bool,
-
-    pre_inst: u64,
+    /// Previous instruction. This is for debug.
+    pub pre_inst: u64,
 }
 
 impl Cpu {

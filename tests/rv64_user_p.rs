@@ -26,8 +26,6 @@ macro_rules! add_test {
             emu.initialize_dram(data);
             emu.initialize_pc(DRAM_BASE);
 
-            emu.is_test = true;
-
             emu.test_start(DRAM_BASE, DRAM_BASE + len);
 
             // Test result is stored at a0 (x10), a function argument and a return value.
