@@ -6,13 +6,13 @@ use crate::{
 };
 
 /// All the exception kinds.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Exception {
     /// With the addition of the C extension, no instructions can raise
     /// instruction-address-misaligned exceptions.
     InstructionAddressMisaligned,
     InstructionAccessFault,
-    IllegalInstruction,
+    IllegalInstruction(u64),
     Breakpoint,
     LoadAddressMisaligned,
     LoadAccessFault,
@@ -49,7 +49,7 @@ impl Exception {
         match self {
             Exception::InstructionAddressMisaligned => 0,
             Exception::InstructionAccessFault => 1,
-            Exception::IllegalInstruction => 2,
+            Exception::IllegalInstruction(_) => 2,
             Exception::Breakpoint => 3,
             Exception::LoadAddressMisaligned => 4,
             Exception::LoadAccessFault => 5,
@@ -91,8 +91,6 @@ impl Exception {
         // may be written with the first XLEN or ILEN bits of the faulting instruction as described
         // below. For other traps, mtval (stval) is set to zero, but a future standard may redefine
         // mtval's (stval's) setting for other traps."
-        //
-        // TODO: support illegal instruction trap.
         match self {
             Exception::InstructionAddressMisaligned
             | Exception::InstructionAccessFault
@@ -104,6 +102,7 @@ impl Exception {
             Exception::InstructionPageFault(val)
             | Exception::LoadPageFault(val)
             | Exception::StoreAMOPageFault(val) => *val,
+            Exception::IllegalInstruction(val) => *val,
             _ => 0,
         }
     }
@@ -216,7 +215,7 @@ impl Exception {
             Exception::InstructionAddressMisaligned | Exception::InstructionAccessFault => {
                 Trap::Fatal
             }
-            Exception::IllegalInstruction => Trap::Invisible,
+            Exception::IllegalInstruction(_) => Trap::Invisible,
             Exception::Breakpoint => Trap::Requested,
             Exception::LoadAddressMisaligned
             | Exception::LoadAccessFault

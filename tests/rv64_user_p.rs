@@ -217,3 +217,27 @@ add_test!(rv64um_p_remw);
 
 // rv64uc-p-*
 add_test!(rv64uc_p_rvc);
+
+// rv64mi-p-*
+add_test!(rv64mi_p_access);
+//add_test!(rv64mi_p_breakpoint);
+//add_test!(rv64mi_p_csr);
+//add_test!(rv64mi_p_illegal);
+add_test!(rv64mi_p_ma_addr);
+//add_test!(rv64mi_p_ma_fetch);
+add_test!(rv64mi_p_mcsr);
+add_test!(rv64mi_p_sbreak);
+add_test!(rv64mi_p_scall);
+
+// rv64si-p-*
+/*
+add_test!(rv64si_p_csr);
+add_test!(rv64si_p_dirty);
+add_test!(rv64si_p_icache_alias);
+add_test!(rv64si_p_ma_fetch);
+add_test!(rv64si_p_sbreak);
+add_test!(rv64si_p_scall);
+add_test!(rv64si_p_wfi);
+
+add_test!(rv64ua_v_lrsc);
+*/
