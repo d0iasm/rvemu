@@ -9,8 +9,6 @@ pub struct Emulator {
     pub cpu: Cpu,
     /// The debug flag. Output messages if it's true, otherwise output nothing.
     pub is_debug: bool,
-    /// The test flag for riscv/riscv-tests.
-    pub is_test: bool,
 }
 
 impl Emulator {
@@ -19,7 +17,6 @@ impl Emulator {
         Self {
             cpu: Cpu::new(),
             is_debug: false,
-            is_test: false,
         }
     }
 
@@ -76,10 +73,6 @@ impl Emulator {
         let mut count = 0;
         loop {
             count += 1;
-            // This is a workaround for unit tests to finish the execution.
-            if self.is_test && count > 10000 {
-                return;
-            }
             if self.cpu.is_count && count > 50000000 {
                 return;
             }
