@@ -3113,10 +3113,10 @@ impl Cpu {
                                 inst_count!(self, "fmv.x.w");
                                 self.debug(inst, "fmv.x.w");
 
-                                // "The bits are not modified in the transfer"
                                 self.xregs.write(
                                     rd,
-                                    (self.fregs.read(rs1).to_bits() as u32) as i32 as i64 as u64,
+                                    (self.fregs.read(rs1).to_bits() & 0xffffffff) as i32 as i64
+                                        as u64,
                                 );
                             }
                             0x1 => {
@@ -3198,9 +3198,8 @@ impl Cpu {
                         inst_count!(self, "fmv.w.x");
                         self.debug(inst, "fmv.w.x");
 
-                        // "The bits are not modified in the transfer"
                         self.fregs
-                            .write(rd, f32::from_bits(self.xregs.read(rs1) as u32) as f64);
+                            .write(rd, f64::from_bits(self.xregs.read(rs1) & 0xffffffff));
                     }
                     0x79 => {
                         // fmv.d.x
