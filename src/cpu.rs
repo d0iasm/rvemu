@@ -1206,7 +1206,7 @@ impl Cpu {
 
                                 let rs1 = (inst >> 7) & 0x1f;
                                 if rs1 != 0 {
-                                    self.pc = self.xregs.read(rs1).wrapping_sub(2);
+                                    self.pc = self.xregs.read(rs1);
                                 }
                             }
                             (0, _) => {
