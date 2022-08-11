@@ -195,18 +195,20 @@ impl Exception {
             // explicitly written by software."
             cpu.state.write(MTVAL, self.trap_value(exception_pc));
 
-            // Set a previous interrupt-enable bit for supervisor mode (MPIE, 7) to the value
-            // of a global interrupt-enable bit for supervisor mode (MIE, 3).
+            // Set a previous interrupt-enable bit for machine mode (MPIE, 7) to the value
+            // of a global interrupt-enable bit for machine mode (MIE, 3).
             cpu.state
                 .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
-            // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
+            // Set a global interrupt-enable bit for machine mode (MIE, 3) to 0.
             cpu.state.write_bit(MSTATUS, 3, 0);
             // When a trap is taken from privilege mode y into privilege mode x, xPIE is set
             // to the value of x IE; x IE is set to 0; and xPP is set to y.
             match previous_mode {
-                Mode::User => cpu.state.write_bits(MSTATUS, 11..13, 0b00),
-                Mode::Supervisor => cpu.state.write_bits(MSTATUS, 11..13, 0b01),
-                Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, 0b11),
+                Mode::User => cpu.state.write_bits(MSTATUS, 11..13, Mode::User as u64),
+                Mode::Supervisor => cpu
+                    .state
+                    .write_bits(MSTATUS, 11..13, Mode::Supervisor as u64),
+                Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, Mode::Machine as u64),
                 _ => panic!("previous privilege mode is invalid"),
             }
         }
