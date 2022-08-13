@@ -333,7 +333,7 @@ impl Cpu {
             }
             Mode::Supervisor => {
                 // Check if the SIE bit is enabled.
-                if self.state.read_sstatus(STATUS_SIE) == 0 {
+                if self.state.read_sstatus(XSTATUS_SIE) == 0 {
                     return None;
                 }
             }
@@ -3374,7 +3374,7 @@ impl Cpu {
 
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for supervisor mode (SPP, 8).
-                                self.mode = match self.state.read_sstatus(STATUS_SPP) {
+                                self.mode = match self.state.read_sstatus(XSTATUS_SPP) {
                                     0b0 => Mode::User,
                                     0b1 => {
                                         // If SPP != M-mode, SRET also sets MPRV=0.
@@ -3388,15 +3388,15 @@ impl Cpu {
                                 // 5), and set a global interrupt-enable bit for supervisor mode
                                 // (SIE, 1) to it.
                                 self.state.write_sstatus(
-                                    STATUS_SIE,
-                                    self.state.read_sstatus(STATUS_SPIE),
+                                    XSTATUS_SIE,
+                                    self.state.read_sstatus(XSTATUS_SPIE),
                                 );
 
                                 // Set a privious interrupt-enable bit for supervisor mode (SPIE,
                                 // 5) to 1.
-                                self.state.write_sstatus(STATUS_SPIE, 1);
+                                self.state.write_sstatus(XSTATUS_SPIE, 1);
                                 // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
-                                self.state.write_sstatus(STATUS_SPP, 0);
+                                self.state.write_sstatus(XSTATUS_SPP, 0);
                             }
                             (0x2, 0x18) => {
                                 // mret

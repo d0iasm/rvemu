@@ -92,11 +92,11 @@ const SSTATUS_MASK: u64 = SSTATUS_SIE_MASK
     | SSTATUS_UXL_MASK
     | SSTATUS_SD_MASK;
 /// Global interrupt-enable bit for supervisor mode.
-pub const STATUS_SIE: CsrFieldAddress = 1..=1;
+pub const XSTATUS_SIE: CsrFieldAddress = 1..=1;
 /// Previous interrupt-enable bit for supervisor mode.
-pub const STATUS_SPIE: CsrFieldAddress = 5..=5;
+pub const XSTATUS_SPIE: CsrFieldAddress = 5..=5;
 /// Previous privilege mode for supervisor mode.
-pub const STATUS_SPP: CsrFieldAddress = 8..=8;
+pub const XSTATUS_SPP: CsrFieldAddress = 8..=8;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
