@@ -3417,10 +3417,15 @@ impl Cpu {
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_mstatus(MSTATUS_MPP) {
-                                    0b00 | 0b01 => {
+                                    0b00 => {
                                         // If MPP != M-mode, MRET also sets MPRV=0.
                                         self.state.write_mstatus(MSTATUS_MPRV, 0);
                                         Mode::User
+                                    }
+                                    0b01 => {
+                                        // If MPP != M-mode, MRET also sets MPRV=0.
+                                        self.state.write_mstatus(MSTATUS_MPRV, 0);
+                                        Mode::Supervisor
                                     }
                                     0b11 => Mode::Machine,
                                     _ => Mode::Debug,
