@@ -1,9 +1,10 @@
 //! The csr module contains all the control and status registers.
 
 use std::fmt;
-use std::ops::{Bound, Range, RangeBounds};
+use std::ops::{Bound, Range, RangeBounds, RangeInclusive};
 
 pub type CsrAddress = u16;
+pub type CsrFieldRange = RangeInclusive<usize>;
 
 pub const MXLEN: usize = 64;
 /// The number of CSRs. The field is 12 bits so the maximum kind of CSRs is 4096 (2**12).
@@ -70,26 +71,32 @@ pub const SIP: CsrAddress = 0x144;
 pub const SATP: CsrAddress = 0x180;
 
 // SSTATUS fields.
-const SSTATUS_SIE: u64 = 0x2; // sstatus[1]
-const SSTATUS_SPIE: u64 = 0x20; // sstatus[5]
-const SSTATUS_UBE: u64 = 0x40; // sstatus[6]
-const SSTATUS_SPP: u64 = 0x100; // sstatus[8]
-const SSTATUS_FS: u64 = 0x6000; // sstatus[14:13]
-const SSTATUS_XS: u64 = 0x18000; // sstatus[16:15]
-const SSTATUS_SUM: u64 = 0x40000; // sstatus[18]
-const SSTATUS_MXR: u64 = 0x80000; // sstatus[19]
-const SSTATUS_UXL: u64 = 0x3_00000000; // sstatus[33:32]
-const SSTATUS_SD: u64 = 0x80000000_00000000; // sstatus[63]
-const SSTATUS_MASK: u64 = SSTATUS_SIE
-    | SSTATUS_SPIE
-    | SSTATUS_UBE
-    | SSTATUS_SPP
-    | SSTATUS_FS
-    | SSTATUS_XS
-    | SSTATUS_SUM
-    | SSTATUS_MXR
-    | SSTATUS_UXL
-    | SSTATUS_SD;
+const SSTATUS_SIE_MASK: u64 = 0x2; // sstatus[1]
+const SSTATUS_SPIE_MASK: u64 = 0x20; // sstatus[5]
+const SSTATUS_UBE_MASK: u64 = 0x40; // sstatus[6]
+const SSTATUS_SPP_MASK: u64 = 0x100; // sstatus[8]
+const SSTATUS_FS_MASK: u64 = 0x6000; // sstatus[14:13]
+const SSTATUS_XS_MASK: u64 = 0x18000; // sstatus[16:15]
+const SSTATUS_SUM_MASK: u64 = 0x40000; // sstatus[18]
+const SSTATUS_MXR_MASK: u64 = 0x80000; // sstatus[19]
+const SSTATUS_UXL_MASK: u64 = 0x3_00000000; // sstatus[33:32]
+const SSTATUS_SD_MASK: u64 = 0x80000000_00000000; // sstatus[63]
+const SSTATUS_MASK: u64 = SSTATUS_SIE_MASK
+    | SSTATUS_SPIE_MASK
+    | SSTATUS_UBE_MASK
+    | SSTATUS_SPP_MASK
+    | SSTATUS_FS_MASK
+    | SSTATUS_XS_MASK
+    | SSTATUS_SUM_MASK
+    | SSTATUS_MXR_MASK
+    | SSTATUS_UXL_MASK
+    | SSTATUS_SD_MASK;
+/// Global interrupt-enable bit for supervisor mode.
+pub const XSTATUS_SIE: CsrFieldRange = 1..=1;
+/// Previous interrupt-enable bit for supervisor mode.
+pub const XSTATUS_SPIE: CsrFieldRange = 5..=5;
+/// Previous privilege mode for supervisor mode.
+pub const XSTATUS_SPP: CsrFieldRange = 8..=8;
 
 /////////////////////////////////
 // Machine-level CSR addresses //
@@ -137,6 +144,16 @@ pub const MIP: CsrAddress = 0x344;
 const _PMPCFG0: CsrAddress = 0x3a0;
 /// Physical memory protection address register.
 const _PMPADDR0: CsrAddress = 0x3b0;
+
+// MSTATUS fields.
+/// Global interrupt-enable bit for machine mode.
+pub const MSTATUS_MIE: CsrFieldRange = 3..=3;
+/// Previous interrupt-enable bit for machine mode.
+pub const MSTATUS_MPIE: CsrFieldRange = 7..=7;
+/// Previous privilege mode for machine mode.
+pub const MSTATUS_MPP: CsrFieldRange = 11..=12;
+/// Modify privilege bit.
+pub const MSTATUS_MPRV: CsrFieldRange = 17..=17;
 
 // MIP fields.
 /// Supervisor software interrupt.
@@ -318,10 +335,33 @@ impl State {
         if (range.start >= MXLEN) | (range.end > MXLEN) | (range.start >= range.end) {
             // TODO: ranse exception?
         }
+        if (val >> (range.end - range.start)) != 0 {
+            // TODO: raise exception
+        }
 
         let bitmask = (!0 << range.end) | !(!0 << range.start);
         // Set bits.
         self.write(addr, (self.read(addr) & bitmask) | (val << range.start))
+    }
+
+    /// Read bit(s) from a given field in the SSTATUS register.
+    pub fn read_sstatus(&self, range: CsrFieldRange) -> u64 {
+        self.read_bits(SSTATUS, range)
+    }
+
+    /// Read bit(s) from a given field in the MSTATUS register.
+    pub fn read_mstatus(&self, range: CsrFieldRange) -> u64 {
+        self.read_bits(MSTATUS, range)
+    }
+
+    /// Write bit(s) to a given field in the SSTATUS register.
+    pub fn write_sstatus(&mut self, range: CsrFieldRange, val: u64) {
+        self.write_bits(SSTATUS, range, val);
+    }
+
+    /// Write bit(s) to a given field in the MSTATUS register.
+    pub fn write_mstatus(&mut self, range: CsrFieldRange, val: u64) {
+        self.write_bits(MSTATUS, range, val);
     }
 
     /// Reset all the CSRs.

@@ -327,13 +327,13 @@ impl Cpu {
         match self.mode {
             Mode::Machine => {
                 // Check if the MIE bit is enabled.
-                if (self.state.read(MSTATUS) >> 3) & 1 == 0 {
+                if self.state.read_mstatus(MSTATUS_MIE) == 0 {
                     return None;
                 }
             }
             Mode::Supervisor => {
                 // Check if the SIE bit is enabled.
-                if (self.state.read(SSTATUS) >> 1) & 1 == 0 {
+                if self.state.read_sstatus(XSTATUS_SIE) == 0 {
                     return None;
                 }
             }
@@ -585,8 +585,8 @@ impl Cpu {
         // 3.1.6.3 Memory Privilege in mstatus Register
         // "When MPRV=1, load and store memory addresses are translated and protected, and
         // endianness is applied, as though the current privilege mode were set to MPP."
-        if self.state.read_bit(MSTATUS, 17) == 1 {
-            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+        if self.state.read_mstatus(MSTATUS_MPRV) == 1 {
+            self.mode = match self.state.read_mstatus(MSTATUS_MPP) {
                 0b00 => Mode::User,
                 0b01 => Mode::Supervisor,
                 0b11 => Mode::Machine,
@@ -597,7 +597,7 @@ impl Cpu {
         let p_addr = self.translate(v_addr, AccessType::Load)?;
         let result = self.bus.read(p_addr, size);
 
-        if self.state.read_bit(MSTATUS, 17) == 1 {
+        if self.state.read_mstatus(MSTATUS_MPRV) == 1 {
             self.mode = previous_mode;
         }
 
@@ -612,8 +612,8 @@ impl Cpu {
         // 3.1.6.3 Memory Privilege in mstatus Register
         // "When MPRV=1, load and store memory addresses are translated and protected, and
         // endianness is applied, as though the current privilege mode were set to MPP."
-        if self.state.read_bit(MSTATUS, 17) == 1 {
-            self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+        if self.state.read_mstatus(MSTATUS_MPRV) == 1 {
+            self.mode = match self.state.read_mstatus(MSTATUS_MPP) {
                 0b00 => Mode::User,
                 0b01 => Mode::Supervisor,
                 0b11 => Mode::Machine,
@@ -630,7 +630,7 @@ impl Cpu {
         let p_addr = self.translate(v_addr, AccessType::Store)?;
         let result = self.bus.write(p_addr, value, size);
 
-        if self.state.read_bit(MSTATUS, 17) == 1 {
+        if self.state.read_mstatus(MSTATUS_MPRV) == 1 {
             self.mode = previous_mode;
         }
 
@@ -3374,11 +3374,11 @@ impl Cpu {
 
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for supervisor mode (SPP, 8).
-                                self.mode = match self.state.read_bit(SSTATUS, 8) {
+                                self.mode = match self.state.read_sstatus(XSTATUS_SPP) {
                                     0b0 => Mode::User,
                                     0b1 => {
                                         // If SPP != M-mode, SRET also sets MPRV=0.
-                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        self.state.write_mstatus(MSTATUS_MPRV, 0);
                                         Mode::Supervisor
                                     }
                                     _ => Mode::Debug,
@@ -3387,14 +3387,16 @@ impl Cpu {
                                 // Read a privious interrupt-enable bit for supervisor mode (SPIE,
                                 // 5), and set a global interrupt-enable bit for supervisor mode
                                 // (SIE, 1) to it.
-                                self.state
-                                    .write_bit(SSTATUS, 1, self.state.read_bit(SSTATUS, 5));
+                                self.state.write_sstatus(
+                                    XSTATUS_SIE,
+                                    self.state.read_sstatus(XSTATUS_SPIE),
+                                );
 
                                 // Set a privious interrupt-enable bit for supervisor mode (SPIE,
                                 // 5) to 1.
-                                self.state.write_bit(SSTATUS, 5, 1);
+                                self.state.write_sstatus(XSTATUS_SPIE, 1);
                                 // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
-                                self.state.write_bit(SSTATUS, 8, 0);
+                                self.state.write_sstatus(XSTATUS_SPP, 0);
                             }
                             (0x2, 0x18) => {
                                 // mret
@@ -3414,15 +3416,15 @@ impl Cpu {
 
                                 // Set the current privileged mode depending on a privious
                                 // privilege mode for machine  mode (MPP, 11..13).
-                                self.mode = match self.state.read_bits(MSTATUS, 11..13) {
+                                self.mode = match self.state.read_mstatus(MSTATUS_MPP) {
                                     0b00 => {
                                         // If MPP != M-mode, MRET also sets MPRV=0.
-                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        self.state.write_mstatus(MSTATUS_MPRV, 0);
                                         Mode::User
                                     }
                                     0b01 => {
                                         // If MPP != M-mode, MRET also sets MPRV=0.
-                                        self.state.write_bit(MSTATUS, 17, 0);
+                                        self.state.write_mstatus(MSTATUS_MPRV, 0);
                                         Mode::Supervisor
                                     }
                                     0b11 => Mode::Machine,
@@ -3432,16 +3434,18 @@ impl Cpu {
                                 // Read a privious interrupt-enable bit for machine mode (MPIE, 7),
                                 // and set a global interrupt-enable bit for machine mode (MIE, 3)
                                 // to it.
-                                self.state
-                                    .write_bit(MSTATUS, 3, self.state.read_bit(MSTATUS, 7));
+                                self.state.write_mstatus(
+                                    MSTATUS_MIE,
+                                    self.state.read_mstatus(MSTATUS_MPIE),
+                                );
 
                                 // Set a privious interrupt-enable bit for machine mode (MPIE, 7)
                                 // to 1.
-                                self.state.write_bit(MSTATUS, 7, 1);
+                                self.state.write_mstatus(MSTATUS_MPIE, 1);
 
                                 // Set a privious privilege mode for machine mode (MPP, 11..13) to
                                 // 0.
-                                self.state.write_bits(MSTATUS, 11..13, 0b00);
+                                self.state.write_mstatus(MSTATUS_MPP, Mode::User as u64);
                             }
                             (0x5, 0x8) => {
                                 // wfi

@@ -99,15 +99,15 @@ impl Interrupt {
             // Set a privious interrupt-enable bit for supervisor mode (SPIE, 5) to the value
             // of a global interrupt-enable bit for supervisor mode (SIE, 1).
             cpu.state
-                .write_bit(SSTATUS, 5, cpu.state.read_bit(SSTATUS, 1));
+                .write_sstatus(XSTATUS_SPIE, cpu.state.read_sstatus(XSTATUS_SIE));
             // Set a global interrupt-enable bit for supervisor mode (SIE, 1) to 0.
-            cpu.state.write_bit(SSTATUS, 1, 0);
+            cpu.state.write_sstatus(XSTATUS_SIE, 0);
             // 4.1.1 Supervisor Status Register (sstatus)
             // "When a trap is taken, SPP is set to 0 if the trap originated from user mode, or
             // 1 otherwise."
             match previous_mode {
-                Mode::User => cpu.state.write_bit(SSTATUS, 8, 0),
-                _ => cpu.state.write_bit(SSTATUS, 8, 1),
+                Mode::User => cpu.state.write_sstatus(XSTATUS_SPP, 0),
+                _ => cpu.state.write_sstatus(XSTATUS_SPP, 1),
             }
         } else {
             // Handle the trap in M-mode.
@@ -147,18 +147,20 @@ impl Interrupt {
             // instruction as described below. For other traps, mtval is set to zero."
             cpu.state.write(MTVAL, 0);
 
-            // Set a privious interrupt-enable bit for supervisor mode (MPIE, 7) to the value
-            // of a global interrupt-enable bit for supervisor mode (MIE, 3).
+            // Set a previous interrupt-enable bit for machine mode (MPIE, 7) to the value
+            // of a global interrupt-enable bit for machine mode (MIE, 3).
             cpu.state
-                .write_bit(MSTATUS, 7, cpu.state.read_bit(MSTATUS, 3));
-            // Set a global interrupt-enable bit for supervisor mode (MIE, 3) to 0.
-            cpu.state.write_bit(MSTATUS, 3, 0);
+                .write_mstatus(MSTATUS_MPIE, cpu.state.read_mstatus(MSTATUS_MIE));
+            // Set a global interrupt-enable bit for machine mode (MIE, 3) to 0.
+            cpu.state.write_mstatus(MSTATUS_MIE, 0);
             // When a trap is taken from privilege mode y into privilege mode x, xPIE is set
             // to the value of x IE; x IE is set to 0; and xPP is set to y.
             match previous_mode {
-                Mode::User => cpu.state.write_bits(MSTATUS, 11..13, 0b00),
-                Mode::Supervisor => cpu.state.write_bits(MSTATUS, 11..13, 0b01),
-                Mode::Machine => cpu.state.write_bits(MSTATUS, 11..13, 0b11),
+                Mode::User => cpu.state.write_mstatus(MSTATUS_MPP, Mode::User as u64),
+                Mode::Supervisor => cpu
+                    .state
+                    .write_mstatus(MSTATUS_MPP, Mode::Supervisor as u64),
+                Mode::Machine => cpu.state.write_mstatus(MSTATUS_MPP, Mode::Machine as u64),
                 _ => panic!("previous privilege mode is invalid"),
             }
         }
