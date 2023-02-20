@@ -159,6 +159,10 @@ impl Rom {
         Self { data: rom }
     }
 
+    pub fn new_with_data(data: Vec<u8>) -> Rom {
+        Rom { data }
+    }
+
     /// Load `size`-bit data from the memory.
     pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
         match size {

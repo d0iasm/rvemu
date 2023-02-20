@@ -51,7 +51,7 @@ pub struct Bus {
     pub uart: Uart,
     pub virtio: Virtio,
     dram: Dram,
-    rom: Rom,
+    pub rom: Rom,
 }
 
 impl Bus {
