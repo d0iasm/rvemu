@@ -75,7 +75,7 @@ impl XRegisters {
     /// Create a new `XRegisters` object.
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
-        // The stack pointer is set in the default maximum mamory size + the start address of dram.
+        // The stack pointer is set in the default maximum memory size + the start address of dram.
         xregs[2] = DRAM_BASE + DRAM_SIZE;
         // From riscv-pk:
         // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
@@ -154,12 +154,12 @@ impl FRegisters {
         }
     }
 
-    /// Read the value from a regsiter.
+    /// Read the value from a register.
     pub fn read(&self, index: u64) -> f64 {
         self.fregs[index as usize]
     }
 
-    /// Write the value to a regsiter.
+    /// Write the value to a register.
     pub fn write(&mut self, index: u64, value: f64) {
         self.fregs[index as usize] = value;
     }
@@ -1422,7 +1422,7 @@ impl Cpu {
             }
             0x0f => {
                 // RV32I and RV64I
-                // fence instructions are not supportted yet because this emulator executes an
+                // fence instructions are not supported yet because this emulator executes an
                 // instruction sequentially on a single thread.
                 // fence.i is a part of the Zifencei extension.
                 match funct3 {
@@ -3372,7 +3372,7 @@ impl Cpu {
 
                                 // TODO: Check TSR field
 
-                                // Set the current privileged mode depending on a privious
+                                // Set the current privileged mode depending on a previous
                                 // privilege mode for supervisor mode (SPP, 8).
                                 self.mode = match self.state.read_sstatus(XSTATUS_SPP) {
                                     0b0 => Mode::User,
@@ -3384,7 +3384,7 @@ impl Cpu {
                                     _ => Mode::Debug,
                                 };
 
-                                // Read a privious interrupt-enable bit for supervisor mode (SPIE,
+                                // Read a previous interrupt-enable bit for supervisor mode (SPIE,
                                 // 5), and set a global interrupt-enable bit for supervisor mode
                                 // (SIE, 1) to it.
                                 self.state.write_sstatus(
@@ -3392,10 +3392,10 @@ impl Cpu {
                                     self.state.read_sstatus(XSTATUS_SPIE),
                                 );
 
-                                // Set a privious interrupt-enable bit for supervisor mode (SPIE,
+                                // Set a previous interrupt-enable bit for supervisor mode (SPIE,
                                 // 5) to 1.
                                 self.state.write_sstatus(XSTATUS_SPIE, 1);
-                                // Set a privious privilege mode for supervisor mode (SPP, 8) to 0.
+                                // Set a previous privilege mode for supervisor mode (SPP, 8) to 0.
                                 self.state.write_sstatus(XSTATUS_SPP, 0);
                             }
                             (0x2, 0x18) => {
@@ -3414,7 +3414,7 @@ impl Cpu {
                                 // counter (MEPC).
                                 self.pc = self.state.read(MEPC).wrapping_sub(4);
 
-                                // Set the current privileged mode depending on a privious
+                                // Set the current privileged mode depending on a previous
                                 // privilege mode for machine  mode (MPP, 11..13).
                                 self.mode = match self.state.read_mstatus(MSTATUS_MPP) {
                                     0b00 => {
@@ -3431,7 +3431,7 @@ impl Cpu {
                                     _ => Mode::Debug,
                                 };
 
-                                // Read a privious interrupt-enable bit for machine mode (MPIE, 7),
+                                // Read a previous interrupt-enable bit for machine mode (MPIE, 7),
                                 // and set a global interrupt-enable bit for machine mode (MIE, 3)
                                 // to it.
                                 self.state.write_mstatus(
@@ -3439,11 +3439,11 @@ impl Cpu {
                                     self.state.read_mstatus(MSTATUS_MPIE),
                                 );
 
-                                // Set a privious interrupt-enable bit for machine mode (MPIE, 7)
+                                // Set a previous interrupt-enable bit for machine mode (MPIE, 7)
                                 // to 1.
                                 self.state.write_mstatus(MSTATUS_MPIE, 1);
 
-                                // Set a privious privilege mode for machine mode (MPP, 11..13) to
+                                // Set a previous privilege mode for machine mode (MPP, 11..13) to
                                 // 0.
                                 self.state.write_mstatus(MSTATUS_MPP, Mode::User as u64);
                             }
