@@ -399,7 +399,7 @@ fn or_rd_rs1_rs2() {
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
-        0x33, 0x69, 0x18, 0x01, // xor x18, x16, x17
+        0x33, 0x69, 0x18, 0x01, // or x18, x16, x17
     ];
     let expected_xregs = helper::create_xregs(vec![(16, 3), (17, 5), (18, 7)]);
     let expected_fregs = helper::create_fregs(vec![]);
@@ -476,7 +476,7 @@ fn blt_rs1_rs2_imm() {
     let data = vec![
         0x13, 0x08, 0xd0, 0xff, // addi x16, x0, -3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
-        0x63, 0x46, 0x18, 0x01, // blt x16, x17, -8
+        0x63, 0x46, 0x18, 0x01, // blt x16, x17, 12
     ];
     let expected_xregs = helper::create_xregs(vec![(16, -3i64 as u64), (17, 5)]);
     let expected_fregs = helper::create_fregs(vec![]);
