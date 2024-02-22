@@ -260,6 +260,24 @@ impl Cpu {
         }
     }
 
+    pub fn with_bus(bus: Bus) -> Cpu {
+        Cpu {
+            xregs: XRegisters::new(),
+            fregs: FRegisters::new(),
+            pc: 0,
+            state: State::new(),
+            mode: Mode::Machine,
+            bus,
+            enable_paging: false,
+            page_table: 0,
+            reservation_set: Vec::new(),
+            idle: false,
+            inst_counter: BTreeMap::new(),
+            is_count: false,
+            pre_inst: 0,
+        }
+    }
+
     fn debug(&self, _inst: u64, _name: &str) {
         /*
         if (((0x20_0000_0000 & self.pc) >> 37) == 1) && (self.pc & 0xf0000000_00000000) == 0 {
