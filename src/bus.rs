@@ -50,7 +50,7 @@ pub struct Bus {
     pub plic: Plic,
     pub uart: Uart,
     pub virtio: Virtio,
-    dram: Dram,
+    pub dram: Dram,
     pub rom: Rom,
 }
 
