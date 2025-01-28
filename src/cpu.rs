@@ -3516,6 +3516,13 @@ impl Cpu {
                             self.update_paging();
                         }
                     }
+                    0x4 => {
+                        // mop
+                        inst_count!(self, "mop");
+                        self.debug(inst, "mop");
+
+                        self.xregs.write(rd, 0x0);
+                    }
                     0x5 => {
                         // csrrwi
                         inst_count!(self, "csrrwi");
