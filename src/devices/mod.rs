@@ -1,7 +1,9 @@
 //! The devices module contains peripheral devices.
 
 pub mod clint;
+pub mod dram;
 pub mod plic;
+pub mod rom;
 pub mod virtio_blk;
 
 #[cfg(not(target_arch = "wasm32"))]

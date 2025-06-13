@@ -4,7 +4,7 @@
 //! Create an `Emulator` object, place a binary data in DRAM and set the program counter to
 //! `DRAM_BASE`. The binary data must contain no headers for now. The example is here:
 //! ```rust
-//! use rvemu::bus::DRAM_BASE;
+//! use rvemu::emulator::DRAM_BASE;
 //! use rvemu::emulator::Emulator;
 //!
 //! fn main() {
@@ -35,8 +35,6 @@ pub mod bus;
 pub mod cpu;
 pub mod csr;
 pub mod devices;
-pub mod dram;
 pub mod emulator;
 pub mod exception;
 pub mod interrupt;
-pub mod rom;

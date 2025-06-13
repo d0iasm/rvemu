@@ -12,23 +12,24 @@
 // - https://github.com/qemu/qemu/blob/master/hw/intc/sifive_plic.c
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_plic.h
 
-use crate::bus::PLIC_BASE;
 use crate::cpu::WORD;
 use crate::exception::Exception;
+
+use crate::bus::Device;
 
 /// The address for interrupt source priority. 1024 4-byte registers exist. Each interrupt into the
 /// PLIC has a configurable priority, from 1-7, with 7 being the highest priority. A value of 0
 /// means do not interrupt, effectively disabling that interrupt.
-const SOURCE_PRIORITY: u64 = PLIC_BASE;
-const SOURCE_PRIORITY_END: u64 = PLIC_BASE + 0xfff;
+const SOURCE_PRIORITY: u64 = 0;
+const SOURCE_PRIORITY_END: u64 = 0 + 0xfff;
 
 /// The address range for interrupt pending bits. 32 4-byte (1024 bits) registers exist.
 ///
 /// https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc#memory-map
 /// base + 0x001000: Interrupt Pending bit 0-31
 /// base + 0x00107C: Interrupt Pending bit 992-1023
-const PENDING: u64 = PLIC_BASE + 0x1000;
-const PENDING_END: u64 = PLIC_BASE + 0x107f;
+const PENDING: u64 = 0 + 0x1000;
+const PENDING_END: u64 = 0 + 0x107f;
 
 /// The address range for enable registers. The maximum number of contexts is 15871 but this PLIC
 /// supports only 2 contexts.
@@ -42,8 +43,8 @@ const PENDING_END: u64 = PLIC_BASE + 0x107f;
 /// base + 0x002084: Enable bits for sources 32-63 on context 1
 /// ...
 /// base + 0x0020FF: Enable bits for sources 992-1023 on context 1
-const ENABLE: u64 = PLIC_BASE + 0x2000;
-const ENABLE_END: u64 = PLIC_BASE + 0x20ff;
+const ENABLE: u64 = 0 + 0x2000;
+const ENABLE_END: u64 = 0 + 0x20ff;
 
 /// The address range for priority thresholds and claim/complete registers. The maximum number of
 /// contexts is 15871 but this PLIC supports only 2 contexts.
@@ -56,8 +57,8 @@ const ENABLE_END: u64 = PLIC_BASE + 0x20ff;
 /// base + 0x200FFC: Reserved
 /// base + 0x201000: Priority threshold for context 1
 /// base + 0x201004: Claim/complete for context 1
-const THRESHOLD_AND_CLAIM: u64 = PLIC_BASE + 0x200000;
-const THRESHOLD_AND_CLAIM_END: u64 = PLIC_BASE + 0x201007;
+const THRESHOLD_AND_CLAIM: u64 = 0 + 0x200000;
+const THRESHOLD_AND_CLAIM_END: u64 = 0 + 0x201007;
 
 const WORD_SIZE: u64 = 0x4;
 const CONTEXT_OFFSET: u64 = 0x1000;
@@ -125,9 +126,25 @@ impl Plic {
         let offset = (irq.wrapping_rem(SOURCE_NUM)).wrapping_rem(WORD_SIZE * 8);
         return ((self.enable[(context * 32 + index) as usize] >> offset) & 1) == 1;
     }
+}
+
+impl Device for Plic {
+    fn size(&self) -> u64 {
+        0x208000
+    }
+
+    fn is_interrupting(&mut self) -> bool {
+        false
+    }
+
+    fn irq(&self) -> Option<u64> {
+        None
+    }
+
+    fn reset(&mut self) {}
 
     /// Load `size`-bit data from a register located at `addr` in PLIC.
-    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+    fn read(&mut self, addr: u64, size: u8) -> Result<u64, Exception> {
         // TODO: should support byte-base access.
         if size != WORD {
             return Err(Exception::LoadAccessFault);
@@ -171,7 +188,7 @@ impl Plic {
     }
 
     /// Store `size`-bit data to a register located at `addr` in PLIC.
-    pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+    fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
         // TODO: should support byte-base access.
         if size != WORD {
             return Err(Exception::StoreAMOAccessFault);

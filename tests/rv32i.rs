@@ -1,7 +1,7 @@
 mod helper;
 
 use rvemu::emulator::Emulator;
-use rvemu::bus::DRAM_BASE;
+use rvemu::emulator::DRAM_BASE;
 
 #[test]
 fn lb_rd_offset_rs1() {

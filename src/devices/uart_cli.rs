@@ -10,29 +10,33 @@ use std::sync::{
 };
 use std::thread;
 
-use crate::bus::{UART_BASE, UART_SIZE};
 use crate::cpu::BYTE;
 use crate::exception::Exception;
+
+use crate::bus::Device;
+
+/// The size of UART.
+pub const UART_SIZE: u64 = 0x100;
 
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;
 
 /// Receive holding register (for input bytes).
-const UART_RHR: u64 = UART_BASE + 0;
+const UART_RHR: u64 = 0 + 0;
 /// Transmit holding register (for output bytes).
-const UART_THR: u64 = UART_BASE + 0;
+const UART_THR: u64 = 0 + 0;
 /// Interrupt enable register.
-const _UART_IER: u64 = UART_BASE + 1;
+const _UART_IER: u64 = 0 + 1;
 /// FIFO control register.
-const _UART_FCR: u64 = UART_BASE + 2;
+const _UART_FCR: u64 = 0 + 2;
 /// Interrupt status register.
 /// ISR BIT-0:
 ///     0 = an interrupt is pending and the ISR contents may be used as a pointer to the appropriate
 /// interrupt service routine.
 ///     1 = no interrupt is pending.
-const _UART_ISR: u64 = UART_BASE + 2;
+const _UART_ISR: u64 = 0 + 2;
 /// Line control register.
-const _UART_LCR: u64 = UART_BASE + 3;
+const _UART_LCR: u64 = 0 + 3;
 /// Line status register.
 /// LSR BIT 0:
 ///     0 = no data in receive holding register or FIFO.
@@ -40,7 +44,7 @@ const _UART_LCR: u64 = UART_BASE + 3;
 /// LSR BIT 5:
 ///     0 = transmit holding register is full. 16550 will not accept any data for transmission.
 ///     1 = transmitter hold register (or FIFO) is empty. CPU can load the next character.
-const UART_LSR: u64 = UART_BASE + 5;
+const UART_LSR: u64 = 0 + 5;
 
 /// The receiver (RX).
 const UART_LSR_RX: u8 = 1;
@@ -51,18 +55,19 @@ const UART_LSR_TX: u8 = 1 << 5;
 pub struct Uart {
     uart: Arc<(Mutex<[u8; UART_SIZE as usize]>, Condvar)>,
     interrupting: Arc<AtomicBool>,
+    irq: u64,
 }
 
 impl Uart {
     /// Create a new UART object.
-    pub fn new() -> Self {
+    pub fn new(irq: u64) -> Self {
         let uart = Arc::new((Mutex::new([0; UART_SIZE as usize]), Condvar::new()));
         let interrupting = Arc::new(AtomicBool::new(false));
         {
             let (uart, _cvar) = &*uart;
             let mut uart = uart.lock().expect("failed to get an UART object");
             // Transmitter hold register is empty. It allows input anytime.
-            uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_TX;
+            uart[(UART_LSR - 0) as usize] |= UART_LSR_TX;
         }
 
         // Create a new thread for waiting for input.
@@ -75,13 +80,13 @@ impl Uart {
                     let (uart, cvar) = &*cloned_uart;
                     let mut uart = uart.lock().expect("failed to get an UART object");
                     // Wait for the thread to start up.
-                    while (uart[(UART_LSR - UART_BASE) as usize] & UART_LSR_RX) == 1 {
+                    while (uart[(UART_LSR - 0) as usize] & UART_LSR_RX) == 1 {
                         uart = cvar.wait(uart).expect("the mutex is poisoned");
                     }
                     uart[0] = byte[0];
                     cloned_interrupting.store(true, Ordering::Release);
                     // Data has been receive.
-                    uart[(UART_LSR - UART_BASE) as usize] |= UART_LSR_RX;
+                    uart[(UART_LSR - 0) as usize] |= UART_LSR_RX;
                 }
                 Err(e) => {
                     println!("input via UART is error: {}", e);
@@ -89,16 +94,32 @@ impl Uart {
             }
         });
 
-        Self { uart, interrupting }
+        Self {
+            uart,
+            interrupting,
+            irq,
+        }
+    }
+}
+
+impl Device for Uart {
+    fn size(&self) -> u64 {
+        UART_SIZE
     }
 
     /// Return true if an interrupt is pending. Clear the interrupting flag by swapping a value.
-    pub fn is_interrupting(&self) -> bool {
+    fn is_interrupting(&mut self) -> bool {
         self.interrupting.swap(false, Ordering::Acquire)
     }
 
+    fn irq(&self) -> Option<u64> {
+        Some(self.irq)
+    }
+
+    fn reset(&mut self) {}
+
     /// Read a byte from the receive holding register.
-    pub fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
+    fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
         if size != BYTE {
             return Err(Exception::LoadAccessFault);
         }
@@ -108,15 +129,16 @@ impl Uart {
         match index {
             UART_RHR => {
                 cvar.notify_one();
-                uart[(UART_LSR - UART_BASE) as usize] &= !UART_LSR_RX;
-                Ok(uart[(UART_RHR - UART_BASE) as usize] as u64)
+                uart[(UART_LSR - 0) as usize] &= !UART_LSR_RX;
+                Ok(uart[(UART_RHR - 0) as usize] as u64)
             }
-            _ => Ok(uart[(index - UART_BASE) as usize] as u64),
+            _ => Ok(uart[(index - 0) as usize] as u64),
         }
     }
 
     /// Write a byte to the transmit holding register.
-    pub fn write(&mut self, index: u64, value: u8, size: u8) -> Result<(), Exception> {
+    fn write(&mut self, index: u64, value: u64, size: u8) -> Result<(), Exception> {
+        let value = (value & 0xff) as u8;
         if size != BYTE {
             return Err(Exception::StoreAMOAccessFault);
         }
@@ -139,7 +161,7 @@ impl Uart {
                 io::stdout().flush().expect("failed to flush stdout");
             }
             _ => {
-                uart[(index - UART_BASE) as usize] = value;
+                uart[(index - 0) as usize] = value;
             }
         }
         Ok(())

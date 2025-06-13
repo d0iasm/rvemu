@@ -6,17 +6,73 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::num::FpCategory;
 
-use crate::{
-    bus::{Bus, DRAM_BASE},
-    csr::*,
-    devices::{
-        uart::UART_IRQ,
-        virtio_blk::{Virtio, VIRTIO_IRQ},
-    },
-    dram::DRAM_SIZE,
-    exception::Exception,
-    interrupt::Interrupt,
-};
+use crate::{bus::Bus, csr::*, exception::Exception, interrupt::Interrupt};
+
+pub const REG_FT0: u64 = 0;
+pub const REG_FT1: u64 = 1;
+pub const REG_FT2: u64 = 2;
+pub const REG_FT3: u64 = 3;
+pub const REG_FT4: u64 = 4;
+pub const REG_FT5: u64 = 5;
+pub const REG_FT6: u64 = 6;
+pub const REG_FT7: u64 = 7;
+pub const REG_FS0: u64 = 8;
+pub const REG_FS1: u64 = 9;
+pub const REG_FA0: u64 = 10;
+pub const REG_FA1: u64 = 11;
+pub const REG_FA2: u64 = 12;
+pub const REG_FA3: u64 = 13;
+pub const REG_FA4: u64 = 14;
+pub const REG_FA5: u64 = 15;
+pub const REG_FA6: u64 = 16;
+pub const REG_FA7: u64 = 17;
+pub const REG_FS2: u64 = 18;
+pub const REG_FS3: u64 = 19;
+pub const REG_FS4: u64 = 20;
+pub const REG_FS5: u64 = 21;
+pub const REG_FS6: u64 = 22;
+pub const REG_FS7: u64 = 23;
+pub const REG_FS8: u64 = 24;
+pub const REG_FS9: u64 = 25;
+pub const REG_FS10: u64 = 26;
+pub const REG_FS11: u64 = 27;
+pub const REG_FT8: u64 = 28;
+pub const REG_FT9: u64 = 29;
+pub const REG_FT10: u64 = 30;
+pub const REG_FT11: u64 = 31;
+
+pub const REG_ZERO: u64 = 0;
+pub const REG_RA: u64 = 1;
+pub const REG_SP: u64 = 2;
+pub const REG_GP: u64 = 3;
+pub const REG_TP: u64 = 4;
+pub const REG_T0: u64 = 5;
+pub const REG_T1: u64 = 6;
+pub const REG_T2: u64 = 7;
+pub const REG_S0: u64 = 8;
+pub const REG_S1: u64 = 9;
+pub const REG_A0: u64 = 10;
+pub const REG_A1: u64 = 11;
+pub const REG_A2: u64 = 12;
+pub const REG_A3: u64 = 13;
+pub const REG_A4: u64 = 14;
+pub const REG_A5: u64 = 15;
+pub const REG_A6: u64 = 16;
+pub const REG_A7: u64 = 17;
+pub const REG_S2: u64 = 18;
+pub const REG_S3: u64 = 19;
+pub const REG_S4: u64 = 20;
+pub const REG_S5: u64 = 21;
+pub const REG_S6: u64 = 22;
+pub const REG_S7: u64 = 23;
+pub const REG_S8: u64 = 24;
+pub const REG_S9: u64 = 25;
+pub const REG_S10: u64 = 26;
+pub const REG_S11: u64 = 27;
+pub const REG_T3: u64 = 28;
+pub const REG_T4: u64 = 29;
+pub const REG_T5: u64 = 30;
+pub const REG_T6: u64 = 31;
 
 /// The number of registers.
 pub const REGISTERS_COUNT: usize = 32;
@@ -75,8 +131,6 @@ impl XRegisters {
     /// Create a new `XRegisters` object.
     pub fn new() -> Self {
         let mut xregs = [0; REGISTERS_COUNT];
-        // The stack pointer is set in the default maximum memory size + the start address of dram.
-        xregs[2] = DRAM_BASE + DRAM_SIZE;
         // From riscv-pk:
         // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
         //   save a0 and a1; arguments from previous boot loader stage:
@@ -206,6 +260,25 @@ impl fmt::Display for FRegisters {
         // Remove the first new line.
         output.remove(0);
         write!(f, "{}", output)
+    }
+}
+
+pub struct ExecutedOp {
+    pub opcode: u64,
+    pub pc: u64,
+}
+
+pub enum ExecCycle {
+    Idle,
+    Opcode(ExecutedOp),
+}
+
+impl ExecutedOp {
+    pub fn new(opcode: u64, pc: u64) -> ExecutedOp {
+        ExecutedOp {
+            opcode: opcode,
+            pc: pc,
+        }
     }
 }
 
@@ -342,22 +415,9 @@ impl Cpu {
 
         // TODO: Take interrupts based on priorities.
 
-        // Check external interrupt for uart and virtio.
-        let irq;
-        if self.bus.uart.is_interrupting() {
-            irq = UART_IRQ;
-        } else if self.bus.virtio.is_interrupting() {
-            // An interrupt is raised after a disk access is done.
-            Virtio::disk_access(self).expect("failed to access the disk");
-            irq = VIRTIO_IRQ;
-        } else {
-            irq = 0;
-        }
-
-        if irq != 0 {
+        if self.bus.is_interrupting() {
             // TODO: assume that hart is 0
             // TODO: write a value to MCLAIM if the mode is machine
-            self.bus.plic.update_pending(irq);
             self.state.write(MIP, self.state.read(MIP) | SEIP_BIT);
         }
 
@@ -664,15 +724,16 @@ impl Cpu {
 
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// the instruction executed in this cycle.
-    pub fn execute(&mut self) -> Result<u64, Exception> {
+    pub fn execute(&mut self) -> Result<ExecCycle, Exception> {
         // WFI is called and pending interrupts don't exist.
         if self.idle {
-            return Ok(0);
+            return Ok(ExecCycle::Idle);
         }
 
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
         let inst;
+        let prev_pc = self.pc;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
                 if inst16 == 0 {
@@ -692,7 +753,7 @@ impl Cpu {
             }
         }
         self.pre_inst = inst;
-        Ok(inst)
+        Ok(ExecCycle::Opcode(ExecutedOp::new(inst, prev_pc)))
     }
 
     /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,

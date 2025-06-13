@@ -1,7 +1,7 @@
-use rvemu::bus::DRAM_BASE;
 use rvemu::cpu::{POINTER_TO_DTB, REGISTERS_COUNT};
-use rvemu::dram::DRAM_SIZE;
 use rvemu::emulator::Emulator;
+use rvemu::emulator::DRAM_BASE;
+use rvemu::emulator::DRAM_SIZE;
 
 pub const DEFAULT_SP: u64 = DRAM_BASE + DRAM_SIZE;
 

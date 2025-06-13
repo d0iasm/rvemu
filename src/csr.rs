@@ -37,7 +37,7 @@ pub const FCSR: CsrAddress = 0x003;
 
 // User Counter/Timers.
 /// Timer for RDTIME instruction.
-const TIME: CsrAddress = 0xc01;
+pub const TIME: CsrAddress = 0xc01;
 
 /////////////////////////////////////
 // Supervisor-level CSR addresses //
@@ -180,9 +180,9 @@ impl fmt::Display for State {
             f,
             "{}",
             format!(
-                "{}\n{}\n{}",
+                "{}{}{}",
                 format!(
-                    "mstatus={:>#18x}   mtvec={:>#18x}    mepc={:>#18x}\n mcause={:>#18x} medeleg={:>#18x} mideleg={:>#18x}",
+                    "mstatus={:>#18x}   mtvec={:>#18x}    mepc={:>#18x} mcause={:>#18x}\nmedeleg={:>#18x} mideleg={:>#18x}",
                     self.read(MSTATUS),
                     self.read(MTVEC),
                     self.read(MEPC),
@@ -191,7 +191,7 @@ impl fmt::Display for State {
                     self.read(MIDELEG),
                 ),
                 format!(
-                    "sstatus={:>#18x}   stvec={:>#18x}    sepc={:>#18x}\n scause={:>#18x} sedeleg={:>#18x} sideleg={:>#18x}",
+                    "sstatus={:>#18x}   stvec={:>#18x}\n   sepc={:>#18x} scause={:>#18x} sedeleg={:>#18x} sideleg={:>#18x}\n",
                     self.read(SSTATUS),
                     self.read(STVEC),
                     self.read(SEPC),
@@ -200,11 +200,12 @@ impl fmt::Display for State {
                     self.read(SIDELEG),
                 ),
                 format!(
-                    "ustatus={:>#18x}   utvec={:>#18x}    uepc={:>#18x}\n ucause={:>#18x}",
+                    "ustatus={:>#18x}   utvec={:>#18x}    uepc={:>#18x} ucause={:>#18x}\n   time={:>#18x}",
                     self.read(USTATUS),
                     self.read(UTVEC),
                     self.read(UEPC),
                     self.read(UCAUSE),
+                    self.read(TIME),
                 ),
             )
         )

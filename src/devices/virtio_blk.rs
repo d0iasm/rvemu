@@ -5,8 +5,8 @@
 //! 5.2 Block Device:
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
-use crate::bus::VIRTIO_BASE;
-use crate::cpu::{Cpu, BYTE, DOUBLEWORD, HALFWORD, WORD};
+use crate::bus::Device;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::exception::Exception;
 
 /// The interrupt request of virtio.
@@ -29,70 +29,70 @@ const _VIRTQ_DESC_F_INDIRECT: u64 = 4;
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Magic value. Always return 0x74726976 (a Little Endian equivalent of the "virt" string).
-const MAGIC: u64 = VIRTIO_BASE;
-const MAGIC_END: u64 = VIRTIO_BASE + 0x3;
+const MAGIC: u64 = 0;
+const MAGIC_END: u64 = 0 + 0x3;
 
 /// Device version number. 1 is legacy.
-const VERSION: u64 = VIRTIO_BASE + 0x4;
-const VERSION_END: u64 = VIRTIO_BASE + 0x7;
+const VERSION: u64 = 0 + 0x4;
+const VERSION_END: u64 = 0 + 0x7;
 
 /// Virtio Subsystem Device ID. 1 is network, 2 is block device.
-const DEVICE_ID: u64 = VIRTIO_BASE + 0x8;
-const DEVICE_ID_END: u64 = VIRTIO_BASE + 0xb;
+const DEVICE_ID: u64 = 0 + 0x8;
+const DEVICE_ID_END: u64 = 0 + 0xb;
 
 /// Virtio Subsystem Vendor ID. Always return 0x554d4551
-const VENDOR_ID: u64 = VIRTIO_BASE + 0xc;
-const VENDOR_ID_END: u64 = VIRTIO_BASE + 0xf;
+const VENDOR_ID: u64 = 0 + 0xc;
+const VENDOR_ID_END: u64 = 0 + 0xf;
 
 /// Flags representing features the device supports. Access to this register returns bits
 /// DeviceFeaturesSel ∗ 32 to (DeviceFeaturesSel ∗ 32) + 31.
-const DEVICE_FEATURES: u64 = VIRTIO_BASE + 0x10;
-const DEVICE_FEATURES_END: u64 = VIRTIO_BASE + 0x13;
+const DEVICE_FEATURES: u64 = 0 + 0x10;
+const DEVICE_FEATURES_END: u64 = 0 + 0x13;
 
 /// Device (host) features word selection.
-const DEVICE_FEATURES_SEL: u64 = VIRTIO_BASE + 0x14;
-const DEVICE_FEATURES_SEL_END: u64 = VIRTIO_BASE + 0x17;
+const DEVICE_FEATURES_SEL: u64 = 0 + 0x14;
+const DEVICE_FEATURES_SEL_END: u64 = 0 + 0x17;
 
 /// Flags representing device features understood and activated by the driver. Access to this
 /// register sets bits DriverFeaturesSel ∗ 32 to (DriverFeaturesSel ∗ 32) + 31.
-const DRIVER_FEATURES: u64 = VIRTIO_BASE + 0x20;
-const DRIVER_FEATURES_END: u64 = VIRTIO_BASE + 0x23;
+const DRIVER_FEATURES: u64 = 0 + 0x20;
+const DRIVER_FEATURES_END: u64 = 0 + 0x23;
 
 /// Activated (guest) features word selection.
-const DRIVER_FEATURES_SEL: u64 = VIRTIO_BASE + 0x24;
-const DRIVER_FEATURES_SEL_END: u64 = VIRTIO_BASE + 0x27;
+const DRIVER_FEATURES_SEL: u64 = 0 + 0x24;
+const DRIVER_FEATURES_SEL_END: u64 = 0 + 0x27;
 
 // 4.2.4 Legacy interface
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
 /// Guest page size. The driver writes the guest page size in bytes to the register during
 /// initialization, before any queues are used. This value should be a power of 2 and is used by
 /// the device to calculate the Guest address of the first queue page. Write-only.
-const GUEST_PAGE_SIZE: u64 = VIRTIO_BASE + 0x28;
-const GUEST_PAGE_SIZE_END: u64 = VIRTIO_BASE + 0x2b;
+const GUEST_PAGE_SIZE: u64 = 0 + 0x28;
+const GUEST_PAGE_SIZE_END: u64 = 0 + 0x2b;
 
 /// Virtual queue index. Writing to this register selects the virtual queue that the following
 /// operations on the QueueNumMax, QueueNum, QueueAlign and QueuePFN registers apply to. The index
 /// number of the first queue is zero (0x0). Write-only.
-const QUEUE_SEL: u64 = VIRTIO_BASE + 0x30;
-const QUEUE_SEL_END: u64 = VIRTIO_BASE + 0x33;
+const QUEUE_SEL: u64 = 0 + 0x30;
+const QUEUE_SEL_END: u64 = 0 + 0x33;
 
 /// Maximum virtual queue size. Reading from the register returns the maximum size of the queue the
 /// device is ready to process or zero (0x0) if the queue is not available. This applies to the
 /// queue selected by writing to QueueSel and is allowed only when QueuePFN is set to zero (0x0),
 /// so when the queue is not actively used. Read-only. In QEMU, `VIRTIO_COUNT = 8`.
-const QUEUE_NUM_MAX: u64 = VIRTIO_BASE + 0x34;
-const QUEUE_NUM_MAX_END: u64 = VIRTIO_BASE + 0x37;
+const QUEUE_NUM_MAX: u64 = 0 + 0x34;
+const QUEUE_NUM_MAX_END: u64 = 0 + 0x37;
 
 /// Virtual queue size. Queue size is the number of elements in the queue, therefore size of the
 /// descriptor table and both available and used rings. Writing to this register notifies the
 /// device what size of the queue the driver will use. This applies to the queue selected by
 /// writing to QueueSel. Write-only.
-const QUEUE_NUM: u64 = VIRTIO_BASE + 0x38;
-const QUEUE_NUM_END: u64 = VIRTIO_BASE + 0x3b;
+const QUEUE_NUM: u64 = 0 + 0x38;
+const QUEUE_NUM_END: u64 = 0 + 0x3b;
 
 /// Used Ring alignment in the virtual queue.
-const QUEUE_ALIGN: u64 = VIRTIO_BASE + 0x3c;
-const QUEUE_ALIGN_END: u64 = VIRTIO_BASE + 0x3f;
+const QUEUE_ALIGN: u64 = 0 + 0x3c;
+const QUEUE_ALIGN_END: u64 = 0 + 0x3f;
 
 /// Guest physical page number of the virtual queue. Writing to this register notifies the device
 /// about location of the virtual queue in the Guest’s physical address space. This value is the
@@ -101,35 +101,35 @@ const QUEUE_ALIGN_END: u64 = VIRTIO_BASE + 0x3f;
 /// writes zero (0x0) to this register. Reading from this register returns the currently used page
 /// number of the queue, therefore a value other than zero (0x0) means that the queue is in use.
 /// Both read and write accesses apply to the queue selected by writing to QueueSel.
-const QUEUE_PFN: u64 = VIRTIO_BASE + 0x40;
-const QUEUE_PFN_END: u64 = VIRTIO_BASE + 0x43;
+const QUEUE_PFN: u64 = 0 + 0x40;
+const QUEUE_PFN_END: u64 = 0 + 0x43;
 
 // 4.2.2 MMIO Device Register Layout
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
 /// Queue notifier. Writing a queue index to this register notifies the device that there are new
 /// buffers to process in the queue. Write-only.
-const QUEUE_NOTIFY: u64 = VIRTIO_BASE + 0x50;
-const QUEUE_NOTIFY_END: u64 = VIRTIO_BASE + 0x53;
+const QUEUE_NOTIFY: u64 = 0 + 0x50;
+const QUEUE_NOTIFY_END: u64 = 0 + 0x53;
 
 /// Interrupt status. Reading from this register returns a bit mask of events that caused the
 /// device interrupt to be asserted.
-const INTERRUPT_STATUS: u64 = VIRTIO_BASE + 0x60;
-const INTERRUPT_STATUS_END: u64 = VIRTIO_BASE + 0x63;
+const INTERRUPT_STATUS: u64 = 0 + 0x60;
+const INTERRUPT_STATUS_END: u64 = 0 + 0x63;
 
 /// Interrupt acknowledge. Writing a value with bits set as defined in InterruptStatus to this
 /// register notifies the device that events causing the interrupt have been handled.
-const INTERRUPT_ACK: u64 = VIRTIO_BASE + 0x64;
-const INTERRUPT_ACK_END: u64 = VIRTIO_BASE + 0x67;
+const INTERRUPT_ACK: u64 = 0 + 0x64;
+const INTERRUPT_ACK_END: u64 = 0 + 0x67;
 
 /// Device status. Reading from this register returns the current device status flags. Writing
 /// non-zero values to this register sets the status flags, indicating the driver progress. Writing
 /// zero (0x0) to this register triggers a device reset.
-const STATUS: u64 = VIRTIO_BASE + 0x70;
-const STATUS_END: u64 = VIRTIO_BASE + 0x73;
+const STATUS: u64 = 0 + 0x70;
+const STATUS_END: u64 = 0 + 0x73;
 
 /// Configuration space.
-const CONFIG: u64 = VIRTIO_BASE + 0x100;
-const CONFIG_END: u64 = VIRTIO_BASE + 0x107;
+const CONFIG: u64 = 0 + 0x100;
+const CONFIG_END: u64 = 0 + 0x107;
 
 /// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-230005
 /// "Each virtqueue can consist of up to 3 parts:
@@ -221,12 +221,12 @@ struct VirtqDesc {
 impl VirtqDesc {
     /// Creates a new virtqueue descriptor based on the address that stores the content of the
     /// descriptor.
-    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
+    fn new(virtio: &mut Virtio, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
-            addr: cpu.bus.read(addr, DOUBLEWORD)?,
-            len: cpu.bus.read(addr.wrapping_add(8), WORD)?,
-            flags: cpu.bus.read(addr.wrapping_add(12), HALFWORD)?,
-            next: cpu.bus.read(addr.wrapping_add(14), HALFWORD)?,
+            addr: virtio.read(addr, DOUBLEWORD)?,
+            len: virtio.read(addr.wrapping_add(8), WORD)?,
+            flags: virtio.read(addr.wrapping_add(12), HALFWORD)?,
+            next: virtio.read(addr.wrapping_add(14), HALFWORD)?,
         })
     }
 }
@@ -247,16 +247,19 @@ impl VirtqDesc {
 /// ```
 #[derive(Debug)]
 struct VirtqAvail {
+    // JSK: I am not sure where this is used, but also don't know enough
+    //      to feel comfortable getting rid of it.
+    #[allow(dead_code)]
     flags: u16,
     idx: u16,
     ring_start_addr: u64,
 }
 
 impl VirtqAvail {
-    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
+    fn new(virtio: &mut Virtio, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
-            flags: cpu.bus.read(addr, HALFWORD)? as u16,
-            idx: cpu.bus.read(addr.wrapping_add(2), HALFWORD)? as u16,
+            flags: virtio.read(addr, HALFWORD)? as u16,
+            idx: virtio.read(addr.wrapping_add(2), HALFWORD)? as u16,
             ring_start_addr: addr.wrapping_add(4),
         })
     }
@@ -279,11 +282,12 @@ pub struct Virtio {
     config: [u8; 8],
     disk: Vec<u8>,
     virtqueue: Option<VirtqueueAddr>,
+    irq: u64,
 }
 
 impl Virtio {
     /// Creates a new virtio object.
-    pub fn new() -> Self {
+    pub fn new(irq: u64) -> Self {
         let mut config = [0; 8];
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2440004
         // 5.2.4 Device configuration layout
@@ -314,6 +318,7 @@ impl Virtio {
             config,
             disk: Vec::new(),
             virtqueue: None,
+            irq: irq,
         }
     }
 
@@ -342,6 +347,135 @@ impl Virtio {
         }
     }
 
+    /// Sets the binary in the virtio disk.
+    pub fn initialize(&mut self, binary: Vec<u8>) {
+        self.disk.extend(binary.iter().cloned());
+    }
+
+    fn read_disk(&self, addr: u64) -> u64 {
+        self.disk[addr as usize] as u64
+    }
+
+    fn write_disk(&mut self, addr: u64, value: u64) {
+        self.disk[addr as usize] = value as u8
+    }
+
+    /// Accesses the disk via virtio. This is an associated function which takes a `cpu` object to
+    /// read and write with a memory directly (DMA).
+    pub fn disk_access(&mut self) -> Result<(), Exception> {
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
+        // "Used Buffer Notification
+        //     - bit 0 - the interrupt was asserted because the device has used a buffer in at
+        //     least one of the active virtual queues."
+        self.interrupt_status |= 0x1;
+
+        let virtq = self.virtqueue();
+
+        let avail = VirtqAvail::new(self, virtq.avail_addr)?;
+
+        let head_index = self.read(
+            avail.ring_start_addr + avail.idx as u64 % QUEUE_SIZE,
+            HALFWORD,
+        )?;
+
+        // First descriptor.
+        let desc0 = VirtqDesc::new(self, virtq.desc_addr + VRING_DESC_SIZE * head_index)?;
+        assert_eq!(desc0.flags & VIRTQ_DESC_F_NEXT, 1);
+
+        // Second descriptor.
+        let desc1 = VirtqDesc::new(self, virtq.desc_addr + VRING_DESC_SIZE * desc0.next)?;
+        assert_eq!(desc1.flags & VIRTQ_DESC_F_NEXT, 1);
+
+        // 5.2.6 Device Operation
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
+        // struct virtio_blk_req {
+        //   le32 type;
+        //   le32 reserved;
+        //   le64 sector;
+        //   u8 data[][512];
+        //   u8 status;
+        // };
+        let sector = self.read(desc0.addr.wrapping_add(8), DOUBLEWORD)?;
+
+        // Write to a device if the second bit of `flags` is set.
+        match (desc1.flags & VIRTQ_DESC_F_WRITE) == 0 {
+            true => {
+                // Read memory data and write it to a disk.
+                for i in 0..desc1.len {
+                    let data = self.read(desc1.addr + i, BYTE)?;
+                    self.write_disk(sector * SECTOR_SIZE + i, data);
+                }
+            }
+            false => {
+                // Read disk data and write it to memory.
+                for i in 0..desc1.len {
+                    let data = self.read_disk(sector * SECTOR_SIZE + i);
+                    self.write(desc1.addr + i, data, BYTE)?;
+                }
+            }
+        };
+
+        // Third descriptor address.
+        let desc2 = VirtqDesc::new(self, virtq.desc_addr + VRING_DESC_SIZE * desc1.next)?;
+        assert_eq!(desc2.flags & VIRTQ_DESC_F_NEXT, 0);
+        // Tell success.
+        self.write(desc2.addr, 0, BYTE)?;
+
+        // 2.6.7.2 Device Requirements: Used Buffer Notification Suppression
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-400007
+        // After the device writes a descriptor index into the used ring:
+        //   If flags is 1, the device SHOULD NOT send a notification.
+        //   If flags is 0, the device MUST send a notification.
+        // TODO: check the flags in the available ring.
+
+        // "The used ring is where the device returns buffers once it is done with them: it is only
+        // written to by the device, and read by the driver."
+        //
+        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
+        //
+        // ```c
+        // #define VIRTQ_USED_F_NO_NOTIFY 1
+        // struct virtq_used {
+        //   le16 flags;
+        //   le16 idx;
+        //   struct virtq_used_elem ring[ /* Queue Size */];
+        //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
+        // };
+        // ```
+        self.write(
+            virtq
+                .used_addr
+                .wrapping_add(4)
+                .wrapping_add((self.id as u64 % QUEUE_SIZE) * 8),
+            head_index,
+            WORD,
+        )?;
+
+        self.id = self.id.wrapping_add(1);
+        self.write(virtq.used_addr.wrapping_add(2), self.id, HALFWORD)?;
+
+        Ok(())
+    }
+}
+
+impl Device for Virtio {
+    fn size(&self) -> u64 {
+        0x1000
+    }
+
+    /// Returns true if an interrupt is pending.
+    fn is_interrupting(&mut self) -> bool {
+        if self.queue_notify != u32::MAX {
+            self.queue_notify = u32::MAX;
+            return true;
+        }
+        false
+    }
+
+    fn irq(&self) -> Option<u64> {
+        Some(self.irq)
+    }
+
     /// Resets the device when `status` is written to 0.
     fn reset(&mut self) {
         self.id = 0;
@@ -351,22 +485,8 @@ impl Virtio {
         self.interrupt_status = 0;
     }
 
-    /// Returns true if an interrupt is pending.
-    pub fn is_interrupting(&mut self) -> bool {
-        if self.queue_notify != u32::MAX {
-            self.queue_notify = u32::MAX;
-            return true;
-        }
-        false
-    }
-
-    /// Sets the binary in the virtio disk.
-    pub fn initialize(&mut self, binary: Vec<u8>) {
-        self.disk.extend(binary.iter().cloned());
-    }
-
     /// Loads `size`-bit data from a register located at `addr` in the virtio block device.
-    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+    fn read(&mut self, addr: u64, size: u8) -> Result<u64, Exception> {
         // `reg` is the value of a target register in the virtio block device and `offset` is the
         // byte of the start position in the register.
         let (reg, offset) = match addr {
@@ -409,7 +529,8 @@ impl Virtio {
     }
 
     /// Stores `size`-bit data to a register located at `addr` in the virtio block device.
-    pub fn write(&mut self, addr: u64, value: u32, size: u8) -> Result<(), Exception> {
+    fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+        let value = (value & 0xffffffff) as u32;
         // `reg` is the value of a target register in the virtio block device and `offset` is the
         // byte of the start position in the register.
         let (mut reg, offset) = match addr {
@@ -505,112 +626,6 @@ impl Virtio {
             }
             _ => return Err(Exception::StoreAMOAccessFault),
         }
-
-        Ok(())
-    }
-
-    fn read_disk(&self, addr: u64) -> u64 {
-        self.disk[addr as usize] as u64
-    }
-
-    fn write_disk(&mut self, addr: u64, value: u64) {
-        self.disk[addr as usize] = value as u8
-    }
-
-    /// Accesses the disk via virtio. This is an associated function which takes a `cpu` object to
-    /// read and write with a memory directly (DMA).
-    pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
-        // "Used Buffer Notification
-        //     - bit 0 - the interrupt was asserted because the device has used a buffer in at
-        //     least one of the active virtual queues."
-        cpu.bus.virtio.interrupt_status |= 0x1;
-
-        let virtq = cpu.bus.virtio.virtqueue();
-
-        let avail = VirtqAvail::new(cpu, virtq.avail_addr)?;
-
-        let head_index = cpu.bus.read(
-            avail.ring_start_addr + avail.idx as u64 % QUEUE_SIZE,
-            HALFWORD,
-        )?;
-
-        // First descriptor.
-        let desc0 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * head_index)?;
-        assert_eq!(desc0.flags & VIRTQ_DESC_F_NEXT, 1);
-
-        // Second descriptor.
-        let desc1 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc0.next)?;
-        assert_eq!(desc1.flags & VIRTQ_DESC_F_NEXT, 1);
-
-        // 5.2.6 Device Operation
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-2500006
-        // struct virtio_blk_req {
-        //   le32 type;
-        //   le32 reserved;
-        //   le64 sector;
-        //   u8 data[][512];
-        //   u8 status;
-        // };
-        let sector = cpu.bus.read(desc0.addr.wrapping_add(8), DOUBLEWORD)?;
-
-        // Write to a device if the second bit of `flags` is set.
-        match (desc1.flags & VIRTQ_DESC_F_WRITE) == 0 {
-            true => {
-                // Read memory data and write it to a disk.
-                for i in 0..desc1.len {
-                    let data = cpu.bus.read(desc1.addr + i, BYTE)?;
-                    cpu.bus.virtio.write_disk(sector * SECTOR_SIZE + i, data);
-                }
-            }
-            false => {
-                // Read disk data and write it to memory.
-                for i in 0..desc1.len {
-                    let data = cpu.bus.virtio.read_disk(sector * SECTOR_SIZE + i);
-                    cpu.bus.write(desc1.addr + i, data, BYTE)?;
-                }
-            }
-        };
-
-        // Third descriptor address.
-        let desc2 = VirtqDesc::new(cpu, virtq.desc_addr + VRING_DESC_SIZE * desc1.next)?;
-        assert_eq!(desc2.flags & VIRTQ_DESC_F_NEXT, 0);
-        // Tell success.
-        cpu.bus.write(desc2.addr, 0, BYTE)?;
-
-        // 2.6.7.2 Device Requirements: Used Buffer Notification Suppression
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-400007
-        // After the device writes a descriptor index into the used ring:
-        //   If flags is 1, the device SHOULD NOT send a notification.
-        //   If flags is 0, the device MUST send a notification.
-        // TODO: check the flags in the available ring.
-
-        // "The used ring is where the device returns buffers once it is done with them: it is only
-        // written to by the device, and read by the driver."
-        //
-        // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-430008
-        //
-        // ```c
-        // #define VIRTQ_USED_F_NO_NOTIFY 1
-        // struct virtq_used {
-        //   le16 flags;
-        //   le16 idx;
-        //   struct virtq_used_elem ring[ /* Queue Size */];
-        //   le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
-        // };
-        // ```
-        cpu.bus.write(
-            virtq
-                .used_addr
-                .wrapping_add(4)
-                .wrapping_add((cpu.bus.virtio.id as u64 % QUEUE_SIZE) * 8),
-            head_index,
-            WORD,
-        )?;
-
-        cpu.bus.virtio.id = cpu.bus.virtio.id.wrapping_add(1);
-        cpu.bus
-            .write(virtq.used_addr.wrapping_add(2), cpu.bus.virtio.id, HALFWORD)?;
 
         Ok(())
     }

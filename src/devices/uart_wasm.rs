@@ -6,7 +6,6 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::Window;
 
-use crate::bus::{UART_BASE, UART_SIZE};
 use crate::cpu::BYTE;
 use crate::exception::Exception;
 
@@ -16,25 +15,28 @@ extern "C" {
     fn log(s: &str);
 }
 
+/// The size of UART.
+pub const UART_SIZE: u64 = 0x100;
+
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;
 
 /// Receive holding register (for input bytes).
-const UART_RHR: u64 = UART_BASE + 0;
+const UART_RHR: u64 = 0 + 0;
 /// Transmit holding register (for output bytes).
-const UART_THR: u64 = UART_BASE + 0;
+const UART_THR: u64 = 0 + 0;
 /// Interrupt enable register.
-const _UART_IER: u64 = UART_BASE + 1;
+const _UART_IER: u64 = 0 + 1;
 /// FIFO control register.
-const _UART_FCR: u64 = UART_BASE + 2;
+const _UART_FCR: u64 = 0 + 2;
 /// Interrupt status register.
 /// ISR BIT-0:
 ///     0 = an interrupt is pending and the ISR contents may be used as a pointer to the appropriate
 /// interrupt service routine.
 ///     1 = no interrupt is pending.
-const UART_ISR: u64 = UART_BASE + 2;
+const UART_ISR: u64 = 0 + 2;
 /// Line control register.
-const _UART_LCR: u64 = UART_BASE + 3;
+const _UART_LCR: u64 = 0 + 3;
 /// Line status register.
 /// LSR BIT 0:
 ///     0 = no data in receive holding register or FIFO.
@@ -42,7 +44,7 @@ const _UART_LCR: u64 = UART_BASE + 3;
 /// LSR BIT 6:
 ///     0 = transmitter holding and shift registers are full.
 ///     1 = transmit holding register is empty. In FIFO mode this bit is set to one whenever the the transmitter FIFO and transmit shift register are empty.
-const UART_LSR: u64 = UART_BASE + 5;
+const UART_LSR: u64 = 0 + 5;
 
 fn get_input(window: &Window) -> u8 {
     let document = window.document().expect("failed to get a document object");
@@ -70,21 +72,28 @@ pub struct Uart {
     clock: u64,
     not_null: bool,
     window: web_sys::Window,
+    irq: u64,
 }
 
 impl Uart {
     /// Create a new UART object.
-    pub fn new() -> Self {
+    pub fn new(irq: u64) -> Self {
         let mut uart = [0; UART_SIZE as usize];
-        uart[(UART_ISR - UART_BASE) as usize] |= 1;
-        uart[(UART_LSR - UART_BASE) as usize] |= 1 << 5;
+        uart[(UART_ISR - 0) as usize] |= 1;
+        uart[(UART_LSR - 0) as usize] |= 1 << 5;
 
         Self {
             uart,
             clock: 0,
             not_null: false,
             window: web_sys::window().expect("failed to get a global window object"),
+            irq,
         }
+    }
+}
+impl Device for Uart {
+    fn size(&self) -> u64 {
+        UART_SIZE
     }
 
     /// Return true if the byte buffer in UART is full.
@@ -99,7 +108,7 @@ impl Uart {
                 return false;
             }
             self.uart[0] = b;
-            self.uart[(UART_LSR - UART_BASE) as usize] |= 1;
+            self.uart[(UART_LSR - 0) as usize] |= 1;
             // Found a byte in this step, so it might find a byte again in the next step.
             self.not_null = true;
             return true;
@@ -107,23 +116,29 @@ impl Uart {
         false
     }
 
+    fn irq(&self) -> Option<u64> {
+        Some(self.irq)
+    }
+
+    fn reset(&mut self) {}
+
     /// Read a byte from the receive holding register.
-    pub fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
+    fn read(&mut self, index: u64, size: u8) -> Result<u64, Exception> {
         if size != BYTE {
             return Err(Exception::LoadAccessFault);
         }
 
         match index {
             UART_RHR => {
-                self.uart[(UART_LSR - UART_BASE) as usize] &= !1;
-                Ok(self.uart[(index - UART_BASE) as usize] as u64)
+                self.uart[(UART_LSR - 0) as usize] &= !1;
+                Ok(self.uart[(index - 0) as usize] as u64)
             }
-            _ => Ok(self.uart[(index - UART_BASE) as usize] as u64),
+            _ => Ok(self.uart[(index - 0) as usize] as u64),
         }
     }
 
     /// Write a byte to the transmit holding register.
-    pub fn write(&mut self, index: u64, value: u8, size: u8) -> Result<(), Exception> {
+    fn write(&mut self, index: u64, value: u8, size: u8) -> Result<(), Exception> {
         if size != BYTE {
             return Err(Exception::StoreAMOAccessFault);
         }
@@ -135,7 +150,7 @@ impl Uart {
                     .expect("failed to post message");
             }
             _ => {
-                self.uart[(index - UART_BASE) as usize] = value;
+                self.uart[(index - 0) as usize] = value;
             }
         }
         Ok(())

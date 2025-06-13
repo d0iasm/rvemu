@@ -1,6 +1,6 @@
-use rvemu::bus::DRAM_BASE;
 use rvemu::csr::MEPC;
 use rvemu::emulator::Emulator;
+use rvemu::emulator::DRAM_BASE;
 
 #[test]
 fn illegal_isa() {

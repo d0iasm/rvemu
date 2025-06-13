@@ -12,26 +12,27 @@
 // - https://github.com/qemu/qemu/blob/master/hw/intc/sifive_clint.c
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
-use crate::bus::CLINT_BASE;
 use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::csr::{State, MIP, MSIP_BIT, MTIP_BIT};
 use crate::exception::Exception;
 
+use crate::bus::Device;
+
 /// The address that a msip register starts. A msip is a machine mode software interrupt pending
 /// register, used to assert a software interrupt for a CPU.
-const MSIP: u64 = CLINT_BASE;
+const MSIP: u64 = 0;
 /// The address that a msip register ends. `msip` is a 4-byte register.
 const MSIP_END: u64 = MSIP + 0x4;
 
 /// The address that a mtimecmp register starts. A mtimecmp is a memory mapped machine mode timer
 /// compare register, used to trigger an interrupt when mtimecmp is greater than or equal to mtime.
-const MTIMECMP: u64 = CLINT_BASE + 0x4000;
+const MTIMECMP: u64 = 0x4000;
 /// The address that a mtimecmp register ends. `mtimecmp` is a 8-byte register.
 const MTIMECMP_END: u64 = MTIMECMP + 0x8;
 
 /// The address that a timer register starts. A mtime is a machine mode timer register which runs
 /// at a constant frequency.
-const MTIME: u64 = CLINT_BASE + 0xbff8;
+const MTIME: u64 = 0xbff8;
 /// The address that a timer register ends. `mtime` is a 8-byte register.
 const MTIME_END: u64 = MTIME + 0x8;
 
@@ -88,9 +89,24 @@ impl Clint {
             state.write(MIP, state.read(MIP) | MTIP_BIT);
         }
     }
+}
+impl Device for Clint {
+    fn size(&self) -> u64 {
+        0x10000
+    }
+
+    fn is_interrupting(&mut self) -> bool {
+        false
+    }
+
+    fn irq(&self) -> Option<u64> {
+        None
+    }
+
+    fn reset(&mut self) {}
 
     /// Load `size`-bit data from a register located at `addr` in CLINT.
-    pub fn read(&self, addr: u64, size: u8) -> Result<u64, Exception> {
+    fn read(&mut self, addr: u64, size: u8) -> Result<u64, Exception> {
         // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
         // position in the register.
         let (reg, offset) = match addr {
@@ -110,7 +126,7 @@ impl Clint {
     }
 
     /// Store `size`-bit data to a register located at `addr` in CLINT.
-    pub fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
+    fn write(&mut self, addr: u64, value: u64, size: u8) -> Result<(), Exception> {
         // `reg` is the value of a target register in CLINT and `offset` is the byte of the start
         // position in the register.
         let (mut reg, offset) = match addr {
