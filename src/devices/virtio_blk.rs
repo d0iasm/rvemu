@@ -524,14 +524,20 @@ impl Virtio {
         // "Used Buffer Notification
         //     - bit 0 - the interrupt was asserted because the device has used a buffer in at
         //     least one of the active virtual queues."
-        cpu.bus.virtio.interrupt_status |= 0x1;
+        //cpu.bus.virtio.interrupt_status |= 0x1; //move this to the end of this function after processing the disk access.
 
         let virtq = cpu.bus.virtio.virtqueue();
 
         let avail = VirtqAvail::new(cpu, virtq.avail_addr)?;
 
+        // let head_index = cpu.bus.read(
+        //     avail.ring_start_addr + avail.idx as u64 % QUEUE_SIZE,
+        //     HALFWORD,
+        // )?;
+
+        // Use the device's internal ID to find the next available descriptor
         let head_index = cpu.bus.read(
-            avail.ring_start_addr + avail.idx as u64 % QUEUE_SIZE,
+            avail.ring_start_addr + (cpu.bus.virtio.id as u64 % QUEUE_SIZE) * 2,
             HALFWORD,
         )?;
 
@@ -612,6 +618,7 @@ impl Virtio {
         cpu.bus
             .write(virtq.used_addr.wrapping_add(2), cpu.bus.virtio.id, HALFWORD)?;
 
+        cpu.bus.virtio.interrupt_status |= 0x1;
         Ok(())
     }
 }
